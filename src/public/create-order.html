@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criar Pedido</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.2/dist/sweetalert2.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">INÍCIO</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/create-order.html">Criar Pedido</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card shadow-lg">
+          <div class="card-header bg-primary text-white text-center">
+            <h2>Criar Pedido</h2>
+          </div>
+          <div class="card-body">
+            <form id="orderForm">
+              <div class="mb-3">
+                <label for="clientId" class="form-label">Cliente</label>
+                <select id="clientId" name="clientId" class="form-select" required>
+                  <option value="">Selecione um cliente</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="franchiseId" class="form-label">Franquia</label>
+                <select id="franchiseId" name="franchiseId" class="form-select" required>
+                  <option value="">Selecione uma franquia</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="products" class="form-label">Produtos</label>
+                <select id="products" name="products" class="form-select">
+                  <option value="">Selecione um produto</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="productCost" class="form-label">Valor de Custo</label>
+                <input type="text" id="productCost" name="productCost" class="form-control" readonly>
+              </div>
+
+              <div class="mb-3">
+                <label for="salePrice" class="form-label">Valor de Venda</label>
+                <input type="number" id="salePrice" name="salePrice" class="form-control"
+                  placeholder="Digite o valor de venda">
+              </div>
+
+              <button type="button" id="addProductBtn" class="btn btn-info w-100">Adicionar Produto</button>
+              <ul id="productList" class="list-group mt-3">
+                <!-- Produtos adicionados aparecerão aqui -->
+              </ul>
+
+              <div class="mb-3">
+                <label for="totalValue" class="form-label">Valor da Compra</label>
+                <input type="text" id="totalValue" name="totalValue" class="form-control" readonly>
+              </div>
+
+              <div class="mb-3">
+                <label for="paymentMethod" class="form-label">Método de Pagamento</label>
+                <select id="paymentMethod" name="paymentMethod" class="form-select" required>
+                  <option value="">Selecione um estilo de pagamento</option>
+                  <option value="PIX">PIX</option>
+                  <option value="DINHEIRO">DINHEIRO</option>
+                  <option value="CARTÃO DE CRÉDITO">CARTÃO DE CRÉDITO</option>
+                  <option value="PARCELADO">PARCELADO</option>
+                  <option value="PAGAMENTO COMBINADO">PAGAMENTO COMBINADO</option>
+                </select>
+              </div>
+
+              <div class="mb-3" id="installmentsDiv" style="display: none;">
+                <label for="installments" class="form-label">Número de Parcelas</label>
+                <select id="installments" name="installments" class="form-select">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+
+              <div class="mb-3" id="installmentListDiv" style="display: none;">
+                <label for="installmentList" class="form-label">Valores das Parcelas</label>
+                <ul id="installmentList" name="installmentList" class="list-group">
+                  <!-- Lista de valores das parcelas será preenchida aqui -->
+                </ul>
+              </div>
+
+              <div class="mb-3" id="combinedPaymentDiv" style="display: none;">
+                <label for="combinedPaymentValue" class="form-label">Valor a ser pago via PIX/DINHEIRO</label>
+                <input type="number" id="combinedPaymentValue" name="combinedPaymentValue" class="form-control"
+                  placeholder="Digite o valor a ser pago de forma imediata">
+              </div>
+
+              <button type="submit" class="btn btn-success w-100">Criar Pedido</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-dark text-white text-center py-3 mt-5">
+    <p>&copy; 2024 Sistema de Pedidos. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.2/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const clientIdSelect = document.getElementById('clientId');
+      const franchiseIdSelect = document.getElementById('franchiseId');
+      const productsSelect = document.getElementById('products');
+      const productCostInput = document.getElementById('productCost');
+      const salePriceInput = document.getElementById('salePrice');
+      const totalValueInput = document.getElementById('totalValue');
+      const addProductBtn = document.getElementById('addProductBtn');
+      const productList = document.getElementById('productList');
+      const paymentMethodSelect = document.getElementById('paymentMethod');
+      const installmentsDiv = document.getElementById('installmentsDiv');
+      const installmentListDiv = document.getElementById('installmentListDiv');
+      const combinedPaymentDiv = document.getElementById('combinedPaymentDiv');
+      let totalValue = 0;
+      let productsList = [];  // Lista de produtos
+
+      // Carregar clientes do backend
+      fetch('/api/clients')
+        .then(response => response.json())
+        .then(clients => {
+          clients.forEach(client => {
+            const option = document.createElement('option');
+            option.value = client.id;
+            option.textContent = client.name;
+            clientIdSelect.appendChild(option);
+          });
+        })
+        .catch(error => {
+          console.error('Erro ao carregar clientes:', error);
+          Swal.fire('Erro', 'Não foi possível carregar a lista de clientes.', 'error');
+        });
+
+      // Carregar franquias do backend
+      fetch('/api/franchises')
+        .then(response => response.json())
+        .then(franchises => {
+          if (Array.isArray(franchises)) {
+            franchises.forEach(franchise => {
+              const option = document.createElement('option');
+              option.value = franchise;
+              option.textContent = franchise;
+              franchiseIdSelect.appendChild(option);
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Erro ao carregar franquias:', error);
+          Swal.fire('Erro', 'Não foi possível carregar a lista de franquias.', 'error');
+        });
+
+      // Carregar produtos quando selecionar uma franquia
+      franchiseIdSelect.addEventListener('change', (event) => {
+        const franchiseId = event.target.value;
+        if (franchiseId) {
+          fetch(`/api/products?franchise=${franchiseId}`)
+            .then(response => response.json())
+            .then(data => {
+              const products = data.products || data;
+              productsSelect.innerHTML = '<option value="">Selecione um produto</option>';
+              products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = product.name;
+                productsSelect.appendChild(option);
+              });
+            })
+            .catch(error => {
+              console.error('Erro ao carregar produtos:', error);
+              Swal.fire('Erro', 'Não foi possível carregar a lista de produtos.', 'error');
+            });
+        } else {
+          productsSelect.innerHTML = '<option value="">Selecione um produto</option>';
+        }
+      });
+
+      // Exibir custo do produto e atualizar o total
+      productsSelect.addEventListener('change', (event) => {
+        const productId = event.target.value;
+        if (productId) {
+          fetch(`/api/products/${productId}`)
+            .then(response => response.json())
+            .then(product => {
+              if (product && product.cost) {
+                productCostInput.value = parseFloat(product.cost).toFixed(2);  // Exibir o custo no campo
+                salePriceInput.focus();  // Dar foco para o campo de valor de venda
+              }
+            })
+            .catch(error => {
+              console.error('Erro ao carregar o produto:', error);
+              Swal.fire('Erro', 'Não foi possível carregar as informações do produto.', 'error');
+            });
+        }
+      });
+
+      addProductBtn.addEventListener('click', () => {
+        const productId = productsSelect.value;
+        const salePrice = parseFloat(salePriceInput.value);
+
+        if (!productId || isNaN(salePrice) || salePrice <= 0) {
+          Swal.fire('Erro', 'Selecione um produto e insira um valor de venda válido.', 'error');
+          return;
+        }
+
+        const productOption = productsSelect.selectedOptions[0];
+        const productName = productOption.textContent;
+        const productCost = parseFloat(productCostInput.value);
+        const productItem = document.createElement('li');
+        productItem.classList.add('list-group-item');
+        productItem.textContent = `${productName} - Custo: ${productCost.toFixed(2)} - Venda: ${salePrice.toFixed(2)}`;
+
+        const removeButton = document.createElement('button');
+        removeButton.textContent = 'Remover';
+        removeButton.classList.add('btn', 'btn-danger', 'btn-sm', 'ms-2');
+        removeButton.onclick = () => {
+          productList.removeChild(productItem);
+          totalValue -= salePrice;
+          totalValueInput.value = totalValue.toFixed(2);
+          // Remover o produto da lista
+          productsList = productsList.filter(product => product.id !== productId);
+        };
+
+        productItem.appendChild(removeButton);
+        productList.appendChild(productItem);
+
+        totalValue += salePrice;
+        totalValueInput.value = totalValue.toFixed(2);
+
+        // Adicionar o produto à lista
+        productsList.push({ id: productId, name: productName, salePrice });
+      });
+
+      // Exibir campos específicos com base no método de pagamento selecionado
+      paymentMethodSelect.addEventListener('change', (event) => {
+        const selectedMethod = event.target.value;
+
+        // Ocultar todos os campos e então mostrar os necessários
+        installmentsDiv.style.display = 'none';
+        installmentListDiv.style.display = 'none';
+        combinedPaymentDiv.style.display = 'none';
+
+        if (selectedMethod === 'PARCELADO') {
+          installmentsDiv.style.display = 'block';
+        } else if (selectedMethod === 'PAGAMENTO COMBINADO') {
+          combinedPaymentDiv.style.display = 'block';
+        }
+      });
+
+      // Atualizar a lista de parcelas
+      installments.addEventListener('change', () => {
+        const installmentsCount = parseInt(installments.value);
+        const installmentAmount = totalValue / installmentsCount;
+
+        const installmentList = document.getElementById('installmentList');
+        installmentList.innerHTML = '';
+
+        for (let i = 1; i <= installmentsCount; i++) {
+          const listItem = document.createElement('li');
+          listItem.classList.add('list-group-item');
+          listItem.textContent = `${i}x: R$ ${installmentAmount.toFixed(2)}`;
+          installmentList.appendChild(listItem);
+        }
+
+        installmentListDiv.style.display = 'block';
+      });
+
+      // Enviar o pedido
+      document.getElementById('orderForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const formObject = Object.fromEntries(formData);
+
+        // Aqui você pode fazer o ajuste dos dados, se necessário, antes de enviar para o backend
+        const payload = {
+          clientId: formObject.clientId,  // ID do cliente selecionado
+          franchiseId: formObject.franchiseId,  // ID da franquia
+          products: productsList,  // Array de produtos adicionados ao pedido
+          totalValue: totalValue,  // Valor total do pedido
+          paymentMethod: formObject.paymentMethod,  // Método de pagamento selecionado
+          installments: formObject.installments,  // Número de parcelas
+          combinedPaymentValue: formObject.combinedPaymentValue,  // Valor do pagamento combinado
+        };
+
+        // Enviar o pedido para o backend
+        fetch('/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        })
+          .then(response => response.json())
+          .then(order => {
+            Swal.fire('Sucesso', `Pedido #${order.id} criado com sucesso!`, 'success');
+            // Limpar formulário
+            document.getElementById('orderForm').reset();
+            productList.innerHTML = '';
+            totalValue = 0;
+            totalValueInput.value = '0.00';
+          })
+          .catch(error => {
+            console.error('Erro ao criar pedido:', error);
+            Swal.fire('Erro', 'Não foi possível criar o pedido.', 'error');
+          });
+      });
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Produtos</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- SweetAlert2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.2/dist/sweetalert2.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <!-- Barra de Navegação -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">INÍCIO</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/create-product.html">Cadastrar Produto</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/create-order.html">Criar Pedido</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
+        </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Formulário de Cadastro -->
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card shadow-lg">
+          <div class="card-header bg-primary text-white text-center">
+            <h2>Cadastro de Produtos</h2>
+          </div>
+          <div class="card-body">
+            <form id="productForm">
+              <div class="mb-3">
+                <label for="name" class="form-label">Nome do Produto</label>
+                <input type="text" class="form-control" id="name" placeholder="Digite o nome do produto" required>
+              </div>
+              <div class="mb-3">
+                <label for="cost" class="form-label">Valor de Custo</label>
+                <input type="number" step="0.01" class="form-control" id="cost" placeholder="Digite o valor de custo"
+                  required>
+              </div>
+              <div class="mb-3">
+                <label for="franchise" class="form-label">Franquia</label>
+                <select class="form-select" id="franchise" required>
+                  <option value="">Selecione a franquia</option>
+                  <option value="Boticário">Boticário</option>
+                  <option value="Natura">Natura</option>
+                  <option value="Abelha Rainha">Abelha Rainha</option>
+                  <option value="Eudora">Eudora</option>
+                  <option value="Outros">Outros</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="code" class="form-label">Código do Produto</label>
+                <input type="text" class="form-control" id="code" placeholder="Digite o código do produto" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block w-100">Cadastrar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rodapé -->
+  <footer class="bg-dark text-white text-center py-3 mt-5">
+    <p>&copy; 2024 Sistema de Cadastro. Todos os direitos reservados.</p>
+  </footer>
+
+  <!-- SweetAlert2 e Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.2/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('productForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('name').value.trim();
+        const cost = parseFloat(document.getElementById('cost').value.trim());
+        const franchise = document.getElementById('franchise').value.trim();
+        const code = document.getElementById('code').value.trim();
+
+        console.log({ name, cost, franchise, code });
+
+        try {
+          const response = await fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, cost, franchise, code }),
+          });
+
+          const result = await response.json();
+          if (response.ok) {
+            Swal.fire('Sucesso', 'Produto cadastrado com sucesso!', 'success');
+            document.getElementById('productForm').reset();
+          } else {
+            Swal.fire('Erro', result.error || 'Erro ao cadastrar produto', 'error');
+          }
+        } catch (err) {
+          console.error('Erro:', err);
+          Swal.fire('Erro', 'Erro ao conectar ao servidor', 'error');
+        }
+      });
+    });
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Clientes</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.2/dist/sweetalert2.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Barra de Navegação -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">INÍCIO</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/create-client.html">Cadastrar Cliente</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/create-product.html">Cadastrar Produto</a>
+                      </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/create-order.html">Criar Pedido</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Formulário de Cadastro -->
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-primary text-white text-center">
+                        <h2>Cadastro de Clientes</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="clientForm">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Nome</label>
+                                <input type="text" class="form-control" id="name" placeholder="Nome completo" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Endereço</label>
+                                <input type="text" class="form-control" id="address" placeholder="Digite o endereço" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="houseNumber" class="form-label">Número</label>
+                                <input type="text" class="form-control" id="houseNumber" placeholder="Digite o número da casa" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="neighborhood" class="form-label">Bairro</label>
+                                <input type="text" class="form-control" id="neighborhood" placeholder="Digite o bairro" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Telefone</label>
+                                <input type="text" class="form-control" id="phone" placeholder="(XX) XXXXX-XXXX">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block w-100">Cadastrar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <p>&copy; 2024 Sistema de Cadastro. Todos os direitos reservados.</p>
+    </footer>
+
+    <!-- SweetAlert2 e Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.2/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.getElementById('clientForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const houseNumber = document.getElementById('houseNumber').value.trim();
+            const neighborhood = document.getElementById('neighborhood').value.trim();
+            let phone = document.getElementById('phone').value.trim();
+
+            // Remover qualquer caractere não numérico do telefone
+            phone = phone.replace(/[^\d]/g, '');
+
+            // Verifique os dados antes de enviar
+            console.log({ name, address, houseNumber, neighborhood, phone });
+
+            try {
+                const response = await fetch('/api/clients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, address, houseNumber, neighborhood, phone }),
+                });
+
+                if (response.ok) {
+                    Swal.fire('Sucesso', 'Cliente cadastrado com sucesso!', 'success');
+                    document.getElementById('clientForm').reset();
+                } else {
+                    // Obtenha o erro retornado pela API
+                    const error = await response.json();
+                    console.error('Erro do servidor:', error);
+                    Swal.fire('Erro', error.message || 'Erro ao cadastrar cliente', 'error');
+                }
+            } catch (err) {
+                console.error('Erro:', err);
+                Swal.fire('Erro', 'Erro ao conectar ao servidor', 'error');
+            }
+        });
+    </script>
+</body>
+
+</html>
