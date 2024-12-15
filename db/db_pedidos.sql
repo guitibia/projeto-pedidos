@@ -28,9 +28,9 @@ CREATE TABLE IF NOT EXISTS `clients` (
   `neighborhood` varchar(255) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.clients: ~2 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.clients: ~4 rows (aproximadamente)
 INSERT INTO `clients` (`id`, `name`, `address`, `house_number`, `neighborhood`, `phone`) VALUES
 	(1, 'Guilherme Moraes', 'David Carvalho', '233', 'Pratinha', '1999544947'),
 	(2, 'Teste', 'Teste teste teste', '1', 'teste', '1999544948'),
@@ -49,22 +49,13 @@ CREATE TABLE IF NOT EXISTS `orders` (
   PRIMARY KEY (`id`),
   KEY `client_id` (`client_id`),
   CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.orders: ~10 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.orders: ~1 rows (aproximadamente)
 INSERT INTO `orders` (`id`, `client_id`, `payment_method`, `installments`, `total_cost`, `combined_payment_value`, `status`) VALUES
-	(1, 1, 'PIX', 1, 30.00, NULL, 'Pendente'),
-	(2, 1, 'DINHEIRO', 1, 30.00, NULL, 'Pendente'),
-	(3, 1, 'CARTÃO DE CRÉDITO', 1, 30.00, NULL, 'Pendente'),
-	(4, 1, 'PARCELADO', 2, 30.00, NULL, 'Pendente'),
-	(5, 1, 'PAGAMENTO COMBINADO', 2, 30.00, 15.00, 'Pendente'),
-	(6, 1, 'PIX', 1, 45.00, NULL, 'Pendente'),
-	(7, 1, 'PIX', 1, 44.00, NULL, 'Pendente'),
-	(8, 2, 'PARCELADO', 2, 55.00, NULL, 'Pendente'),
-	(9, 1, 'PARCELADO', 2, 30.00, NULL, 'Pendente'),
-	(10, 1, 'PAGAMENTO COMBINADO', 2, 30.00, 15.00, 'Pendente'),
-	(11, 2, 'PARCELADO', 3, 75.00, NULL, 'Pendente'),
-	(12, 4, 'PIX', 1, 15.00, NULL, 'Pendente');
+	(16, 3, 'PIX', 1, 100.00, NULL, 'Entregue'),
+	(17, 2, 'DINHEIRO', 1, 60.00, NULL, 'Entregue'),
+	(19, 3, 'PARCELADO', 5, 110.00, NULL, 'Pendente');
 
 -- Copiando estrutura para tabela cosmeticos_db.order_products
 CREATE TABLE IF NOT EXISTS `order_products` (
@@ -77,22 +68,15 @@ CREATE TABLE IF NOT EXISTS `order_products` (
   CONSTRAINT `order_products_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.order_products: ~11 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.order_products: ~2 rows (aproximadamente)
 INSERT INTO `order_products` (`order_id`, `product_id`, `sale_price`) VALUES
-	(1, 1, 30.00),
-	(2, 1, 30.00),
-	(3, 1, 30.00),
-	(4, 1, 30.00),
-	(5, 1, 30.00),
-	(6, 1, 45.00),
-	(7, 1, 44.00),
-	(8, 1, 30.00),
-	(8, 2, 25.00),
-	(9, 1, 30.00),
-	(10, 1, 30.00),
-	(11, 1, 45.00),
-	(11, 2, 30.00),
-	(12, 1, 15.00);
+	(16, 1, 50.00),
+	(16, 2, 50.00),
+	(17, 1, 30.00),
+	(17, 2, 30.00),
+	(19, 1, 35.00),
+	(19, 2, 30.00),
+	(19, 4, 45.00);
 
 -- Copiando estrutura para tabela cosmeticos_db.products
 CREATE TABLE IF NOT EXISTS `products` (
@@ -103,12 +87,14 @@ CREATE TABLE IF NOT EXISTS `products` (
   `code` varchar(50) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.products: ~2 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.products: ~4 rows (aproximadamente)
 INSERT INTO `products` (`id`, `name`, `cost`, `franchise`, `code`) VALUES
 	(1, 'Gel para Cabelo', 25.00, 'Boticário', '8080'),
-	(2, 'Creme para Pés', 15.00, 'Eudora', '5566');
+	(2, 'Creme para Pés', 15.00, 'Eudora', '5566'),
+	(3, 'Shampoo', 15.00, 'Natura', '5555'),
+	(4, 'KAIK', 25.00, 'Natura', '4444');
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
