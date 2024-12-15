@@ -5,7 +5,7 @@ body {
   background-color: #f8f9fa;
 }
 
-
+/* Estilos para o Modal */
 .table th,
     .table td {
       vertical-align: middle;
@@ -17,4 +17,84 @@ body {
 
     .btn-custom {
       border-radius: 20px;
+    }
+
+    
+
+    .modal-content {
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      background-color: #f8f9fa;
+    }
+
+    .modal-header {
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .modal-body {
+      font-size: 1.1rem;
+      color: #333;
+      padding: 2rem;
+    }
+
+    .modal-footer {
+      border-top: 1px solid #e0e0e0;
+      background-color: #f7f7f7;
+    }
+
+    .btn {
+      font-size: 1rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      border-color: #6c757d;
+    }
+
+    .btn-secondary:hover {
+      background-color: #5a6268;
+    }
+
+    .btn-success {
+      background-color: #28a745;
+      border-color: #28a745;
+    }
+
+    .btn-success:hover {
+      background-color: #218838;
+    }
+
+    .btn-outline-primary {
+      border-color: #007bff;
+      color: #007bff;
+    }
+
+    .btn-outline-primary:hover {
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    .modal-body h5 {
+      font-size: 1.3rem;
+      color: #007bff;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    .modal-body p {
+      margin: 10px 0;
+    }
+
+    .product-details p {
+      font-size: 1.1rem;
+      color: #555;
+      margin-bottom: 10px;
     }

@@ -25,7 +25,7 @@
             <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link active" href="/create-product.html">Cadastrar Produto</a>
+            <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/create-order.html">Criar Pedido</a>
@@ -61,7 +61,7 @@
     aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
+        <div class="modal-header bg-primary text-white rounded-top">
           <h5 class="modal-title" id="orderDetailsModalLabel">Detalhes do Pedido</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
@@ -69,44 +69,56 @@
           <!-- Os detalhes do pedido serão preenchidos aqui -->
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-          <button type="button" class="btn btn-success" id="markAsDeliveredButton">Marcar como Entregue</button>
-          <button type="button" class="btn btn-outline-primary" id="printButton">Imprimir Pedido</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Fechar
+          </button>
+          <button type="button" class="btn btn-success" id="markAsDeliveredButton">
+            <i class="bi bi-check-circle"></i> Marcar como Entregue
+          </button>
+          <button type="button" class="btn btn-outline-primary" id="printButton">
+            <i class="bi bi-printer"></i> Imprimir Pedido
+          </button>
         </div>
       </div>
     </div>
   </div>
-
+  
   <!-- Rodapé -->
   <footer class="bg-dark text-white text-center py-3 mt-5">
     <p>&copy; 2024 Sistema de Cadastro. Todos os direitos reservados.</p>
   </footer>
 
   <script>
+    // Forçar atualização da tabela de pedidos
+    document.getElementById('ordersList').innerHTML = '';
+    loadOrders();  // Recarregar a lista de pedidos
+
+
     // Função para carregar pedidos
     function loadOrders() {
       fetch('/api/orders')
         .then(response => response.json())
         .then(orders => {
+
           const ordersList = document.getElementById('ordersList');
           ordersList.innerHTML = ''; // Limpar lista antes de adicionar os novos itens
 
           orders.forEach(order => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-              <td>${order.id}</td>
-              <td>${order.client_name || 'Cliente Desconhecido'}</td>  
-              <td>${order.payment_method}</td>
-              <td>${order.status || 'Pendente'}</td>
-              <td>
-                <button class="btn btn-info btn-sm btn-custom" onclick="viewOrder(${order.id})">
-                  <i class="bi bi-eye"></i> Ver
-                </button>
-                <button class="btn btn-danger btn-sm btn-custom" onclick="deleteOrder(${order.id})">
-                  <i class="bi bi-trash"></i> Excluir
-                </button>
-              </td>
-            `;
+          <td>${order.id}</td>
+          <td>${order.client_name || 'Cliente Desconhecido'}</td>
+          <td>${order.payment_method}</td>
+          <td>${order.status || 'Pendente'}</td> <!-- O status será atualizado aqui -->
+          <td>
+            <button class="btn btn-info btn-sm btn-custom" onclick="viewOrder(${order.id})">
+              <i class="bi bi-eye"></i> Ver
+            </button>
+            <button class="btn btn-danger btn-sm btn-custom" onclick="deleteOrder(${order.id})">
+              <i class="bi bi-trash"></i> Excluir
+            </button>
+          </td>
+        `;
             ordersList.appendChild(tr);
           });
         })
@@ -114,154 +126,6 @@
           console.error('Erro ao carregar pedidos:', error);
           Swal.fire('Erro', 'Não foi possível carregar os pedidos. Tente novamente.', 'error');
         });
-    }
-
-    // Função para visualizar o pedido
-    function viewOrder(orderId) {
-      fetch(`/api/orders/${orderId}`)
-        .then(response => response.json())
-        .then(data => {
-          const order = data;
-          const orderDetailsContent = document.getElementById('orderDetailsContent');
-
-          // Verificar se 'products' é um array e tem produtos
-          const productsList = Array.isArray(order.products) && order.products.length > 0
-            ? order.products.map(product => {
-              return `
-              <li>
-                <strong>Produto:</strong> ${product.product_name}<br>
-                <strong>Valor de Venda:</strong> R$ ${product.sale_price.toFixed(2)}<br>
-                <strong>Valor de Custo:</strong> R$ ${product.cost_price.toFixed(2)}
-              </li>
-            `;
-            }).join('')
-            : '<li><strong>Sem produtos associados a este pedido.</strong></li>'; // Caso não haja produtos
-
-          // Calcular o total do valor de venda do pedido
-          const totalSaleValue = Array.isArray(order.products) && order.products.length > 0
-            ? order.products.reduce((total, product) => total + (product.sale_price || 0), 0).toFixed(2)
-            : '0.00';
-
-          // Condicional para ocultar o parcelamento nos métodos de pagamento "PIX", "Dinheiro" e "Cartão de Crédito"
-          const isInstallmentVisible = !(order.payment_method === 'PIX' || order.payment_method === 'Dinheiro' || order.payment_method === 'Cartão de Crédito');
-          const installmentInfo = isInstallmentVisible && order.installments
-            ? `<p><strong>Parcelado em:</strong> ${order.installments} vezes</p>`
-            : '';
-
-          // Exibir as informações detalhadas do pedido
-          orderDetailsContent.innerHTML = `  
-        <h4>ID do Pedido: ${order.id}</h4>
-        <p><strong>Cliente:</strong> ${order.client_name}</p>
-        <p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>
-        <p><strong>Status:</strong> ${order.status || 'Pendente'}</p>
-        ${installmentInfo}
-        <h5>Produtos:</h5>
-        <ul>
-          ${productsList}
-        </ul>
-        <h5>Total Valor de Venda:</h5>
-        <p>R$ ${totalSaleValue}</p>
-      `;
-
-          const orderDetailsModal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
-          orderDetailsModal.show();
-
-          // Configurar o botão de impressão
-          document.getElementById('printButton').onclick = () => {
-            printOrderDetails(order);
-          };
-
-          // Marcar como Entregue
-          document.getElementById('markAsDeliveredButton').onclick = () => {
-            markOrderAsDelivered(order.id);
-          };
-        })
-        .catch(error => {
-          console.error('Erro ao carregar detalhes do pedido:', error);
-          Swal.fire('Erro', 'Erro ao carregar detalhes do pedido', 'error');
-        });
-    }
-
-    // Função para imprimir os detalhes do pedido
-    function printOrderDetails(order) {
-      const printWindow = window.open('', '', 'height=600,width=800');
-      printWindow.document.write('<html><head><title>Pedido - ' + order.id + '</title></head><body>');
-      printWindow.document.write('<h3>Detalhes do Pedido ' + order.id + '</h3>');
-      printWindow.document.write('<p><strong>Cliente:</strong> ' + order.client_name + '</p>');
-      printWindow.document.write('<p><strong>Método de Pagamento:</strong> ' + order.payment_method + '</p>');
-      printWindow.document.write('<p><strong>Status:</strong> ' + (order.status || 'Pendente') + '</p>');
-
-      // Exibir o parcelamento se necessário (somente para métodos que não sejam PIX, Dinheiro e Cartão de Crédito)
-      if (order.payment_method !== 'PIX' && order.payment_method !== 'Dinheiro' && order.payment_method !== 'Cartão de Crédito' && order.installments) {
-        printWindow.document.write('<h5>Parcelado em:</h5>');
-        printWindow.document.write('<p>' + order.installments + ' vezes</p>');
-      }
-
-      printWindow.document.write('<h5>Produtos:</h5><ul>');
-      if (Array.isArray(order.products) && order.products.length > 0) {
-        order.products.forEach(product => {
-          printWindow.document.write(`
-        <li>
-          <strong>Produto:</strong> ${product.product_name}<br>
-          <strong>Valor de Venda:</strong> R$ ${product.sale_price.toFixed(2)}<br>
-          <strong>Valor de Custo:</strong> R$ ${product.cost_price.toFixed(2)}
-        </li>
-      `);
-        });
-      } else {
-        printWindow.document.write('<li><strong>Sem produtos associados a este pedido.</strong></li>');
-      }
-      printWindow.document.write('</ul>');
-      printWindow.document.write('<h5>Total Valor de Venda:</h5>');
-      printWindow.document.write('<p>R$ ' + (Array.isArray(order.products) && order.products.length > 0 ? order.products.reduce((total, product) => total + (product.sale_price || 0), 0).toFixed(2) : '0.00') + '</p>');
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      printWindow.print();
-    }
-
-
-
-    // Função para marcar o pedido como entregue
-    function markOrderAsDelivered(orderId) {
-      fetch(`/api/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: 'Entregue' })
-      })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Erro ao atualizar o status do pedido');
-          }
-          return response.json();
-        })
-        .then(data => {
-          Swal.fire('Sucesso', 'Pedido marcado como entregue!', 'success');
-          loadOrders();
-        })
-        .catch(error => {
-          console.error('Erro ao atualizar status do pedido:', error);
-          Swal.fire('Erro', 'Erro ao marcar o pedido como entregue', 'error');
-        });
-    }
-
-    // Função para imprimir os detalhes do pedido
-    function printOrderDetails(order) {
-      const printWindow = window.open('', '', 'height=600,width=800');
-      printWindow.document.write('<html><head><title>Pedido - ' + order.id + '</title></head><body>');
-      printWindow.document.write('<h3>Detalhes do Pedido ' + order.id + '</h3>');
-      printWindow.document.write('<p><strong>Cliente:</strong> ' + order.client_name + '</p>');
-      printWindow.document.write('<p><strong>Método de Pagamento:</strong> ' + order.payment_method + '</p>');
-      printWindow.document.write('<p><strong>Status:</strong> ' + (order.status || 'Pendente') + '</p>');
-      printWindow.document.write('<h5>Produtos:</h5><ul>');
-      order.products.forEach(product => {
-        printWindow.document.write('<li>' + product.product_name + '</li>');
-      });
-      printWindow.document.write('</ul>');
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      printWindow.print();
     }
 
     // Função para excluir o pedido
@@ -276,13 +140,19 @@
         confirmButtonText: 'Sim, excluir!',
       }).then((result) => {
         if (result.isConfirmed) {
+          // Chama a API para excluir o pedido
           fetch(`/api/orders/${orderId}`, {
-            method: 'DELETE',
+            method: 'DELETE', // Método DELETE
           })
-            .then(response => response.json())
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Erro ao excluir pedido');
+              }
+              return response.json();
+            })
             .then(data => {
               Swal.fire('Sucesso', 'Pedido excluído com sucesso!', 'success');
-              loadOrders();
+              loadOrders(); // Recarrega a lista de pedidos
             })
             .catch(error => {
               console.error('Erro ao excluir pedido:', error);
@@ -291,6 +161,290 @@
         }
       });
     }
+
+
+    // Função para visualizar o pedido
+    function viewOrder(orderId) {
+      fetch(`/api/orders/${orderId}`)
+        .then(response => response.json())
+        .then(order => {
+          const orderDetailsContent = document.getElementById('orderDetailsContent');
+
+          // Agrupar os produtos por franquia
+          const groupedProducts = order.products.reduce((groups, product) => {
+            const franchise = product.franchise || 'Desconhecido';
+
+            if (!groups[franchise]) {
+              groups[franchise] = [];
+            }
+            groups[franchise].push(product);
+            return groups;
+          }, {});
+
+          // Gerar a lista de produtos agrupados por franquia
+          const productsList = Object.keys(groupedProducts).map(franchise => {
+            const products = groupedProducts[franchise];
+
+            // Gerar HTML para cada produto dentro da franquia
+            const productDetails = products.map(product => {
+              return `
+            <p>
+              ${product.product_name} - COD ${product.code} / 
+              Valor de Custo: R$ ${product.cost_price.toFixed(2)} / 
+              Valor de Venda: R$ ${product.sale_price.toFixed(2)}
+            </p>
+          `;
+            }).join('');
+
+            return `
+          <div>
+            <h5>${franchise}:</h5>
+            ${productDetails}
+          </div>
+        `;
+          }).join('');
+
+          // Calcular valores totais
+          const totalSaleValue = order.products.reduce((total, product) => total + product.sale_price, 0).toFixed(2);
+          const totalCostValue = order.products.reduce((total, product) => total + product.cost_price, 0).toFixed(2);
+          const profitValue = (totalSaleValue - totalCostValue).toFixed(2);
+
+          // Exibição condicional do método de pagamento
+          let paymentDetails = `<p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>`;
+
+          // Caso o pagamento seja parcelado
+          if (order.payment_method === 'PARCELADO' && order.installments) {
+            const installmentValue = (totalSaleValue / order.installments).toFixed(2);  // Calcula o valor de cada parcela
+            paymentDetails += `
+          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+          <p><strong>Valor de cada parcela:</strong> R$ ${installmentValue}</p>
+        `;
+          }
+          // Caso o pagamento seja combinado
+          else if (order.payment_method === 'PAGAMENTO COMBINADO') {
+            const totalPaid = order.combined_payment_value ? parseFloat(order.combined_payment_value) : 0;  // Garantir que totalPaid seja um número
+            const remainingValue = (totalSaleValue - totalPaid).toFixed(2);
+            paymentDetails += `
+          <p><strong>Valor Pago:</strong> R$ ${totalPaid.toFixed(2)}</p>
+          <p><strong>Restante:</strong> R$ ${remainingValue}</p>
+        `;
+          }
+
+          // Preencher os detalhes do modal
+          orderDetailsContent.innerHTML = `
+        <h4>ID do Pedido: ${order.id}</h4>
+        <p><strong>Cliente:</strong> ${order.client_name}</p>
+        <p><strong>Endereço para entrega:</strong> 
+           Rua ${order.client_address}
+           N° ${order.client_house_number}
+           Bairro - ${order.client_neighborhood}</p>
+        ${paymentDetails}
+        <h5>Produtos Pedidos:</h5>
+        ${productsList} <!-- Exibe os produtos com as informações formatadas -->
+        <h5>Totais:</h5>
+        <p><strong>Valor Total de Custo:</strong> R$ ${totalCostValue} / <strong>Valor Total de Venda:</strong> R$ ${totalSaleValue}</p>
+        <p><strong>Lucro:</strong> R$ ${profitValue} Reais</p>
+      `;
+
+          // Exibir o modal
+          const orderDetailsModal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+          orderDetailsModal.show();
+
+          // Configurar os botões do modal
+          document.getElementById('printButton').onclick = () => printOrderDetails(order);
+          document.getElementById('markAsDeliveredButton').onclick = () => markOrderAsDelivered(order.id);
+        })
+        .catch(error => {
+          console.error('Erro ao carregar detalhes do pedido:', error);
+          Swal.fire('Erro', 'Erro ao carregar detalhes do pedido.', 'error');
+        });
+    }
+
+
+    // Função para marcar o pedido como entregue
+    function markOrderAsDelivered(orderId) {
+      fetch(`/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'Entregue' }) // Atualiza o status para "Entregue"
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Erro ao atualizar o status do pedido');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Log para verificar a resposta da API
+          console.log('Status do pedido atualizado:', data);  // Verifique aqui se o status retornado é 'Entregue'
+
+          // Exibe a mensagem de sucesso
+          Swal.fire('Sucesso', 'Pedido marcado como entregue!', 'success');
+
+          // Agora, vamos forçar a atualização da lista de pedidos na página
+          loadOrders(); // Recarrega a lista de pedidos
+
+        })
+        .catch(error => {
+          console.error('Erro ao atualizar status do pedido:', error);
+          Swal.fire('Erro', 'Erro ao marcar o pedido como entregue', 'error');
+        });
+    }
+
+    // Função para imprimir os detalhes do pedido
+    function printOrderDetails(order) {
+      const printWindow = window.open('', '', 'height=600,width=800');
+
+      // Início do HTML para impressão
+      printWindow.document.write(`
+    <html>
+      <head>
+        <title>Detalhes do Pedido ${order.id}</title>
+        <style>
+          body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+          }
+          h3 {
+            text-align: center;
+            color: #2c3e50;
+          }
+          p {
+            font-size: 14px;
+            margin: 8px 0;
+          }
+          .header {
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+          }
+          .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2980b9;
+            margin-top: 20px;
+            border-bottom: 1px solid #2980b9;
+            padding-bottom: 5px;
+          }
+          .product-list {
+            margin-top: 10px;
+            padding-left: 20px;
+          }
+          .product-item {
+            margin-bottom: 5px;
+            font-size: 14px;
+          }
+          .totals {
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: right;
+          }
+          .totals p {
+            margin: 4px 0;
+          }
+          .totals p span {
+            font-weight: normal;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h3>Detalhes do Pedido #${order.id}</h3>
+        </div>
+
+        <!-- Informações do cliente -->
+        <p><strong>Cliente:</strong> ${order.client_name}</p>
+        <p><strong>Endereço para entrega:</strong><br>
+          Rua ${order.client_address}<br>
+          N° ${order.client_house_number}<br>
+          Bairro: ${order.client_neighborhood}</p>
+
+        <!-- Método de Pagamento -->
+        <p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>
+        
+        <!-- Se o pagamento for parcelado, exibe os detalhes -->
+        ${order.payment_method === 'PARCELADO' ? `
+          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+          <p><strong>Valor de cada parcela:</strong> R$ ${(calculateTotalSale(order.products) / order.installments).toFixed(2)}</p>
+        ` : ''}
+
+        <p><strong>Status:</strong> ${order.status || 'Pendente'}</p>
+
+        <!-- Produtos -->
+        <div class="section-title">Produtos Pedidos:</div>
+        <div class="product-list">
+          <!-- Agrupar produtos por franquia -->
+          ${groupProductsByFranchise(order.products)}
+        </div>
+
+        <!-- Totais -->
+        <div class="totals">
+          <p><strong>Valor Total de Custo:</strong> R$ <span>${calculateTotalCost(order.products)}</span></p>
+          <p><strong>Valor Total de Venda:</strong> R$ <span>${calculateTotalSale(order.products)}</span></p>
+          <p><strong>Lucro:</strong> R$ <span>${calculateProfit(order.products)}</span></p>
+        </div>
+      </body>
+    </html>
+  `);
+
+      printWindow.document.close();
+      printWindow.print();
+    }
+
+    // Função para agrupar e formatar os produtos por franquia
+    function groupProductsByFranchise(products) {
+      const franchiseProducts = {};
+
+      // Agrupar produtos por franquia
+      products.forEach(product => {
+        if (!franchiseProducts[product.franchise]) {
+          franchiseProducts[product.franchise] = [];
+        }
+        franchiseProducts[product.franchise].push(product);
+      });
+
+      let productHtml = '';
+
+      // Exibir produtos agrupados por franquia
+      Object.keys(franchiseProducts).forEach(franchise => {
+        productHtml += `<p><strong>${franchise}:</strong></p>`;
+        franchiseProducts[franchise].forEach(product => {
+          productHtml += `
+        <div class="product-item">
+          ${product.product_name} - COD ${product.code} / 
+          Valor de Custo: R$ ${product.cost_price.toFixed(2)} / 
+          Valor de Venda: R$ ${product.sale_price.toFixed(2)}
+        </div>
+      `;
+        });
+      });
+
+      return productHtml;
+    }
+
+    // Função para calcular o valor total de custo
+    function calculateTotalCost(products) {
+      return products.reduce((total, product) => total + product.cost_price, 0).toFixed(2);
+    }
+
+    // Função para calcular o valor total de venda
+    function calculateTotalSale(products) {
+      return products.reduce((total, product) => total + product.sale_price, 0).toFixed(2);
+    }
+
+    // Função para calcular o lucro
+    function calculateProfit(products) {
+      const totalSaleValue = calculateTotalSale(products);
+      const totalCostValue = calculateTotalCost(products);
+      return (totalSaleValue - totalCostValue).toFixed(2);
+    }
+
 
     // Carregar os pedidos quando a página for carregada
     window.onload = loadOrders;

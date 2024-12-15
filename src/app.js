@@ -216,9 +216,9 @@ app.get('/api/products/:id', (req, res) => {
 // Rota para listar todos os pedidos
 app.get('/api/orders', (req, res) => {
   const query = `
-  SELECT o.id, o.payment_method, o.total_cost, c.name AS client_name
-  FROM orders o
-  JOIN clients c ON o.client_id = c.id
+    SELECT o.id, o.payment_method, o.total_cost, o.status, c.name AS client_name
+    FROM orders o
+    JOIN clients c ON o.client_id = c.id
   `;
 
   connection.query(query, (err, results) => {
@@ -226,25 +226,33 @@ app.get('/api/orders', (req, res) => {
       console.error('Erro ao buscar pedidos:', err);
       return res.status(500).json({ error: 'Erro ao buscar pedidos' });
     }
-    res.status(200).json(results);
+    res.status(200).json(results); // Retorna a lista de pedidos com o campo status
   });
 });
+
 
 // Rota para buscar detalhes do pedido específico
 app.get('/api/orders/:id', (req, res) => {
   const orderId = req.params.id;
 
   const query = `
-  SELECT o.id, o.payment_method, o.total_cost, o.installments, o.combined_payment_value, 
-         c.name AS client_name, 
-         GROUP_CONCAT(p.name) AS product_names, 
-         GROUP_CONCAT(op.sale_price) AS product_prices
-  FROM orders o
-  JOIN clients c ON o.client_id = c.id
-  JOIN order_products op ON op.order_id = o.id
-  JOIN products p ON p.id = op.product_id
-  WHERE o.id = ?
-  GROUP BY o.id
+    SELECT 
+      o.id, o.payment_method, o.total_cost, o.installments, o.combined_payment_value, 
+      c.name AS client_name,
+      c.address AS client_address,
+      c.house_number AS client_house_number,
+      c.neighborhood AS client_neighborhood,
+      GROUP_CONCAT(p.name SEPARATOR ', ') AS product_names,
+      GROUP_CONCAT(op.sale_price SEPARATOR ', ') AS product_prices,
+      GROUP_CONCAT(p.cost SEPARATOR ', ') AS product_costs,
+      GROUP_CONCAT(p.franchise SEPARATOR ', ') AS product_franchises,
+      GROUP_CONCAT(p.code SEPARATOR ', ') AS product_codes -- Incluir o código do produto
+    FROM orders o
+    JOIN clients c ON o.client_id = c.id
+    JOIN order_products op ON op.order_id = o.id
+    JOIN products p ON p.id = op.product_id
+    WHERE o.id = ?
+    GROUP BY o.id
   `;
 
   connection.query(query, [orderId], (err, results) => {
@@ -254,12 +262,99 @@ app.get('/api/orders/:id', (req, res) => {
     }
 
     if (results.length > 0) {
-      res.status(200).json(results[0]);
+      const order = results[0];
+      
+      // Processar os dados dos produtos para criar um array de objetos
+      const productNames = order.product_names.split(', ');
+      const productPrices = order.product_prices.split(', ').map(Number);
+      const productCosts = order.product_costs.split(', ').map(Number);
+      const productFranchises = order.product_franchises.split(', ');
+      const productCodes = order.product_codes.split(', ');
+
+      // Criar um array de objetos com todos os dados necessários
+      const products = productNames.map((name, index) => ({
+        product_name: name,
+        sale_price: productPrices[index],
+        cost_price: productCosts[index],
+        franchise: productFranchises[index], // Atribuindo a franquia
+        code: productCodes[index] // Atribuindo o código do produto
+      }));
+
+      order.products = products; // Adicionando os produtos ao pedido
+      delete order.product_names;
+      delete order.product_prices;
+      delete order.product_costs;
+      delete order.product_franchises;
+      delete order.product_codes; // Removendo as variáveis temporárias
+
+      res.status(200).json(order); // Retorna os dados do pedido com os produtos formatados
     } else {
       res.status(404).json({ error: 'Pedido não encontrado' });
     }
   });
 });
+
+
+
+// Rota para atualizar o status de um pedido
+app.put('/api/orders/:id/status', (req, res) => {
+  const orderId = req.params.id;
+  const { status } = req.body; // O novo status a ser atualizado
+
+  if (!status) {
+    return res.status(400).json({ error: 'O status é obrigatório!' });
+  }
+
+  // Atualizando o status do pedido
+  const query = 'UPDATE orders SET status = ? WHERE id = ?';
+  connection.query(query, [status, orderId], (err, results) => {
+    if (err) {
+      console.error('Erro ao atualizar o status do pedido:', err);
+      return res.status(500).json({ error: 'Erro ao atualizar o status do pedido' });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: 'Pedido não encontrado' });
+    }
+
+    // Buscar o pedido atualizado (incluindo o status atualizado)
+    const selectQuery = `
+      SELECT o.id, o.client_id, o.payment_method, o.total_cost, o.status, c.name AS client_name
+      FROM orders o
+      JOIN clients c ON o.client_id = c.id
+      WHERE o.id = ?
+    `;
+    connection.query(selectQuery, [orderId], (err, results) => {
+      if (err) {
+        console.error('Erro ao buscar o pedido atualizado:', err);
+        return res.status(500).json({ error: 'Erro ao buscar o pedido atualizado' });
+      }
+
+      // Retorna o pedido atualizado com os dados completos, incluindo o status
+      res.status(200).json(results[0]);
+    });
+  });
+});
+
+// Rota para excluir o pedido
+app.delete('/api/orders/:id', (req, res) => {
+  const orderId = req.params.id;
+
+  const query = 'DELETE FROM orders WHERE id = ?';
+  connection.query(query, [orderId], (err, results) => {
+    if (err) {
+      console.error('Erro ao excluir pedido:', err);
+      return res.status(500).json({ error: 'Erro ao excluir pedido' });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: 'Pedido não encontrado' });
+    }
+
+    res.status(200).json({ message: 'Pedido excluído com sucesso!' });
+  });
+});
+
 
 // Porta para o servidor
 const PORT = process.env.PORT || 3000;
