@@ -82,7 +82,7 @@
       </div>
     </div>
   </div>
-  
+
   <!-- Rodapé -->
   <footer class="bg-dark text-white text-center py-3 mt-5">
     <p>&copy; 2024 Sistema de Cadastro. Todos os direitos reservados.</p>
@@ -224,10 +224,20 @@
           else if (order.payment_method === 'PAGAMENTO COMBINADO') {
             const totalPaid = order.combined_payment_value ? parseFloat(order.combined_payment_value) : 0;  // Garantir que totalPaid seja um número
             const remainingValue = (totalSaleValue - totalPaid).toFixed(2);
+
+            // Exibir valor pago, restante e número de parcelas
             paymentDetails += `
           <p><strong>Valor Pago:</strong> R$ ${totalPaid.toFixed(2)}</p>
           <p><strong>Restante:</strong> R$ ${remainingValue}</p>
         `;
+
+            if (order.installments) {
+              const remainingValuePerInstallment = (remainingValue / order.installments).toFixed(2);
+              paymentDetails += `
+            <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+            <p><strong>Valor restante por parcela:</strong> R$ ${remainingValuePerInstallment}</p>
+          `;
+            }
           }
 
           // Preencher os detalhes do modal
@@ -259,6 +269,7 @@
           Swal.fire('Erro', 'Erro ao carregar detalhes do pedido.', 'error');
         });
     }
+
 
 
     // Função para marcar o pedido como entregue
@@ -301,7 +312,7 @@
       printWindow.document.write(`
     <html>
       <head>
-        <title>Detalhes do Pedido ${order.id}</title>
+        <title>Detalhes do Pedido #${order.id}</title>
         <style>
           body {
             font-family: 'Roboto', sans-serif;
@@ -343,13 +354,17 @@
             margin-top: 20px;
             font-size: 16px;
             font-weight: bold;
-            text-align: right;
+            text-align: center;  /* Centraliza os totais */
           }
           .totals p {
             margin: 4px 0;
           }
           .totals p span {
             font-weight: normal;
+          }
+          .separator {
+            border-top: 2px solid #2c3e50;
+            margin: 20px 0;
           }
         </style>
       </head>
@@ -365,29 +380,34 @@
           N° ${order.client_house_number}<br>
           Bairro: ${order.client_neighborhood}</p>
 
+        <div class="separator"></div>
+
         <!-- Método de Pagamento -->
         <p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>
         
-        <!-- Se o pagamento for parcelado, exibe os detalhes -->
-        ${order.payment_method === 'PARCELADO' ? `
+        <!-- Se o pagamento for combinado, exibe o valor pago, restante e parcelas -->
+        ${order.payment_method === 'PAGAMENTO COMBINADO' ? `
+          <p><strong>Valor Pago:</strong> R$ ${parseFloat(order.combined_payment_value).toFixed(2)}</p>
+          <p><strong>Restante:</strong> R$ ${(parseFloat(order.total_cost) - parseFloat(order.combined_payment_value)).toFixed(2)}</p>
           <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
-          <p><strong>Valor de cada parcela:</strong> R$ ${(calculateTotalSale(order.products) / order.installments).toFixed(2)}</p>
+          <p><strong>Valor restante por parcela:</strong> R$ ${((parseFloat(order.total_cost) - parseFloat(order.combined_payment_value)) / order.installments).toFixed(2)}</p>
         ` : ''}
 
+        <div class="separator"></div>
+
+        <!-- Status do pedido -->
         <p><strong>Status:</strong> ${order.status || 'Pendente'}</p>
 
-        <!-- Produtos -->
         <div class="section-title">Produtos Pedidos:</div>
         <div class="product-list">
           <!-- Agrupar produtos por franquia -->
           ${groupProductsByFranchise(order.products)}
         </div>
 
-        <!-- Totais -->
         <div class="totals">
-          <p><strong>Valor Total de Custo:</strong> R$ <span>${calculateTotalCost(order.products)}</span></p>
-          <p><strong>Valor Total de Venda:</strong> R$ <span>${calculateTotalSale(order.products)}</span></p>
-          <p><strong>Lucro:</strong> R$ <span>${calculateProfit(order.products)}</span></p>
+          <p><strong>Valor Total de Custo:</strong> R$ ${calculateTotalCost(order.products)}</p>
+          <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
+          <p><strong>Lucro:</strong> R$ ${calculateProfit(order.products)}</p>
         </div>
       </body>
     </html>

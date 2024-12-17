@@ -124,7 +124,7 @@ app.post('/api/orders', (req, res) => {
           return res.status(500).json({ error: 'Erro ao inserir pedido' });
         }
 
-        const orderId = result.insertId;
+        const orderId = result.insertId;  // Aqui você captura o ID do pedido criado
         const productQuery = 'INSERT INTO order_products (order_id, product_id, sale_price) VALUES ?';
         const productsValues = productData.map(product => [orderId, product.productId, product.salePrice]);
 
@@ -134,9 +134,10 @@ app.post('/api/orders', (req, res) => {
             return res.status(500).json({ error: 'Erro ao inserir produtos no pedido' });
           }
 
-          res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue });
+          res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue });  // Resposta correta com orderId
         });
       });
+
     })
     .catch(error => {
       console.error('Erro ao processar produtos:', error);
@@ -178,7 +179,6 @@ app.get('/api/franchises', (req, res) => {
 // Rota para listar clientes
 app.get('/api/clients', (req, res) => {
   const query = 'SELECT * FROM clients';
-
   connection.query(query, (err, results) => {
     if (err) {
       console.error('Erro ao buscar clientes:', err);
@@ -213,6 +213,7 @@ app.get('/api/products/:id', (req, res) => {
     }
   });
 });
+
 
 // Rota para listar todos os pedidos
 app.get('/api/orders', (req, res) => {
@@ -360,18 +361,11 @@ app.delete('/api/orders/:id', (req, res) => {
 app.get('/api/products/search', (req, res) => {
   const { code } = req.query;
 
-  // Log do código recebido
-  console.log("Código recebido no backend:", code);
-
   if (!code) {
-    console.log("Parâmetro 'code' está vazio ou ausente.");
     return res.status(400).json({ error: 'Parâmetro code é obrigatório' });
   }
 
-  const query = 'SELECT * FROM products WHERE code = CAST(? AS CHAR)';
-
-  // Log da consulta SQL antes de executar
-  console.log("Consulta SQL preparada:", query, "com parâmetro:", code);
+  const query = 'SELECT * FROM products WHERE code = ?';
 
   connection.query(query, [code], (err, results) => {
     if (err) {
@@ -379,12 +373,8 @@ app.get('/api/products/search', (req, res) => {
       return res.status(500).json({ error: 'Erro ao buscar produto' });
     }
 
-    // Log do resultado da consulta
-    console.log("Resultado da consulta SQL:", results);
-
     if (results.length > 0) {
       const product = results[0];
-      console.log("Produto encontrado:", product);
       res.status(200).json({
         id: product.id,
         name: product.name,
@@ -392,11 +382,11 @@ app.get('/api/products/search', (req, res) => {
         code: product.code,
       });
     } else {
-      console.log("Produto não encontrado no banco de dados para o código:", code);
       res.status(404).json({ error: 'Produto não encontrado' });
     }
   });
 });
+
 
 
 // Porta para o servidor

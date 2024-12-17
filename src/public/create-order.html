@@ -65,7 +65,7 @@
               <div class="mb-3">
                 <label for="products" class="form-label me-2">Produtos</label>
                 <div class="input-group">
-                  <select id="products" name="products" class="form-select">
+                  <select id="products" name="products" class="form-select" required>
                     <option value="">Selecione um produto</option>
                   </select>
                   <button type="button" id="searchProductBtn" class="btn btn-secondary">
@@ -74,7 +74,6 @@
                 </div>
               </div>
 
-
               <div class="mb-3">
                 <label for="productCost" class="form-label">Valor de Custo</label>
                 <input type="text" id="productCost" name="productCost" class="form-control" readonly>
@@ -82,14 +81,11 @@
 
               <div class="mb-3">
                 <label for="salePrice" class="form-label">Valor de Venda</label>
-                <input type="number" id="salePrice" name="salePrice" class="form-control"
-                  placeholder="Digite o valor de venda">
+                <input type="number" id="salePrice" name="salePrice" class="form-control" required placeholder="Digite o valor de venda">
               </div>
 
               <button type="button" id="addProductBtn" class="btn btn-info w-100">Adicionar Produto</button>
-              <ul id="productList" class="list-group mt-3">
-                <!-- Produtos adicionados aparecerão aqui -->
-              </ul>
+              <ul id="productList" class="list-group mt-3"></ul>
 
               <div class="mb-3">
                 <label for="totalValue" class="form-label">Valor da Compra</label>
@@ -108,6 +104,13 @@
                 </select>
               </div>
 
+              <!-- Campo para valor pago via PIX/DINHEIRO -->
+              <div class="mb-3" id="combinedPaymentDiv" style="display: none;">
+                <label for="combinedPaymentValue" class="form-label">Valor a ser pago via PIX/DINHEIRO</label>
+                <input type="number" id="combinedPaymentValue" name="combinedPaymentValue" class="form-control" placeholder="Digite o valor a ser pago de forma imediata">
+              </div>
+
+              <!-- Número de Parcelas (exibido após valor pago via PIX/DINHEIRO) -->
               <div class="mb-3" id="installmentsDiv" style="display: none;">
                 <label for="installments" class="form-label">Número de Parcelas</label>
                 <select id="installments" name="installments" class="form-select">
@@ -117,19 +120,7 @@
                   <option value="4">4</option>
                   <option value="5">5</option>
                 </select>
-              </div>
-
-              <div class="mb-3" id="installmentListDiv" style="display: none;">
-                <label for="installmentList" class="form-label">Valores das Parcelas</label>
-                <ul id="installmentList" name="installmentList" class="list-group">
-                  <!-- Lista de valores das parcelas será preenchida aqui -->
-                </ul>
-              </div>
-
-              <div class="mb-3" id="combinedPaymentDiv" style="display: none;">
-                <label for="combinedPaymentValue" class="form-label">Valor a ser pago via PIX/DINHEIRO</label>
-                <input type="number" id="combinedPaymentValue" name="combinedPaymentValue" class="form-control"
-                  placeholder="Digite o valor a ser pago de forma imediata">
+                <p id="installmentAmount" style="display:none; font-weight: bold;">Valor da Parcela: R$ 0.00</p>
               </div>
 
               <button type="submit" class="btn btn-success w-100">Criar Pedido</button>
@@ -158,8 +149,10 @@
       const productList = document.getElementById('productList');
       const paymentMethodSelect = document.getElementById('paymentMethod');
       const installmentsDiv = document.getElementById('installmentsDiv');
-      const installmentListDiv = document.getElementById('installmentListDiv');
       const combinedPaymentDiv = document.getElementById('combinedPaymentDiv');
+      const combinedPaymentValueInput = document.getElementById('combinedPaymentValue');
+      const installmentsInput = document.getElementById('installments');
+      const installmentAmountDiv = document.getElementById('installmentAmount');
       let totalValue = 0;
       let productsList = [];  // Lista de produtos
 
@@ -206,10 +199,11 @@
             .then(data => {
               const products = data.products || data;
               productsSelect.innerHTML = '<option value="">Selecione um produto</option>';
+
               products.forEach(product => {
                 const option = document.createElement('option');
                 option.value = product.id;
-                option.textContent = product.name;
+                option.textContent = `${product.name} - COD ${product.code}`;
                 productsSelect.appendChild(option);
               });
             })
@@ -241,6 +235,7 @@
         }
       });
 
+      // Adicionar produto à lista
       addProductBtn.addEventListener('click', () => {
         const productId = productsSelect.value;
         const salePrice = parseFloat(salePriceInput.value);
@@ -251,12 +246,14 @@
         }
 
         const productOption = productsSelect.selectedOptions[0];
-        const productName = productOption.textContent;
+        const productName = productOption.textContent.split(' - ')[0];
+        const productCode = productOption.textContent.split(' - ')[1].replace('COD ', '');
         const productCost = parseFloat(productCostInput.value);
 
+        // Adicionar o produto à lista de produtos
         const productItem = document.createElement('li');
         productItem.classList.add('list-group-item');
-        productItem.textContent = `${productName} - Custo: ${productCost.toFixed(2)} - Venda: ${salePrice.toFixed(2)}`;
+        productItem.textContent = `${productName} - COD ${productCode} - Custo: ${productCost.toFixed(2)} - Venda: ${salePrice.toFixed(2)}`;
 
         const removeButton = document.createElement('button');
         removeButton.textContent = 'Remover';
@@ -265,7 +262,6 @@
           productList.removeChild(productItem);
           totalValue -= salePrice;
           totalValueInput.value = totalValue.toFixed(2);
-          // Remover o produto da lista
           productsList = productsList.filter(product => product.id !== productId);
         };
 
@@ -275,10 +271,9 @@
         totalValue += salePrice;
         totalValueInput.value = totalValue.toFixed(2);
 
-        // Adicionar o produto à lista
-        productsList.push({ id: productId, name: productName, salePrice });
+        // Adicionar o produto à lista de produtos
+        productsList.push({ id: productId, name: productName, salePrice, code: productCode });
       });
-
 
       // Exibir campos específicos com base no método de pagamento selecionado
       paymentMethodSelect.addEventListener('change', (event) => {
@@ -286,32 +281,37 @@
 
         // Ocultar todos os campos e então mostrar os necessários
         installmentsDiv.style.display = 'none';
-        installmentListDiv.style.display = 'none';
         combinedPaymentDiv.style.display = 'none';
+        installmentAmountDiv.style.display = 'none';
 
+        if (selectedMethod === 'PAGAMENTO COMBINADO') {
+          combinedPaymentDiv.style.display = 'block';
+        }
         if (selectedMethod === 'PARCELADO') {
           installmentsDiv.style.display = 'block';
-        } else if (selectedMethod === 'PAGAMENTO COMBINADO') {
-          combinedPaymentDiv.style.display = 'block';
         }
       });
 
-      // Atualizar a lista de parcelas
-      installments.addEventListener('change', () => {
-        const installmentsCount = parseInt(installments.value);
-        const installmentAmount = totalValue / installmentsCount;
+      // Atualizar o valor total após inserir o valor pago via PIX/DINHEIRO
+      combinedPaymentValueInput.addEventListener('input', () => {
+        const combinedPaymentValue = parseFloat(combinedPaymentValueInput.value);
+        const remainingAmount = totalValue - combinedPaymentValue;
 
-        const installmentList = document.getElementById('installmentList');
-        installmentList.innerHTML = '';
-
-        for (let i = 1; i <= installmentsCount; i++) {
-          const listItem = document.createElement('li');
-          listItem.classList.add('list-group-item');
-          listItem.textContent = `${i}x: R$ ${installmentAmount.toFixed(2)}`;
-          installmentList.appendChild(listItem);
+        if (remainingAmount > 0) {
+          installmentsDiv.style.display = 'block';
+        } else {
+          installmentsDiv.style.display = 'none';
         }
+      });
 
-        installmentListDiv.style.display = 'block';
+      // Exibir o valor da parcela ao selecionar o número de parcelas
+      installmentsInput.addEventListener('change', () => {
+        const installmentsCount = parseInt(installmentsInput.value);
+        const remainingAmount = totalValue - (combinedPaymentValueInput.value ? parseFloat(combinedPaymentValueInput.value) : 0);
+        const installmentValue = remainingAmount / installmentsCount;
+
+        installmentAmountDiv.textContent = `Valor da Parcela: R$ ${installmentValue.toFixed(2)}`;
+        installmentAmountDiv.style.display = 'block';
       });
 
       // Enviar o pedido
@@ -321,18 +321,16 @@
         const formData = new FormData(event.target);
         const formObject = Object.fromEntries(formData);
 
-        // Aqui você pode fazer o ajuste dos dados, se necessário, antes de enviar para o backend
         const payload = {
-          clientId: formObject.clientId,  // ID do cliente selecionado
-          franchiseId: formObject.franchiseId,  // ID da franquia
-          products: productsList,  // Array de produtos adicionados ao pedido
-          totalValue: totalValue,  // Valor total do pedido
-          paymentMethod: formObject.paymentMethod,  // Método de pagamento selecionado
-          installments: formObject.installments,  // Número de parcelas
-          combinedPaymentValue: formObject.combinedPaymentValue,  // Valor do pagamento combinado
+          clientId: formObject.clientId,
+          franchiseId: formObject.franchiseId,
+          products: productsList,
+          totalValue: totalValue,
+          paymentMethod: formObject.paymentMethod,
+          installments: formObject.installments || null,
+          combinedPaymentValue: formObject.combinedPaymentValue || null,
         };
 
-        // Enviar o pedido para o backend
         fetch('/api/orders', {
           method: 'POST',
           headers: {
@@ -342,68 +340,13 @@
         })
           .then(response => response.json())
           .then(order => {
-            Swal.fire('Sucesso', `Pedido #${order.id} criado com sucesso!`, 'success');
-            // Limpar formulário
-            document.getElementById('orderForm').reset();
-            productList.innerHTML = '';
-            totalValue = 0;
-            totalValueInput.value = '0.00';
+            Swal.fire('Sucesso', `Pedido #${order.orderId} criado com sucesso!`, 'success');
           })
           .catch(error => {
-            console.error('Erro ao criar pedido:', error);
-            Swal.fire('Erro', 'Não foi possível criar o pedido.', 'error');
+            Swal.fire('Erro', 'Erro ao criar pedido', 'error');
           });
       });
     });
-
-    // Adicionar funcionalidade ao botão de busca (lupa)
-    document.getElementById('searchProductBtn').addEventListener('click', () => {
-      Swal.fire({
-        title: 'Buscar Produto',
-        input: 'text',
-        inputLabel: 'Digite o código do produto',
-        inputPlaceholder: 'Ex: 12345',
-        showCancelButton: true,
-        confirmButtonText: 'Buscar',
-        cancelButtonText: 'Cancelar',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          const productCode = result.value;
-          // Adicione o log aqui para verificar o valor de productCode
-          console.log("Código enviado do frontend:", productCode);
-
-          if (!productCode || productCode.trim() === '') {
-            Swal.fire('Erro', 'Por favor, insira um código de produto válido.', 'error');
-            return;
-          }
-
-          // Buscar o produto pelo código
-          fetch(`/api/products/search?code=${productCode}`)
-            .then(response => {
-              if (!response.ok) {
-                throw new Error('Produto não encontrado.');
-              }
-              return response.json();
-            })
-            .then(product => {
-              const productsSelect = document.getElementById('products');
-              const option = document.createElement('option');
-              option.value = product.id;
-              option.textContent = product.name;
-              option.selected = true;
-              productsSelect.appendChild(option);
-              document.getElementById('productCost').value = parseFloat(product.cost).toFixed(2);
-              document.getElementById('salePrice').focus();
-              Swal.fire('Sucesso', `Produto ${product.name} adicionado com sucesso.`, 'success');
-            })
-            .catch(error => {
-              console.error('Erro na busca do produto:', error);
-              Swal.fire('Erro', error.message, 'error');
-            });
-        }
-      });
-    });
-
   </script>
 
 </body>
