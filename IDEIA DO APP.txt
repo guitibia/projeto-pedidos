@@ -1,20 +1,4 @@
-página inicial para criar o pedido
-
-nome - (da pessoa  que fez o pedido)
-nome da empresa - (de onde vai vir o pedido, uma lista com os seguintes nomes: Natura, Boticário e Abelha Rainha
-produtos - (lista dos produtos que foram pedidos, que cada vez que eu adicionar ele vai criando uma lista dos que já foram adicionados
-tipo pagamento - (qual foi o método de pagamento: parcelado, a vista, cartão, se for parcelado ele habilita uma opção de quantas x foi parcelado 
-status - (se o pedido já chegou, se veio todos os produtos, se faltou ter a opção de editar para marcar qual item faltou
-
-gostaria de uma página também que listasse todos os pedidos feitos para que eu poça acompanhar e quanto chegar possa editar ou excluir se chegou todo o pedido ou veio faltando algum item
-também gostaria de ver em um modal o pedido e se possível imprimir esse pedido pra que me facilite a separação
-
-a estrutura do aplicativo deve ser em Node.Js e usar HeideSQL como banco de dados
-
-
-
 ===========================
-
 !!!TENTAR FAZER AMANHÃ!!!
 
 Fazer um datatable na aba de listar pedidos para aparecer somente os pedidos pendentes/entregues.- FALTA
@@ -24,8 +8,6 @@ Fazer aba de observação no modal para se caso venha faltando algum item no ped
 Poder descontar o valor do item que não veio no valor final de venda - FALTA (LISTA DE PEDIDOS/VER)
 
 Tentar finalizar o esquema da LUPA na criação de pedido - FALTA (não está funcionando ainda)
-
-Fazer uma opção de pagamento "Pagamento Combinado" - seria pagar uma quantia em PIX/Dinheiro e outra parcelado no cartão - FALTA ARRUMAR
 
 =========================================
 Tabela  de produtos comprados em promoção e vendidos pelos preços normais / SABER O VALOR QUE VAI RETORNAR.

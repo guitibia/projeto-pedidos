@@ -51,12 +51,15 @@ CREATE TABLE IF NOT EXISTS `orders` (
   PRIMARY KEY (`id`),
   KEY `client_id` (`client_id`),
   CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.orders: ~2 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.orders: ~5 rows (aproximadamente)
 INSERT INTO `orders` (`id`, `client_id`, `payment_method`, `installments`, `total_cost`, `combined_payment_value`, `status`) VALUES
 	(19, 3, 'PARCELADO', 5, 110.00, NULL, 'Pendente'),
-	(23, 6, 'PARCELADO', 2, 54.00, NULL, 'Entregue');
+	(37, 2, 'CARTÃO DE CRÉDITO', 1, 35.00, NULL, 'Pendente'),
+	(38, 5, 'PARCELADO', 2, 50.00, NULL, 'Pendente'),
+	(39, 6, 'PAGAMENTO COMBINADO', 1, 100.00, 30.00, 'Pendente'),
+	(40, 2, 'PAGAMENTO COMBINADO', 2, 55.00, 15.00, 'Pendente');
 
 -- Copiando estrutura para tabela cosmeticos_db.order_products
 CREATE TABLE IF NOT EXISTS `order_products` (
@@ -69,13 +72,15 @@ CREATE TABLE IF NOT EXISTS `order_products` (
   CONSTRAINT `order_products_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.order_products: ~5 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.order_products: ~7 rows (aproximadamente)
 INSERT INTO `order_products` (`order_id`, `product_id`, `sale_price`) VALUES
 	(19, 1, 35.00),
 	(19, 2, 30.00),
 	(19, 4, 45.00),
-	(23, 1, 30.00),
-	(23, 5, 24.00);
+	(37, 1, 35.00),
+	(38, 4, 50.00),
+	(39, 2, 100.00),
+	(40, 2, 55.00);
 
 -- Copiando estrutura para tabela cosmeticos_db.products
 CREATE TABLE IF NOT EXISTS `products` (
