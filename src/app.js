@@ -12,6 +12,7 @@ const connection = mysql.createConnection({
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'cosmeticos_db'
 });
+console.log("Conectado ao banco:", process.env.DB_NAME);
 
 // Middleware para interpretar o corpo da requisição como JSON
 app.use(express.json());
@@ -195,7 +196,7 @@ app.get('/api/products/:id', (req, res) => {
   connection.query(query, [productId], (err, results) => {
     if (err) {
       console.error('Erro ao buscar produto:', err);
-      return res.status(500).json({ error: 'Erro ao buscar produto' });
+      return res.status(500).json({ error: 'Erro ao buscar produto', details: err });
     }
 
     if (results.length > 0) {
@@ -263,7 +264,7 @@ app.get('/api/orders/:id', (req, res) => {
 
     if (results.length > 0) {
       const order = results[0];
-      
+
       // Processar os dados dos produtos para criar um array de objetos
       const productNames = order.product_names.split(', ');
       const productPrices = order.product_prices.split(', ').map(Number);
@@ -352,6 +353,48 @@ app.delete('/api/orders/:id', (req, res) => {
     }
 
     res.status(200).json({ message: 'Pedido excluído com sucesso!' });
+  });
+});
+
+// Rota para buscar produto pelo código
+app.get('/api/products/search', (req, res) => {
+  const { code } = req.query;
+
+  // Log do código recebido
+  console.log("Código recebido no backend:", code);
+
+  if (!code) {
+    console.log("Parâmetro 'code' está vazio ou ausente.");
+    return res.status(400).json({ error: 'Parâmetro code é obrigatório' });
+  }
+
+  const query = 'SELECT * FROM products WHERE code = CAST(? AS CHAR)';
+
+  // Log da consulta SQL antes de executar
+  console.log("Consulta SQL preparada:", query, "com parâmetro:", code);
+
+  connection.query(query, [code], (err, results) => {
+    if (err) {
+      console.error('Erro ao executar a consulta SQL:', err);
+      return res.status(500).json({ error: 'Erro ao buscar produto' });
+    }
+
+    // Log do resultado da consulta
+    console.log("Resultado da consulta SQL:", results);
+
+    if (results.length > 0) {
+      const product = results[0];
+      console.log("Produto encontrado:", product);
+      res.status(200).json({
+        id: product.id,
+        name: product.name,
+        cost: product.cost,
+        code: product.code,
+      });
+    } else {
+      console.log("Produto não encontrado no banco de dados para o código:", code);
+      res.status(404).json({ error: 'Produto não encontrado' });
+    }
   });
 });
 

@@ -15,13 +15,15 @@ a estrutura do aplicativo deve ser em Node.Js e usar HeideSQL como banco de dado
 
 ===========================
 
-!!!FAZER AMANHÃ!!!
+!!!TENTAR FAZER AMANHÃ!!!
 
 Fazer um datatable na aba de listar pedidos para aparecer somente os pedidos pendentes/entregues.- FALTA
 
-Fazer aba de observação no modal para se caso venha faltando algum item no pedido - FALTA
+Fazer aba de observação no modal para se caso venha faltando algum item no pedido - FALTA (LISTA DE PEDIDOS/VER)
 
-poder descontar o valor do item que não veio no valor final de venda - FALTA
+Poder descontar o valor do item que não veio no valor final de venda - FALTA (LISTA DE PEDIDOS/VER)
+
+Tentar finalizar o esquema da LUPA na criação de pedido - FALTA (não está funcionando ainda)
 
 Fazer uma opção de pagamento "Pagamento Combinado" - seria pagar uma quantia em PIX/Dinheiro e outra parcelado no cartão - FALTA ARRUMAR
 
