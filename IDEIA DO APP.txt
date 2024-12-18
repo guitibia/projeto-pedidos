@@ -6,6 +6,8 @@ e automaticamente atualizar os valor total de custo, valor de venda e lucro - FA
 
 Tentar finalizar o esquema da LUPA na criação de pedido - FALTA (não está funcionando ainda)
 
+Conseguir alterar o preço de custo - caso aquele produto seja comprado em uma promoção - PAGINA CRIAR PEDIDO
+
 =========================================
 Tabela  de produtos comprados em promoção e vendidos pelos preços normais / SABER O VALOR QUE VAI RETORNAR.
 =========================================
