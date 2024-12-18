@@ -1,8 +1,6 @@
 ===========================
 !!!TENTAR FAZER AMANHÃ!!!
 
-Fazer um datatable na aba de listar pedidos para aparecer somente os pedidos pendentes/entregues.- FALTA
-
 Ter como marcar se o produto não veio, fazendo com que o produto ficase com um escrito na frente dele "NÃO VEIO",
 e automaticamente atualizar os valor total de custo, valor de venda e lucro - FALTA (LISTA DE PEDIDOS/VER)
 
