@@ -51,36 +51,35 @@ CREATE TABLE IF NOT EXISTS `orders` (
   PRIMARY KEY (`id`),
   KEY `client_id` (`client_id`),
   CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.orders: ~5 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.orders: ~4 rows (aproximadamente)
 INSERT INTO `orders` (`id`, `client_id`, `payment_method`, `installments`, `total_cost`, `combined_payment_value`, `status`) VALUES
-	(19, 3, 'PARCELADO', 5, 110.00, NULL, 'Pendente'),
-	(37, 2, 'CARTÃO DE CRÉDITO', 1, 35.00, NULL, 'Pendente'),
-	(38, 5, 'PARCELADO', 2, 50.00, NULL, 'Pendente'),
-	(39, 6, 'PAGAMENTO COMBINADO', 1, 100.00, 30.00, 'Pendente'),
-	(40, 2, 'PAGAMENTO COMBINADO', 2, 55.00, 15.00, 'Pendente');
+	(19, 3, 'PARCELADO', 5, 110.00, NULL, 'Entregue'),
+	(40, 2, 'PAGAMENTO COMBINADO', 2, 55.00, 15.00, 'Pendente'),
+	(41, 1, 'PIX', 1, 50.00, NULL, 'Pendente'),
+	(51, 5, 'PAGAMENTO COMBINADO', 2, 25.00, 10.00, 'Pendente');
 
 -- Copiando estrutura para tabela cosmeticos_db.order_products
 CREATE TABLE IF NOT EXISTS `order_products` (
   `order_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
   `sale_price` decimal(10,2) NOT NULL,
+  `not_came` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`order_id`,`product_id`),
   KEY `product_id` (`product_id`),
   CONSTRAINT `order_products_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `order_products_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.order_products: ~7 rows (aproximadamente)
-INSERT INTO `order_products` (`order_id`, `product_id`, `sale_price`) VALUES
-	(19, 1, 35.00),
-	(19, 2, 30.00),
-	(19, 4, 45.00),
-	(37, 1, 35.00),
-	(38, 4, 50.00),
-	(39, 2, 100.00),
-	(40, 2, 55.00);
+-- Copiando dados para a tabela cosmeticos_db.order_products: ~6 rows (aproximadamente)
+INSERT INTO `order_products` (`order_id`, `product_id`, `sale_price`, `not_came`) VALUES
+	(19, 1, 35.00, 0),
+	(19, 2, 30.00, 1),
+	(19, 4, 45.00, 1),
+	(40, 2, 55.00, 0),
+	(41, 1, 50.00, 0),
+	(51, 1, 25.00, 0);
 
 -- Copiando estrutura para tabela cosmeticos_db.products
 CREATE TABLE IF NOT EXISTS `products` (
@@ -89,17 +88,18 @@ CREATE TABLE IF NOT EXISTS `products` (
   `cost` decimal(10,2) NOT NULL,
   `franchise` varchar(255) NOT NULL,
   `code` varchar(50) NOT NULL,
+  `promotion_price` decimal(10,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `code` (`code`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.products: ~5 rows (aproximadamente)
-INSERT INTO `products` (`id`, `name`, `cost`, `franchise`, `code`) VALUES
-	(1, 'Gel para Cabelo', 25.00, 'Boticário', '8080'),
-	(2, 'Creme para Pés', 15.00, 'Eudora', '5566'),
-	(3, 'Shampoo', 15.00, 'Natura', '5555'),
-	(4, 'KAIK', 25.00, 'Natura', '4444'),
-	(5, 'Tadala', 12.00, 'Natura', '6768');
+-- Copiando dados para a tabela cosmeticos_db.products: ~6 rows (aproximadamente)
+INSERT INTO `products` (`id`, `name`, `cost`, `franchise`, `code`, `promotion_price`) VALUES
+	(1, 'Gel para Cabelo', 25.00, 'Boticário', '8080', NULL),
+	(2, 'Creme para Pés', 15.00, 'Eudora', '5566', NULL),
+	(3, 'Shampoo', 15.00, 'Natura', '5555', NULL),
+	(4, 'KAIK', 25.00, 'Natura', '4444', NULL),
+	(5, 'Tadala', 12.00, 'Natura', '6768', NULL);
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
