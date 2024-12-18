@@ -40,14 +40,14 @@ app.post('/api/clients', (req, res) => {
 
 // Rota para cadastrar produto
 app.post('/api/products', (req, res) => {
-  const { name, cost, franchise, code } = req.body;
+  const { name, cost, franchise, code, promotionPrice } = req.body;
 
   if (!name || !cost || !franchise || !code) {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios!' });
   }
 
-  const query = 'INSERT INTO products (name, cost, franchise, code) VALUES (?, ?, ?, ?)';
-  connection.query(query, [name, cost, franchise, code], (err, results) => {
+  const query = 'INSERT INTO products (name, cost, franchise, code, promotion_price) VALUES (?, ?, ?, ?, ?)';
+  connection.query(query, [name, cost, franchise, code, promotionPrice || null], (err, results) => {
     if (err) {
       console.error('Erro ao cadastrar produto:', err);
       return res.status(500).json({ error: 'Erro ao cadastrar produto' });

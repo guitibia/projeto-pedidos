@@ -36,7 +36,7 @@
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/list-clients.html">Listar Pedidos</a>
-        </li>
+          </li>
         </ul>
       </div>
     </div>
@@ -78,13 +78,24 @@
               </div>
 
               <div class="mb-3">
+                <label for="promotionalPrice" class="form-label">Valor Promocional</label>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="promotionalPrice" name="promotionalPrice">
+                  <label class="form-check-label" for="promotionalPrice">
+                    Produto com valor promocional
+                  </label>
+                </div>
+              </div>
+
+              <div class="mb-3">
                 <label for="productCost" class="form-label">Valor de Custo</label>
                 <input type="text" id="productCost" name="productCost" class="form-control" readonly>
               </div>
 
               <div class="mb-3">
                 <label for="salePrice" class="form-label">Valor de Venda</label>
-                <input type="number" id="salePrice" name="salePrice" class="form-control" required placeholder="Digite o valor de venda">
+                <input type="number" id="salePrice" name="salePrice" class="form-control" required
+                  placeholder="Digite o valor de venda">
               </div>
 
               <button type="button" id="addProductBtn" class="btn btn-info w-100">Adicionar Produto</button>
@@ -110,7 +121,8 @@
               <!-- Campo para valor pago via PIX/DINHEIRO -->
               <div class="mb-3" id="combinedPaymentDiv" style="display: none;">
                 <label for="combinedPaymentValue" class="form-label">Valor a ser pago via PIX/DINHEIRO</label>
-                <input type="number" id="combinedPaymentValue" name="combinedPaymentValue" class="form-control" placeholder="Digite o valor a ser pago de forma imediata">
+                <input type="number" id="combinedPaymentValue" name="combinedPaymentValue" class="form-control"
+                  placeholder="Digite o valor a ser pago de forma imediata">
               </div>
 
               <!-- Número de Parcelas (exibido após valor pago via PIX/DINHEIRO) -->
@@ -156,8 +168,18 @@
       const combinedPaymentValueInput = document.getElementById('combinedPaymentValue');
       const installmentsInput = document.getElementById('installments');
       const installmentAmountDiv = document.getElementById('installmentAmount');
+      const promotionalPriceCheckbox = document.getElementById('promotionalPrice');
       let totalValue = 0;
       let productsList = [];  // Lista de produtos
+
+      // Ao marcar a caixa de valor promocional, permitir a edição do campo de valor de custo
+      promotionalPriceCheckbox.addEventListener('change', () => {
+        if (promotionalPriceCheckbox.checked) {
+          productCostInput.removeAttribute('readonly'); // Permitir edição
+        } else {
+          productCostInput.setAttribute('readonly', true); // Manter como somente leitura
+        }
+      });
 
       // Carregar clientes do backend
       fetch('/api/clients')
@@ -239,24 +261,31 @@
       });
 
       // Adicionar produto à lista
+      // Adicionar produto à lista
       addProductBtn.addEventListener('click', () => {
         const productId = productsSelect.value;
         const salePrice = parseFloat(salePriceInput.value);
+        const isPromotionalPrice = promotionalPriceCheckbox.checked;
+        let productCost = parseFloat(productCostInput.value);
 
         if (!productId || isNaN(salePrice) || salePrice <= 0) {
           Swal.fire('Erro', 'Selecione um produto e insira um valor de venda válido.', 'error');
           return;
         }
 
+        if (isPromotionalPrice && isNaN(productCost)) {
+          Swal.fire('Erro', 'Insira um valor de custo válido para o produto promocional.', 'error');
+          return;
+        }
+
         const productOption = productsSelect.selectedOptions[0];
         const productName = productOption.textContent.split(' - ')[0];
         const productCode = productOption.textContent.split(' - ')[1].replace('COD ', '');
-        const productCost = parseFloat(productCostInput.value);
 
         // Adicionar o produto à lista de produtos
         const productItem = document.createElement('li');
         productItem.classList.add('list-group-item');
-        productItem.textContent = `${productName} - COD ${productCode} - Custo: ${productCost.toFixed(2)} - Venda: ${salePrice.toFixed(2)}`;
+        productItem.textContent = `${productName} - COD ${productCode} - Custo: ${productCost.toFixed(2)} - Venda: ${salePrice.toFixed(2)}${isPromotionalPrice ? ' (Promoção)' : ''}`;
 
         const removeButton = document.createElement('button');
         removeButton.textContent = 'Remover';
@@ -275,8 +304,16 @@
         totalValueInput.value = totalValue.toFixed(2);
 
         // Adicionar o produto à lista de produtos
-        productsList.push({ id: productId, name: productName, salePrice, code: productCode });
+        productsList.push({
+          id: productId,
+          name: productName,
+          salePrice,
+          code: productCode,
+          isPromotionalPrice,
+          productCost: isPromotionalPrice ? productCost : null // Enviar o custo apenas se for promocional
+        });
       });
+
 
       // Exibir campos específicos com base no método de pagamento selecionado
       paymentMethodSelect.addEventListener('change', (event) => {
