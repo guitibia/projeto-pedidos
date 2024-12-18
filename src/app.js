@@ -218,18 +218,24 @@ app.get('/api/products/:id', (req, res) => {
 
 // Rota para listar todos os pedidos
 app.get('/api/orders', (req, res) => {
-  const query = `
-    SELECT o.id, o.payment_method, o.total_cost, o.status, c.name AS client_name
-    FROM orders o
-    JOIN clients c ON o.client_id = c.id
-  `;
+  // Recuperar o status a partir do filtro de query string (default é 'Todos')
+  const statusFilter = req.query.status || 'Todos';
+  let query = `SELECT o.id, o.payment_method, o.total_cost, o.status, c.name AS client_name
+               FROM orders o
+               JOIN clients c ON o.client_id = c.id`;
 
-  connection.query(query, (err, results) => {
+  // Adiciona filtro se o status for Pendente ou Entregue
+  if (statusFilter !== 'Todos') {
+    query += ' WHERE o.status = ?';
+  }
+
+  // Executar a consulta com ou sem filtro
+  connection.query(query, [statusFilter === 'Todos' ? null : statusFilter], (err, results) => {
     if (err) {
       console.error('Erro ao buscar pedidos:', err);
       return res.status(500).json({ error: 'Erro ao buscar pedidos' });
     }
-    res.status(200).json(results); // Retorna a lista de pedidos com o campo status
+    res.status(200).json(results); // Retorna os pedidos filtrados
   });
 });
 

@@ -40,6 +40,17 @@
 
   <div class="container mt-4">
     <h2 class="text-center mb-4">Lista de Pedidos</h2>
+
+    <!-- Filtro de Status -->
+    <div class="mb-3">
+      <label for="statusFilter" class="form-label">Filtrar por Status:</label>
+      <select id="statusFilter" class="form-select" onchange="loadOrders()">
+        <option value="Todos">Todos</option>
+        <option value="Pendente">Pendente</option>
+        <option value="Entregue">Entregue</option>
+      </select>
+    </div>
+
     <table class="table table-striped table-hover">
       <thead>
         <tr>
@@ -57,8 +68,7 @@
   </div>
 
   <!-- Modal para exibir os detalhes do pedido -->
-  <div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel"
-    aria-hidden="true">
+  <div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header bg-primary text-white rounded-top">
@@ -89,36 +99,33 @@
   </footer>
 
   <script>
-    // Forçar atualização da tabela de pedidos
-    document.getElementById('ordersList').innerHTML = '';
-    loadOrders();  // Recarregar a lista de pedidos
-
-
-    // Função para carregar pedidos
+    // Função para carregar pedidos com base no filtro de status
     function loadOrders() {
-      fetch('/api/orders')
+      const statusFilter = document.getElementById('statusFilter').value;
+      const url = statusFilter === 'Todos' ? '/api/orders' : `/api/orders?status=${statusFilter}`;
+
+      fetch(url)
         .then(response => response.json())
         .then(orders => {
-
           const ordersList = document.getElementById('ordersList');
           ordersList.innerHTML = ''; // Limpar lista antes de adicionar os novos itens
 
           orders.forEach(order => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-          <td>${order.id}</td>
-          <td>${order.client_name || 'Cliente Desconhecido'}</td>
-          <td>${order.payment_method}</td>
-          <td>${order.status || 'Pendente'}</td> <!-- O status será atualizado aqui -->
-          <td>
-            <button class="btn btn-info btn-sm btn-custom" onclick="viewOrder(${order.id})">
-              <i class="bi bi-eye"></i> Ver
-            </button>
-            <button class="btn btn-danger btn-sm btn-custom" onclick="deleteOrder(${order.id})">
-              <i class="bi bi-trash"></i> Excluir
-            </button>
-          </td>
-        `;
+              <td>${order.id}</td>
+              <td>${order.client_name || 'Cliente Desconhecido'}</td>
+              <td>${order.payment_method}</td>
+              <td>${order.status || 'Pendente'}</td> <!-- O status será atualizado aqui -->
+              <td>
+                <button class="btn btn-info btn-sm btn-custom" onclick="viewOrder(${order.id})">
+                  <i class="bi bi-eye"></i> Ver
+                </button>
+                <button class="btn btn-danger btn-sm btn-custom" onclick="deleteOrder(${order.id})">
+                  <i class="bi bi-trash"></i> Excluir
+                </button>
+              </td>
+            `;
             ordersList.appendChild(tr);
           });
         })
@@ -162,7 +169,6 @@
       });
     }
 
-
     // Função para visualizar o pedido
     function viewOrder(orderId) {
       fetch(`/api/orders/${orderId}`)
@@ -188,20 +194,20 @@
             // Gerar HTML para cada produto dentro da franquia
             const productDetails = products.map(product => {
               return `
-            <p>
-              ${product.product_name} - COD ${product.code} / 
-              Valor de Custo: R$ ${product.cost_price.toFixed(2)} / 
-              Valor de Venda: R$ ${product.sale_price.toFixed(2)}
-            </p>
-          `;
+                <p>
+                  ${product.product_name} - COD ${product.code} / 
+                  Valor de Custo: R$ ${product.cost_price.toFixed(2)} / 
+                  Valor de Venda: R$ ${product.sale_price.toFixed(2)}
+                </p>
+              `;
             }).join('');
 
             return `
-          <div>
-            <h5>${franchise}:</h5>
-            ${productDetails}
-          </div>
-        `;
+              <div>
+                <h5>${franchise}:</h5>
+                ${productDetails}
+              </div>
+            `;
           }).join('');
 
           // Calcular valores totais
@@ -216,10 +222,10 @@
           if (order.payment_method === 'PARCELADO' && order.installments) {
             const installmentValue = (totalSaleValue / order.installments).toFixed(2);  // Calcula o valor de cada parcela
             paymentDetails += `
-          <p><strong>Valor da Compra:</strong> R$ ${totalSaleValue} </p>
-          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
-          <p><strong>Valor de cada parcela:</strong> R$ ${installmentValue}</p>
-        `;
+              <p><strong>Valor da Compra:</strong> R$ ${totalSaleValue} </p>
+              <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+              <p><strong>Valor de cada parcela:</strong> R$ ${installmentValue}</p>
+            `;
           }
           // Caso o pagamento seja combinado
           else if (order.payment_method === 'PAGAMENTO COMBINADO') {
@@ -228,35 +234,35 @@
 
             // Exibir valor pago, restante e número de parcelas
             paymentDetails += `
-          <p><strong>Valor da Compra:</strong> R$ ${totalSaleValue} </p>  
-          <p><strong>Valor Pago no PIX:</strong> R$ ${totalPaid.toFixed(2)}</p>
-          <p><strong>Restante:</strong> R$ ${remainingValue}</p>
-        `;
+              <p><strong>Valor da Compra:</strong> R$ ${totalSaleValue} </p>  
+              <p><strong>Valor Pago no PIX:</strong> R$ ${totalPaid.toFixed(2)}</p>
+              <p><strong>Restante:</strong> R$ ${remainingValue}</p>
+            `;
 
             if (order.installments) {
               const remainingValuePerInstallment = (remainingValue / order.installments).toFixed(2);
               paymentDetails += `
-            <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
-            <p><strong>Valor restante por parcela:</strong> R$ ${remainingValuePerInstallment}</p>
-          `;
+                <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+                <p><strong>Valor restante por parcela:</strong> R$ ${remainingValuePerInstallment}</p>
+              `;
             }
           }
 
           // Preencher os detalhes do modal
           orderDetailsContent.innerHTML = `
-        <h4>ID do Pedido: ${order.id}</h4>
-        <p><strong>Cliente:</strong> ${order.client_name}</p>
-        <p><strong>Endereço para entrega:</strong> 
-           Rua ${order.client_address}
-           N° ${order.client_house_number}
-           Bairro - ${order.client_neighborhood}</p>
-        ${paymentDetails}
-        <h5>Produtos Pedidos:</h5>
-        ${productsList} <!-- Exibe os produtos com as informações formatadas -->
-        <h5>Totais:</h5>
-        <p><strong>Valor Total de Custo:</strong> R$ ${totalCostValue} / <strong>Valor Total de Venda:</strong> R$ ${totalSaleValue}</p>
-        <p><strong>Lucro:</strong> R$ ${profitValue} Reais</p>
-      `;
+            <h4>ID do Pedido: ${order.id}</h4>
+            <p><strong>Cliente:</strong> ${order.client_name}</p>
+            <p><strong>Endereço para entrega:</strong> 
+              Rua ${order.client_address}
+              N° ${order.client_house_number}
+              Bairro - ${order.client_neighborhood}</p>
+            ${paymentDetails}
+            <h5>Produtos Pedidos:</h5>
+            ${productsList} <!-- Exibe os produtos com as informações formatadas -->
+            <h5>Totais:</h5>
+            <p><strong>Valor Total de Custo:</strong> R$ ${totalCostValue} / <strong>Valor Total de Venda:</strong> R$ ${totalSaleValue}</p>
+            <p><strong>Lucro:</strong> R$ ${profitValue} Reais</p>
+          `;
 
           // Exibir o modal
           const orderDetailsModal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
@@ -271,8 +277,6 @@
           Swal.fire('Erro', 'Erro ao carregar detalhes do pedido.', 'error');
         });
     }
-
-
 
     // Função para marcar o pedido como entregue
     function markOrderAsDelivered(orderId) {
