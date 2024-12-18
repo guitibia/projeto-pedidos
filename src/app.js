@@ -179,6 +179,7 @@ app.get('/api/franchises', (req, res) => {
 // Rota para listar clientes
 app.get('/api/clients', (req, res) => {
   const query = 'SELECT * FROM clients';
+
   connection.query(query, (err, results) => {
     if (err) {
       console.error('Erro ao buscar clientes:', err);
@@ -386,6 +387,33 @@ app.get('/api/products/search', (req, res) => {
     }
   });
 });
+
+// ROTA PARA ATUALIZAR SE O ITEM VEIO
+app.patch('/api/orders/:orderId/products/:productCode/not-came', (req, res) => {
+  const { orderId, productCode } = req.params;
+  const { notCame } = req.body;
+
+  const query = `
+    UPDATE order_products op
+    JOIN products p ON op.product_id = p.id
+    SET op.not_came = ?
+    WHERE op.order_id = ? AND p.code = ?;
+  `;
+
+  connection.query(query, [notCame ? 1 : 0, orderId, productCode], (err, results) => {
+    if (err) {
+      console.error('Erro ao atualizar o status do produto:', err);
+      return res.status(500).json({ error: 'Erro ao atualizar o status do produto.' });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: 'Produto não encontrado no pedido.' });
+    }
+
+    res.status(200).json({ message: notCame ? 'Produto marcado como NÃO VEIO.' : 'Produto marcado como VEIO.' });
+  });
+});
+
 
 
 

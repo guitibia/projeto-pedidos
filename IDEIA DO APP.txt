@@ -3,9 +3,8 @@
 
 Fazer um datatable na aba de listar pedidos para aparecer somente os pedidos pendentes/entregues.- FALTA
 
-Fazer aba de observação no modal para se caso venha faltando algum item no pedido - FALTA (LISTA DE PEDIDOS/VER)
-
-Poder descontar o valor do item que não veio no valor final de venda - FALTA (LISTA DE PEDIDOS/VER)
+Ter como marcar se o produto não veio, fazendo com que o produto ficase com um escrito na frente dele "NÃO VEIO",
+e automaticamente atualizar os valor total de custo, valor de venda e lucro - FALTA (LISTA DE PEDIDOS/VER)
 
 Tentar finalizar o esquema da LUPA na criação de pedido - FALTA (não está funcionando ainda)
 

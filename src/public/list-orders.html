@@ -216,6 +216,7 @@
           if (order.payment_method === 'PARCELADO' && order.installments) {
             const installmentValue = (totalSaleValue / order.installments).toFixed(2);  // Calcula o valor de cada parcela
             paymentDetails += `
+          <p><strong>Valor da Compra:</strong> R$ ${totalSaleValue} </p>
           <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
           <p><strong>Valor de cada parcela:</strong> R$ ${installmentValue}</p>
         `;
@@ -227,7 +228,8 @@
 
             // Exibir valor pago, restante e número de parcelas
             paymentDetails += `
-          <p><strong>Valor Pago:</strong> R$ ${totalPaid.toFixed(2)}</p>
+          <p><strong>Valor da Compra:</strong> R$ ${totalSaleValue} </p>  
+          <p><strong>Valor Pago no PIX:</strong> R$ ${totalPaid.toFixed(2)}</p>
           <p><strong>Restante:</strong> R$ ${remainingValue}</p>
         `;
 
@@ -382,8 +384,13 @@
 
         <div class="separator"></div>
 
-        <!-- Método de Pagamento -->
+        <!-- Método de Pagamento na impressão -->
         <p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>
+        <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
+        ${order.payment_method === 'PARCELADO' ? `
+          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+          <p><strong>Valor por parcela:</strong> R$ ${(parseFloat(calculateTotalSale(order.products)) / order.installments).toFixed(2)}</p>
+        ` : ''}
         
         <!-- Se o pagamento for combinado, exibe o valor pago, restante e parcelas -->
         ${order.payment_method === 'PAGAMENTO COMBINADO' ? `
