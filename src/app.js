@@ -420,6 +420,29 @@ app.patch('/api/orders/:orderId/products/:productCode/not-came', (req, res) => {
   });
 });
 
+// Rota para listar pedidos de um cliente específico
+app.get('/api/client-orders/:clientId', (req, res) => {
+  const clientId = req.params.clientId;
+  const statusFilter = req.query.status || 'Todos'; // Filtra por status (Todos, Pendente, Entregue)
+
+  let query = `SELECT o.id, o.payment_method, o.total_cost, o.status, c.name AS client_name
+               FROM orders o
+               JOIN clients c ON o.client_id = c.id
+               WHERE o.client_id = ?`;
+
+  // Se o filtro de status for diferente de "Todos", adicione o filtro de status na consulta
+  if (statusFilter !== 'Todos') {
+    query += ' AND o.status = ?';
+  }
+
+  connection.query(query, [clientId, statusFilter === 'Todos' ? null : statusFilter], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar pedidos do cliente:', err);
+      return res.status(500).json({ error: 'Erro ao buscar pedidos do cliente' });
+    }
+    res.status(200).json(results); // Retorna os pedidos filtrados
+  });
+});
 
 
 

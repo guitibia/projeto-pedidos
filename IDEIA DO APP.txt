@@ -8,6 +8,10 @@ Tentar finalizar o esquema da LUPA na criação de pedido - FALTA (não está fu
 
 Conseguir alterar o preço de custo - caso aquele produto seja comprado em uma promoção - PAGINA CRIAR PEDIDO
 
+Criar uma página de Lista Cliente - uma página que listaria todo os pedidos feitos pelo cliente, teria um filtro igual a do lista pedidos
+so que iria aparecer apenas os nomes dos clientes cadastrados e assim que selecionado o nome a lista carregaria com todos os pedidos 
+referente ao cliente.
+
 =========================================
 Tabela  de produtos comprados em promoção e vendidos pelos preços normais / SABER O VALOR QUE VAI RETORNAR.
 =========================================
