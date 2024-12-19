@@ -1,12 +1,12 @@
 ===========================
 !!!TENTAR FAZER AMANHÃ!!!
 
-Ter como marcar se o produto não veio, fazendo com que o produto ficase com um escrito na frente dele "NÃO VEIO",
+Ter como marcar se o produto não veio, fazendo com que o produto fique com um escrito na frente dele "NÃO VEIO",
 e automaticamente atualizar os valor total de custo, valor de venda e lucro - FALTA (LISTA DE PEDIDOS/VER).
 
-Tentar finalizar o esquema da LUPA na criação de pedido - FALTA (não está funcionando ainda).
+Tentar finalizar o esquema da LUPA na criação de pedido - FALTA (não está funcionando).
 
-***Corrigir no Listar Pedidos os pediso que foram cadastrados com valor de promação para que retorne o mesmo valor da promação***
+***Corrigir no Listar Pedidos os pedidos que foram cadastrados com valor de promação para que retorne o mesmo valor da promação***
 
 =========================================
 Tabela  de produtos comprados em promoção e vendidos pelos preços normais / SABER O VALOR QUE VAI RETORNAR.
