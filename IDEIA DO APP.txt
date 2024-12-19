@@ -4,9 +4,9 @@
 Ter como marcar se o produto não veio, fazendo com que o produto fique com um escrito na frente dele "NÃO VEIO",
 e automaticamente atualizar os valor total de custo, valor de venda e lucro - FALTA (LISTA DE PEDIDOS/VER).
 
-Tentar finalizar o esquema da LUPA na criação de pedido - FALTA (não está funcionando).
+Cria uma lupa na parte de produtos, que daria para procurar os produtos daquela franquia pelo código - FALTA
 
-***Corrigir no Listar Pedidos os pedidos que foram cadastrados com valor de promação para que retorne o mesmo valor da promoção***
+Corrigir no Listar Pedidos os pedidos que foram cadastrados com valor de promação para que retorne o mesmo valor da promoção - FALTA
 
 =========================================
 Tabela  de produtos comprados em promoção e vendidos pelos preços normais / SABER O VALOR QUE VAI RETORNAR.
