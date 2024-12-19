@@ -364,6 +364,62 @@ app.delete('/api/orders/:id', (req, res) => {
   });
 });
 
+// Rota para buscar produto pelo código
+app.get('/api/products/search', (req, res) => {
+  const { code } = req.query;
+
+  if (!code) {
+    return res.status(400).json({ error: 'Parâmetro code é obrigatório' });
+  }
+
+  const query = 'SELECT * FROM products WHERE code = ?';
+
+  connection.query(query, [code], (err, results) => {
+    if (err) {
+      console.error('Erro ao executar a consulta SQL:', err);
+      return res.status(500).json({ error: 'Erro ao buscar produto' });
+    }
+
+    if (results.length > 0) {
+      const product = results[0];
+      res.status(200).json({
+        id: product.id,
+        name: product.name,
+        cost: product.cost,
+        code: product.code,
+      });
+    } else {
+      res.status(404).json({ error: 'Produto não encontrado' });
+    }
+  });
+});
+
+// ROTA PARA ATUALIZAR SE O ITEM VEIO
+app.patch('/api/orders/:orderId/products/:productCode/not-came', (req, res) => {
+  const { orderId, productCode } = req.params;
+  const { notCame } = req.body;
+
+  const query = `
+    UPDATE order_products op
+    JOIN products p ON op.product_id = p.id
+    SET op.not_came = ?
+    WHERE op.order_id = ? AND p.code = ?;
+  `;
+
+  connection.query(query, [notCame ? 1 : 0, orderId, productCode], (err, results) => {
+    if (err) {
+      console.error('Erro ao atualizar o status do produto:', err);
+      return res.status(500).json({ error: 'Erro ao atualizar o status do produto.' });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: 'Produto não encontrado no pedido.' });
+    }
+
+    res.status(200).json({ message: notCame ? 'Produto marcado como NÃO VEIO.' : 'Produto marcado como VEIO.' });
+  });
+});
+
 // Rota para listar pedidos de um cliente específico
 app.get('/api/client-orders/:clientId', (req, res) => {
   const clientId = req.params.clientId;

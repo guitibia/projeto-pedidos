@@ -6,95 +6,86 @@ body {
 }
 
 /* Estilos para o Modal */
-.table th,
-    .table td {
-      vertical-align: middle;
-    }
+body {
+  background-color: #f8f9fa;
+}
 
-    .modal-content {
-      border-radius: 10px;
-    }
+.navbar {
+  border-bottom: 2px solid #ddd;
+}
 
-    .btn-custom {
-      border-radius: 20px;
-    }
+.navbar-brand {
+  font-weight: bold;
+}
 
-    
+.navbar-nav .nav-link.active {
+  color: #fff !important;
+  background-color: #007bff;
+  border-radius: 20px;
+}
 
-    .modal-content {
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      background-color: #f8f9fa;
-    }
+.card {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 15px;
+}
 
-    .modal-header {
-      border-bottom: 1px solid #e0e0e0;
-    }
+.card-header {
+  background-color: #007bff;
+  color: white;
+  border-radius: 15px 15px 0 0;
+}
 
-    .modal-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
+.form-label {
+  font-weight: 600;
+}
 
-    .modal-body {
-      font-size: 1.1rem;
-      color: #333;
-      padding: 2rem;
-    }
+.form-control {
+  border-radius: 10px;
+}
 
-    .modal-footer {
-      border-top: 1px solid #e0e0e0;
-      background-color: #f7f7f7;
-    }
+.btn-info {
+  background-color: #17a2b8;
+  border-color: #17a2b8;
+  border-radius: 30px;
+}
 
-    .btn {
-      font-size: 1rem;
-      padding: 0.75rem 1.25rem;
-      border-radius: 8px;
-      font-weight: 600;
-    }
+.btn-info:hover {
+  background-color: #138496;
+  border-color: #117a8b;
+}
 
-    .btn-secondary {
-      background-color: #6c757d;
-      border-color: #6c757d;
-    }
+.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+  border-radius: 30px;
+}
 
-    .btn-secondary:hover {
-      background-color: #5a6268;
-    }
+.btn-success:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+}
 
-    .btn-success {
-      background-color: #28a745;
-      border-color: #28a745;
-    }
+footer {
+  background-color: #007bff;
+  color: white;
+}
 
-    .btn-success:hover {
-      background-color: #218838;
-    }
+.list-group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-    .btn-outline-primary {
-      border-color: #007bff;
-      color: #007bff;
-    }
+.list-group-item button {
+  border-radius: 20px;
+}
 
-    .btn-outline-primary:hover {
-      background-color: #007bff;
-      color: #fff;
-    }
+.form-check-input {
+  width: 20px;
+  height: 20px;
+}
 
-    .modal-body h5 {
-      font-size: 1.3rem;
-      color: #007bff;
-      margin-bottom: 15px;
-      font-weight: 600;
-    }
-
-    .modal-body p {
-      margin: 10px 0;
-    }
-
-    .product-details p {
-      font-size: 1.1rem;
-      color: #555;
-      margin-bottom: 10px;
-    }
+.input-group {
+  border-radius: 10px;
+  overflow: hidden;
+}
