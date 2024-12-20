@@ -13,7 +13,7 @@ Tabela  de produtos comprados em promoção e vendidos pelos preços normais / S
 =========================================
 
 =========================================
-Cadastro de promisorias de pagamentos - e controle da mesma.
+Cadastro de promisorias de pagamentos - e controle da mesma - FEITA MAS FALTA ALGUNS AJUSTES!!!
 =========================================
 
 =========================================

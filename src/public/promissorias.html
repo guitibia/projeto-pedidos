@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastrar Promissórias</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+  <div class="container">
+    <h1 class="text-center">Promissórias Cadastradas</h1>
+    <button class="btn btn-primary mb-4" data-toggle="modal" data-target="#cadastrarModal">Cadastrar
+      Promissória</button>
+
+    <div class="card">
+      <div class="card-body">
+        <ul id="promissorias-list" class="list-group mt-3"></ul>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="cadastrarModal" tabindex="-1" role="dialog" aria-labelledby="cadastrarModalLabel"
+      aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="cadastrarModalLabel">Cadastrar Promissória</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="promissoria-form">
+              <div class="form-group">
+                <label for="numero_nf">Número da Nota Fiscal:</label>
+                <input type="text" class="form-control" id="numero_nf" required>
+              </div>
+              <div class="form-group">
+                <label for="data_emissao">Data de Emissão:</label>
+                <input type="date" class="form-control" id="data_emissao" required>
+              </div>
+              <div class="form-group">
+                <label for="valor_nf">Valor da Nota Fiscal:</label>
+                <input type="number" step="0.01" class="form-control" id="valor_nf" required>
+              </div>
+              <div class="form-group">
+                <label for="parcelas">Número de Parcelas:</label>
+                <input type="number" class="form-control" id="parcelas" required>
+              </div>
+              <div class="form-group">
+                <label for="valor_parcela">Valor da Parcela:</label>
+                <input type="text" class="form-control" id="valor_parcela" readonly>
+              </div>
+              <div class="form-group">
+                <label for="data_vencimento">Data de Vencimento:</label>
+                <input type="date" class="form-control" id="data_vencimento" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Cadastrar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.getElementById('valor_nf').addEventListener('input', calcularValorParcela);
+    document.getElementById('parcelas').addEventListener('input', calcularValorParcela);
+
+    function calcularValorParcela() {
+      const valorNF = parseFloat(document.getElementById('valor_nf').value) || 0;
+      const parcelas = parseInt(document.getElementById('parcelas').value) || 1;
+      const valorParcela = valorNF / parcelas;
+
+      document.getElementById('valor_parcela').value = valorParcela.toFixed(2);
+    }
+
+    document.getElementById('promissoria-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const numeroNF = document.getElementById('numero_nf').value;
+      const dataEmissao = document.getElementById('data_emissao').value;
+      const valorNF = document.getElementById('valor_nf').value;
+      const parcelas = document.getElementById('parcelas').value;
+      const valorParcela = document.getElementById('valor_parcela').value;
+      const dataVencimento = document.getElementById('data_vencimento').value;
+
+      fetch('/api/promissorias', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          numero_nf: numeroNF,
+          data_emissao: dataEmissao,
+          valor_nf: valorNF,
+          parcelas,
+          valor_parcela: valorParcela,
+          data_vencimento: dataVencimento
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: data.message,
+          });
+          $('#cadastrarModal').modal('hide'); // Fecha o modal
+          loadPromissorias();
+        })
+        .catch(error => {
+          Swal.fire({
+            icon: 'error',
+            title: 'Erro!',
+            text: 'Ocorreu um erro ao cadastrar a promissória.',
+          });
+        });
+    });
+
+    function loadPromissorias() {
+      fetch('/api/promissorias')
+        .then(response => response.json())
+        .then(data => {
+          const list = document.getElementById('promissorias-list');
+          list.innerHTML = ''; // Limpa a lista
+          data.forEach(promissoria => {
+            const valorTotal = parseFloat(promissoria.valor) || 0; // Converte para número
+            const parcelas = promissoria.parcelas; // Número de parcelas
+            const dataVencimento = new Date(promissoria.data_vencimento);
+
+            const vencimentos = [];
+            const status = []; // Array para armazenar o status de cada parcela
+            for (let i = 0; i < parcelas; i++) {
+              const novaData = new Date(dataVencimento);
+              novaData.setMonth(dataVencimento.getMonth() + i); // Adiciona meses
+              vencimentos.push(novaData.toLocaleDateString('pt-BR')); // Formata a data
+              status.push('Pendente'); // Status inicial
+            }
+
+            const item = document.createElement('li');
+            item.className = 'list-group-item';
+            item.setAttribute('data-id', promissoria.id); // Adiciona um atributo data-id
+            item.innerHTML = `
+    <div>
+        Valor Total: R$ ${valorTotal.toFixed(2)} <br>
+        N° de Parcelas: ${parcelas} <br>
+        Vencimento da primeira parcela: ${vencimentos[0]} <br>
+        ${vencimentos.map((data, index) => `
+            Vencimento da ${index + 1}ª parcela: ${data} 
+            <span class="badge badge-warning ml-2">${status[index]}</span>
+            <button class="btn btn-success btn-sm ml-2" onclick="marcarComoPaga(${promissoria.id}, ${index + 1})">Marcar como Paga</button>
+            <br>
+        `).join('')}
+    </div>
+`;
+            list.appendChild(item);
+          });
+        })
+        .catch(error => {
+          console.error('Erro ao carregar promissórias:', error);
+        });
+    }
+
+    function marcarComoPaga(promissoriaId, parcelaIndex) {
+      fetch(`/api/promissorias/${promissoriaId}/parcelas/${parcelaIndex}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'JÁ PAGA' }) // Envia o status
+      })
+        .then(response => {
+          if (response.ok) {
+            // Atualiza o status no DOM
+            const item = document.querySelector(`#promissorias-list .list-group-item[data-id="${promissoriaId}"]`);
+            const statusBadge = item.querySelectorAll('.badge'); // Seleciona todos os badges
+            statusBadge[parcelaIndex - 1].textContent = 'JÁ PAGA'; // Atualiza o texto do badge
+            statusBadge[parcelaIndex - 1].classList.remove('badge-warning'); // Remove a classe de pendente
+            statusBadge[parcelaIndex - 1].classList.add('badge-success'); // Adiciona a classe de sucesso
+
+            Swal.fire('Sucesso!', 'Parcela marcada como paga!', 'success');
+          } else {
+            Swal.fire('Erro!', 'Não foi possível marcar a parcela como paga.', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Erro ao marcar parcela como paga:', error);
+        });
+    }
+
+    loadPromissorias(); // Carrega as promissórias ao iniciar
+  </script>
+</body>
+
+</html>
