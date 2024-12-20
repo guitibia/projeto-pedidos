@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS `notas_fiscais` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.notas_fiscais: ~0 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.notas_fiscais: ~1 rows (aproximadamente)
 INSERT INTO `notas_fiscais` (`id`, `numero`, `data_emissao`, `valor`) VALUES
 	(10, '5554', '2024-12-01', 1000.00);
 
