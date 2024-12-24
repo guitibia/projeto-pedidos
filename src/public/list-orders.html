@@ -291,113 +291,94 @@
 
       // Início do HTML para impressão
       printWindow.document.write(`
-        <html>
-          <head>
-            <title>Detalhes do Pedido #${order.id}</title>
-            <style>
-              body {
-                font-family: 'Roboto', sans-serif;
-                line-height: 1.6;
-                color: #333;
-                margin: 0;
-                padding: 20px;
-              }
-              h3 {
-                text-align: center;
-                color: #2c3e50;
-              }
-              p {
-                font-size: 14px;
-                margin: 8px 0;
-              }
-              .header {
-                border-bottom: 2px solid #2c3e50;
-                padding-bottom: 20px;
-                margin-bottom: 20px;
-              }
-              .section-title {
-                font-size: 18px;
-                font-weight: bold;
-                color: #2980b9;
-                margin-top: 20px;
-                border-bottom: 1px solid #2980b9;
-                padding-bottom: 5px;
-              }
-              .product-list {
-                margin-top: 10px;
-                padding-left: 20px;
-              }
-              .product-item {
-                margin-bottom: 5px;
-                font-size: 14px;
-              }
-              .totals {
-                margin-top: 20px;
-                font-size: 16px;
-                font-weight: bold;
-                text-align: center;
-              }
-              .totals p {
-                margin: 4px 0;
-              }
-              .totals p span {
-                font-weight: normal;
-              }
-              .separator {
-                border-top: 2px solid #2c3e50;
-                margin: 20px 0;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h3>Detalhes do Pedido #${order.id}</h3>
-            </div>
+    <html>
+      <head>
+        <title>Detalhes do Pedido #${order.id}</title>
+        <style>
+          body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+          }
+          h3 {
+            text-align: center;
+            color: #2c3e50;
+          }
+          p {
+            font-size: 14px;
+            margin: 8px 0;
+          }
+          .header {
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+          }
+          .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2980b9;
+            margin-top: 20px;
+            border-bottom: 1px solid #2980b9;
+            padding-bottom: 5px;
+          }
+          .product-list {
+            margin-top: 10px;
+            padding-left: 20px;
+          }
+          .product-item {
+            margin-bottom: 5px;
+            font-size: 14px;
+          }
+          .totals {
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+          }
+          .totals p {
+            margin: 4px 0;
+          }
+          .separator {
+            border-top: 2px solid #2c3e50;
+            margin: 20px 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h3>Detalhes do Pedido #${order.id}</h3>
+        </div>
 
-            <!-- Informações do cliente -->
-            <p><strong>Cliente:</strong> ${order.client_name}</p>
-            <p><strong>Endereço para entrega:</strong><br>
-              Rua ${order.client_address}<br>
-              N° ${order.client_house_number}<br>
-              Bairro: ${order.client_neighborhood}</p>
+        <p><strong>Cliente:</strong> ${order.client_name}</p>
+        <p><strong>Endereço para entrega:</strong><br>
+          Rua ${order.client_address}<br>
+          N° ${order.client_house_number}<br>
+          Bairro: ${order.client_neighborhood}</p>
 
-            <div class="separator"></div>
+        <div class="separator"></div>
 
-            <!-- Método de Pagamento na impressão -->
-            <p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>
-            <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
-            ${order.payment_method === 'PARCELADO' ? `
-              <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
-              <p><strong>Valor por parcela:</strong> R$ ${(parseFloat(calculateTotalSale(order.products)) / order.installments).toFixed(2)}</p>
-            ` : ''}
-            
-            <!-- Se o pagamento for combinado, exibe o valor pago, restante e parcelas -->
-            ${order.payment_method === 'PAGAMENTO COMBINADO' ? `
-              <p><strong>Valor Pago:</strong> R$ ${parseFloat(order.combined_payment_value).toFixed(2)}</p>
-              <p><strong>Restante:</strong> R$ ${(parseFloat(order.total_cost) - parseFloat(order.combined_payment_value)).toFixed(2)}</p>
-              <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
-              <p><strong>Valor restante por parcela:</strong> R$ ${((parseFloat(order.total_cost) - parseFloat(order.combined_payment_value)) / order.installments).toFixed(2)}</p>
-            ` : ''}
+        <p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>
+        <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
 
-            <div class="separator"></div>
+        <div class="separator"></div>
 
-            <!-- Status do pedido -->
-            <p><strong>Status:</strong> ${order.status || 'Pendente'}</p>
+        <p><strong>Status:</strong> ${order.status || 'Pendente'}</p>
 
-            <div class="section-title">Produtos Pedidos:</div>
-            <div class="product-list">
-              <!-- Agrupar produtos por franquia -->
-              ${groupProductsByFranchise(order.products)}
-            </div>
+        <div class="section-title">Produtos Pedidos:</div>
+        <div class="product-list">
+          ${groupProductsByFranchise(order.products)}
+        </div>
 
-            <div class="totals">
-              <p><strong>Valor Total de Custo:</strong> R$ ${calculateTotalCost(order.products)}</p>
-              <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
-              <p><strong>Lucro:</strong> R$ ${calculateProfit(order.products)}</p>
-            </div>
-          </body>
-        </html>
-      `);
+        <div class="totals">
+          <p><strong>Valor Total de Custo:</strong> R$ ${calculateTotalCost(order.products)}</p>
+          <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
+          <p><strong>Lucro:</strong> R$ ${calculateProfit(order.products)}</p>
+        </div>
+      </body>
+    </html>
+  `);
 
       printWindow.document.close();
       printWindow.print();
@@ -407,7 +388,6 @@
     function groupProductsByFranchise(products) {
       const franchiseProducts = {};
 
-      // Agrupar produtos por franquia
       products.forEach(product => {
         if (!franchiseProducts[product.franchise]) {
           franchiseProducts[product.franchise] = [];
@@ -417,16 +397,18 @@
 
       let productHtml = '';
 
+
       // Exibir produtos agrupados por franquia
       Object.keys(franchiseProducts).forEach(franchise => {
         productHtml += `<p><strong>${franchise}:</strong></p>`;
         franchiseProducts[franchise].forEach(product => {
           productHtml += `
-            <div class="product-item">
-              ${product.product_name} - COD ${product.code} / 
-              Valor de Venda: R$ ${product.sale_price.toFixed(2)}
-            </div>
-          `;
+        <div class="product-item">
+          ${product.product_name} - COD ${product.code} / 
+          Quantidade: ${product.quantity} / 
+          Valor de Venda: R$ ${product.sale_price.toFixed(2)}
+        </div>
+      `;
         });
       });
 
