@@ -36,9 +36,9 @@
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
+          </li>
           <li class="nav-item">
             <a class="nav-link" href="/promissorias.html">Promissória</a>
-          </li>
           </li>
         </ul>
       </div>
@@ -78,12 +78,16 @@
               </div>
 
               <div class="mb-3">
+                <label for="productQuantity" class="form-label">Quantidade</label>
+                <input type="number" id="productQuantity" name="productQuantity" class="form-control" required value="1"
+                  min="1">
+              </div>
+
+              <div class="mb-3">
                 <label for="promotionalPrice" class="form-label">Valor Promocional</label>
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" id="promotionalPrice" name="promotionalPrice">
-                  <label class="form-check-label" for="promotionalPrice">
-                    Produto com valor promocional
-                  </label>
+                  <label class="form-check-label" for="promotionalPrice">Produto com valor promocional</label>
                 </div>
               </div>
 
@@ -118,14 +122,12 @@
                 </select>
               </div>
 
-              <!-- Campo para valor pago via PIX/DINHEIRO -->
               <div class="mb-3" id="combinedPaymentDiv" style="display: none;">
                 <label for="combinedPaymentValue" class="form-label">Valor a ser pago via PIX/DINHEIRO</label>
                 <input type="number" id="combinedPaymentValue" name="combinedPaymentValue" class="form-control"
                   placeholder="Digite o valor a ser pago de forma imediata">
               </div>
 
-              <!-- Número de Parcelas (exibido após valor pago via PIX/DINHEIRO) -->
               <div class="mb-3" id="installmentsDiv" style="display: none;">
                 <label for="installments" class="form-label">Número de Parcelas</label>
                 <select id="installments" name="installments" class="form-select">
@@ -174,11 +176,7 @@
 
       // Ao marcar a caixa de valor promocional, permitir a edição do campo de valor de custo
       promotionalPriceCheckbox.addEventListener('change', () => {
-        if (promotionalPriceCheckbox.checked) {
-          productCostInput.removeAttribute('readonly'); // Permitir edição
-        } else {
-          productCostInput.setAttribute('readonly', true); // Manter como somente leitura
-        }
+        productCostInput.readOnly = !promotionalPriceCheckbox.checked; // Alternar a propriedade readonly
       });
 
       // Carregar clientes do backend
@@ -261,15 +259,16 @@
       });
 
       // Adicionar produto à lista
-      // Adicionar produto à lista
       addProductBtn.addEventListener('click', () => {
         const productId = productsSelect.value;
         const salePrice = parseFloat(salePriceInput.value);
+        const productQuantity = parseInt(document.getElementById('productQuantity').value); // Captura a quantidade
         const isPromotionalPrice = promotionalPriceCheckbox.checked;
         let productCost = parseFloat(productCostInput.value);
 
-        if (!productId || isNaN(salePrice) || salePrice <= 0) {
-          Swal.fire('Erro', 'Selecione um produto e insira um valor de venda válido.', 'error');
+        // Validações
+        if (!productId || isNaN(salePrice) || salePrice <= 0 || productQuantity < 1) { // Use productQuantity aqui
+          Swal.fire('Erro', 'Selecione um produto, insira um valor de venda válido e defina a quantidade.', 'error');
           return;
         }
 
@@ -284,42 +283,42 @@
 
         // Adicionar o produto à lista de produtos
         const productItem = document.createElement('li');
+        const totalProductPrice = salePrice * productQuantity; // Calcular o preço total do produto
         productItem.classList.add('list-group-item');
-        productItem.textContent = `${productName} - COD ${productCode} - Custo: ${productCost.toFixed(2)} - Venda: ${salePrice.toFixed(2)}${isPromotionalPrice ? ' (Promoção)' : ''}`;
+        productItem.textContent = `${productName} - COD ${productCode} - Custo: ${productCost.toFixed(2)} - Venda: ${salePrice.toFixed(2)} - Quantidade: ${productQuantity} - Total: ${totalProductPrice.toFixed(2)}${isPromotionalPrice ? ' (Promoção)' : ''}`;
 
         const removeButton = document.createElement('button');
         removeButton.textContent = 'Remover';
         removeButton.classList.add('btn', 'btn-danger', 'btn-sm', 'ms-2');
         removeButton.onclick = () => {
           productList.removeChild(productItem);
-          totalValue -= salePrice;
+          totalValue -= totalProductPrice; // Atualizar totalValue
           totalValueInput.value = totalValue.toFixed(2);
-          productsList = productsList.filter(product => product.id !== productId);
+          productsList = productsList.filter(product => product.id !== productId || product.quantity !== productQuantity); // Ajustar filtro
         };
 
         productItem.appendChild(removeButton);
         productList.appendChild(productItem);
 
-        totalValue += salePrice;
+        totalValue += totalProductPrice; // Somar o total do produto
         totalValueInput.value = totalValue.toFixed(2);
 
-        // Adicionar o produto à lista de produtos
+        // Adicionar o produto à lista de produtos com a quantidade
         productsList.push({
           id: productId,
           name: productName,
           salePrice,
           code: productCode,
           isPromotionalPrice,
-          productCost: isPromotionalPrice ? productCost : null // Enviar o custo apenas se for promocional
+          productCost: isPromotionalPrice ? productCost : null,
+          quantity: productQuantity, // Aqui está a quantidade
         });
       });
-
 
       // Exibir campos específicos com base no método de pagamento selecionado
       paymentMethodSelect.addEventListener('change', (event) => {
         const selectedMethod = event.target.value;
 
-        // Ocultar todos os campos e então mostrar os necessários
         installmentsDiv.style.display = 'none';
         combinedPaymentDiv.style.display = 'none';
         installmentAmountDiv.style.display = 'none';
@@ -337,11 +336,7 @@
         const combinedPaymentValue = parseFloat(combinedPaymentValueInput.value);
         const remainingAmount = totalValue - combinedPaymentValue;
 
-        if (remainingAmount > 0) {
-          installmentsDiv.style.display = 'block';
-        } else {
-          installmentsDiv.style.display = 'none';
-        }
+        installmentsDiv.style.display = remainingAmount > 0 ? 'block' : 'none';
       });
 
       // Exibir o valor da parcela ao selecionar o número de parcelas
@@ -364,12 +359,20 @@
         const payload = {
           clientId: formObject.clientId,
           franchiseId: formObject.franchiseId,
-          products: productsList,
+          products: productsList.map(product => ({
+            id: product.id,
+            quantity: product.quantity,
+            salePrice: product.salePrice,
+            isPromotionalPrice: product.isPromotionalPrice,
+            productCost: product.productCost
+          })),
           totalValue: totalValue,
           paymentMethod: formObject.paymentMethod,
           installments: formObject.installments || null,
           combinedPaymentValue: formObject.combinedPaymentValue || null,
         };
+
+        console.log('Payload enviado:', JSON.stringify(payload, null, 2));
 
         fetch('/api/orders', {
           method: 'POST',
@@ -383,6 +386,7 @@
             Swal.fire('Sucesso', `Pedido #${order.orderId} criado com sucesso!`, 'success');
           })
           .catch(error => {
+            console.error('Erro ao criar o pedido:', error);
             Swal.fire('Erro', 'Erro ao criar pedido', 'error');
           });
       });

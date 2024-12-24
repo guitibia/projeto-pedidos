@@ -84,10 +84,10 @@ app.post('/api/orders', async (req, res) => {
   }
 
   const validProducts = productArray.map(product => {
-    if (isNaN(parseFloat(product.salePrice)) || parseFloat(product.salePrice) <= 0) {
-      return { error: `Preço de venda inválido para o produto "${product.name}"` };
+    if (!product.id || isNaN(parseFloat(product.salePrice)) || parseFloat(product.salePrice) <= 0) {
+      return { error: `Preço de venda inválido para o produto ID "${product.id || 'desconhecido'}"` };
     }
-    return { name: product.name, salePrice: parseFloat(product.salePrice) };
+    return { id: product.id, salePrice: parseFloat(product.salePrice), quantity: product.quantity }; // Captura a quantidade
   });
 
   const invalidProduct = validProducts.find(product => product.error);
@@ -97,12 +97,12 @@ app.post('/api/orders', async (req, res) => {
 
   try {
     const productQueries = validProducts.map(product => {
-      return connection.query('SELECT id FROM products WHERE name = ?', [product.name])
+      return connection.query('SELECT id FROM products WHERE id = ?', [product.id])
         .then(([results]) => {
           if (results.length === 0) {
-            throw new Error(`Produto "${product.name}" não encontrado.`);
+            throw new Error(`Produto ID "${product.id}" não encontrado.`);
           }
-          return { productId: results[0].id, salePrice: product.salePrice };
+          return { productId: results[0].id, salePrice: product.salePrice, quantity: product.quantity }; // Inclui a quantidade
         });
     });
 
@@ -112,8 +112,8 @@ app.post('/api/orders', async (req, res) => {
     const [orderResult] = await connection.query(queryOrder, [clientId, paymentMethod, installments || null, totalValue, combinedPaymentValue || null]);
 
     const orderId = orderResult.insertId;
-    const productQuery = 'INSERT INTO order_products (order_id, product_id, sale_price) VALUES ?';
-    const productsValues = productData.map(product => [orderId, product.productId, product.salePrice]);
+    const productQuery = 'INSERT INTO order_products (order_id, product_id, sale_price, quantity) VALUES ?'; // Inclui a quantidade
+    const productsValues = productData.map(product => [orderId, product.productId, product.salePrice, product.quantity]); // Mapeia a quantidade
 
     await connection.query(productQuery, [productsValues]);
     res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue });
