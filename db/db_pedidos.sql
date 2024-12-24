@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `notas_fiscais` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.notas_fiscais: ~0 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.notas_fiscais: ~1 rows (aproximadamente)
 INSERT INTO `notas_fiscais` (`id`, `numero`, `data_emissao`, `valor`) VALUES
 	(10, '5554', '2024-12-01', 1000.00);
 
@@ -72,6 +72,8 @@ CREATE TABLE IF NOT EXISTS `orders` (
 ) ENGINE=InnoDB AUTO_INCREMENT=69 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Copiando dados para a tabela cosmeticos_db.orders: ~1 rows (aproximadamente)
+INSERT INTO `orders` (`id`, `client_id`, `payment_method`, `installments`, `total_cost`, `combined_payment_value`, `status`) VALUES
+	(73, 2, 'PIX', 1, 68.64, NULL, 'Pendente');
 
 -- Copiando estrutura para tabela cosmeticos_db.order_products
 CREATE TABLE IF NOT EXISTS `order_products` (
@@ -87,7 +89,9 @@ CREATE TABLE IF NOT EXISTS `order_products` (
   CONSTRAINT `order_products_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.order_products: ~0 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.order_products: ~1 rows (aproximadamente)
+INSERT INTO `order_products` (`order_id`, `product_id`, `sale_price`, `not_came`, `promotion_price`, `quantity`) VALUES
+	(73, 8, 34.32, 0, NULL, 2);
 
 -- Copiando estrutura para tabela cosmeticos_db.parcelas
 CREATE TABLE IF NOT EXISTS `parcelas` (
