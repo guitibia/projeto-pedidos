@@ -221,7 +221,8 @@ app.get('/api/orders/:id', async (req, res) => {
       GROUP_CONCAT(op.sale_price SEPARATOR ', ') AS product_prices,
       GROUP_CONCAT(p.cost SEPARATOR ', ') AS product_costs,
       GROUP_CONCAT(p.franchise SEPARATOR ', ') AS product_franchises,
-      GROUP_CONCAT(p.code SEPARATOR ', ') AS product_codes
+      GROUP_CONCAT(p.code SEPARATOR ', ') AS product_codes,
+      GROUP_CONCAT(op.quantity SEPARATOR ', ') AS product_quantities
     FROM orders o
     JOIN clients c ON o.client_id = c.id
     JOIN order_products op ON op.order_id = o.id
@@ -239,13 +240,15 @@ app.get('/api/orders/:id', async (req, res) => {
       const productCosts = order.product_costs.split(', ').map(Number);
       const productFranchises = order.product_franchises.split(', ');
       const productCodes = order.product_codes.split(', ');
+      const productQuantities = order.product_quantities.split(', ').map(Number); // Conversão para números
 
       const products = productNames.map((name, index) => ({
         product_name: name,
         sale_price: productPrices[index],
         cost_price: productCosts[index],
         franchise: productFranchises[index],
-        code: productCodes[index]
+        code: productCodes[index],
+        quantity: productQuantities[index] // Adiciona a quantidade
       }));
 
       order.products = products;
