@@ -71,9 +71,16 @@ CREATE TABLE IF NOT EXISTS `orders` (
   CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=69 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.orders: ~1 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.orders: ~5 rows (aproximadamente)
 INSERT INTO `orders` (`id`, `client_id`, `payment_method`, `installments`, `total_cost`, `combined_payment_value`, `status`) VALUES
-	(73, 2, 'PIX', 1, 68.64, NULL, 'Pendente');
+	(77, 9, 'PIX', 1, 68.64, NULL, 'Pendente'),
+	(78, 8, 'PIX', 1, 79.90, NULL, 'Pendente'),
+	(79, 10, 'PIX', 1, 76.80, NULL, 'Pendente'),
+	(81, 11, 'PIX', 1, 199.90, NULL, 'Pendente'),
+	(82, 3, 'PIX', 1, 179.40, NULL, 'Pendente'),
+	(84, 2, 'PIX', 1, 100.00, NULL, 'Pendente'),
+	(85, 1, 'PAGAMENTO COMBINADO', 2, 180.00, 50.00, 'Pendente'),
+	(86, 2, 'PARCELADO', 3, 210.00, NULL, 'Pendente');
 
 -- Copiando estrutura para tabela cosmeticos_db.order_products
 CREATE TABLE IF NOT EXISTS `order_products` (
@@ -89,9 +96,18 @@ CREATE TABLE IF NOT EXISTS `order_products` (
   CONSTRAINT `order_products_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.order_products: ~1 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.order_products: ~8 rows (aproximadamente)
 INSERT INTO `order_products` (`order_id`, `product_id`, `sale_price`, `not_came`, `promotion_price`, `quantity`) VALUES
-	(73, 8, 34.32, 0, NULL, 2);
+	(77, 8, 34.32, 0, NULL, 2),
+	(78, 9, 79.90, 0, NULL, 1),
+	(79, 10, 76.80, 0, NULL, 1),
+	(81, 11, 199.90, 0, NULL, 1),
+	(82, 12, 29.90, 0, NULL, 2),
+	(82, 13, 29.90, 0, NULL, 2),
+	(82, 14, 29.90, 0, NULL, 2),
+	(84, 1, 50.00, 0, NULL, 2),
+	(85, 1, 60.00, 0, NULL, 3),
+	(86, 1, 70.00, 0, NULL, 3);
 
 -- Copiando estrutura para tabela cosmeticos_db.parcelas
 CREATE TABLE IF NOT EXISTS `parcelas` (
@@ -136,7 +152,7 @@ INSERT INTO `products` (`id`, `name`, `cost`, `franchise`, `code`, `promotion_pr
 	(8, 'Creme de Pentear Dr. Botica', 29.17, 'Boticário', '48745', NULL),
 	(9, 'Refil Creme Liley Acetinado', 67.91, 'Boticário', '48062', NULL),
 	(10, 'Colonia Comexion Masculina', 65.28, 'Boticário', '27707', NULL),
-	(11, 'Colonia Coffe Seduction', 179.40, 'Boticário', '48139', NULL),
+	(11, 'Colonia Coffe Seduction', 169.91, 'Boticário', '48139', NULL),
 	(12, 'Body Spray Eudora', 20.93, 'Boticário', '58633', NULL),
 	(13, 'Body Spray La Victoria', 20.93, 'Boticário', '58640', NULL),
 	(14, 'Body Spray Lira', 20.93, 'Boticário', '58639', NULL);
