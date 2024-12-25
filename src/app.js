@@ -269,32 +269,23 @@ app.get('/api/orders/:id', async (req, res) => {
 });
 
 // Rota para atualizar o status de um pedido
-app.put('/api/orders/:id/status', async (req, res) => {
-  const orderId = req.params.id;
+app.put('/api/parcelas/:id', async (req, res) => {
+  const { id } = req.params;
   const { status } = req.body;
 
-  if (!status) {
-    return res.status(400).json({ error: 'O status é obrigatório!' });
-  }
-
-  const query = 'UPDATE orders SET status = ? WHERE id = ?';
   try {
-    const [results] = await connection.query(query, [status, orderId]);
-    if (results.affectedRows === 0) {
-      return res.status(404).json({ error: 'Pedido não encontrado' });
+    const query = `UPDATE parcelas SET status = ? WHERE id = ?`;
+    const result = await connection.query(query, [status, id]);
+
+    // Verifique se a atualização foi bem-sucedida
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Parcela não encontrada' });
     }
 
-    const selectQuery = `
-      SELECT o.id, o.client_id, o.payment_method, o.total_cost, o.status, c.name AS client_name
-      FROM orders o
-      JOIN clients c ON o.client_id = c.id
-      WHERE o.id = ?
-    `;
-    const [updatedResult] = await connection.query(selectQuery, [orderId]);
-    res.status(200).json(updatedResult[0]);
-  } catch (err) {
-    console.error('Erro ao atualizar o status do pedido:', err);
-    return res.status(500).json({ error: 'Erro ao atualizar o status do pedido' });
+    res.status(200).json({ message: 'Status da parcela atualizado com sucesso' });
+  } catch (error) {
+    console.error('Erro ao atualizar status da parcela:', error);
+    res.status(500).json({ error: 'Erro ao atualizar status da parcela' });
   }
 });
 
@@ -427,6 +418,23 @@ app.post('/api/promissorias', async (req, res) => {
   }
 });
 
+app.delete('/api/promissorias/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Primeiro, excluir as parcelas associadas
+    await connection.query(`DELETE FROM parcelas WHERE promissoria_id = ?`, [id]);
+
+    // Agora, excluir a promissória
+    await connection.query(`DELETE FROM promissorias WHERE id = ?`, [id]);
+
+    res.status(200).json({ message: 'Promissória e suas parcelas excluídas com sucesso' });
+  } catch (error) {
+    console.error('Erro ao excluir promissória:', error);
+    res.status(500).json({ error: 'Erro ao excluir promissória' });
+  }
+});
+
 // Rota para listar promissórias com valores das parcelas e número da NF
 app.get('/api/promissorias', async (req, res) => {
   try {
@@ -466,23 +474,6 @@ app.put('/api/promissorias/:promissoriaId/parcelas/:parcelaId', async (req, res)
   } catch (error) {
     console.error('Erro ao atualizar status da parcela:', error);
     res.status(500).json({ message: 'Erro ao atualizar a parcela.' });
-  }
-});
-
-// Rota para listar promissórias com valores das parcelas e número da NF
-app.get('/api/promissorias', async (req, res) => {
-  try {
-    const query = `
-      SELECT p.*, nf.numero AS numero_nf
-      FROM promissorias p
-      JOIN notas_fiscais nf ON nf.id = p.nota_fiscal_id;
-    `;
-    const [results] = await connection.query(query);
-    console.log(results); // Verifique aqui
-    res.json(results);
-  } catch (err) {
-    console.error('Erro ao buscar promissórias:', err);
-    return res.status(500).json({ error: 'Erro ao buscar promissórias' });
   }
 });
 

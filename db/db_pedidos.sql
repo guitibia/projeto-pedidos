@@ -51,11 +51,12 @@ CREATE TABLE IF NOT EXISTS `notas_fiscais` (
   `data_emissao` date NOT NULL,
   `valor` decimal(10,2) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Copiando dados para a tabela cosmeticos_db.notas_fiscais: ~1 rows (aproximadamente)
 INSERT INTO `notas_fiscais` (`id`, `numero`, `data_emissao`, `valor`) VALUES
-	(10, '5554', '2024-12-01', 1000.00);
+	(10, '5554', '2024-12-01', 1000.00),
+	(11, '5554', '2024-12-01', 1000.00);
 
 -- Copiando estrutura para tabela cosmeticos_db.orders
 CREATE TABLE IF NOT EXISTS `orders` (
@@ -114,14 +115,14 @@ CREATE TABLE IF NOT EXISTS `parcelas` (
   PRIMARY KEY (`id`),
   KEY `promissoria_id` (`promissoria_id`),
   CONSTRAINT `parcelas_ibfk_1` FOREIGN KEY (`promissoria_id`) REFERENCES `promissorias` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Copiando dados para a tabela cosmeticos_db.parcelas: ~4 rows (aproximadamente)
 INSERT INTO `parcelas` (`id`, `promissoria_id`, `numero_parcela`, `data_vencimento`, `valor`, `status`) VALUES
-	(13, 11, 1, '2025-01-02', 250.00, 'JÁ PAGA'),
-	(14, 11, 2, '2025-02-02', 250.00, 'JÁ PAGA'),
-	(15, 11, 3, '2025-03-02', 250.00, 'JÁ PAGA'),
-	(16, 11, 4, '2025-04-02', 250.00, 'JÁ PAGA');
+	(17, 12, 1, '2025-01-01', 250.00, 'PENDENTE'),
+	(18, 12, 2, '2025-02-01', 250.00, 'PENDENTE'),
+	(19, 12, 3, '2025-03-04', 250.00, 'PENDENTE'),
+	(20, 12, 4, '2025-04-01', 250.00, 'PENDENTE');
 
 -- Copiando estrutura para tabela cosmeticos_db.products
 CREATE TABLE IF NOT EXISTS `products` (
@@ -135,7 +136,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   KEY `code` (`code`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.products: ~13 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.products: ~11 rows (aproximadamente)
 INSERT INTO `products` (`id`, `name`, `cost`, `franchise`, `code`, `promotion_price`) VALUES
 	(1, 'Gel para Cabelo', 25.00, 'Boticário', '8080', NULL),
 	(2, 'Creme para Pés', 15.00, 'Eudora', '5566', NULL),
@@ -162,11 +163,11 @@ CREATE TABLE IF NOT EXISTS `promissorias` (
   PRIMARY KEY (`id`),
   KEY `nota_fiscal_id` (`nota_fiscal_id`),
   CONSTRAINT `promissorias_ibfk_1` FOREIGN KEY (`nota_fiscal_id`) REFERENCES `notas_fiscais` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Copiando dados para a tabela cosmeticos_db.promissorias: ~1 rows (aproximadamente)
 INSERT INTO `promissorias` (`id`, `nota_fiscal_id`, `valor`, `data_vencimento`, `status`, `parcelas`) VALUES
-	(11, 10, 1000.00, '2025-01-02', 'Pendente', 4);
+	(12, 11, 1000.00, '2025-01-01', 'Pendente', 4);
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
