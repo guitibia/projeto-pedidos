@@ -427,10 +427,15 @@ app.post('/api/promissorias', async (req, res) => {
   }
 });
 
-// Rota para listar promissórias
+// Rota para listar promissórias com valores das parcelas e número da NF
 app.get('/api/promissorias', async (req, res) => {
   try {
-    const [results] = await connection.query('SELECT * FROM promissorias');
+    const query = `
+      SELECT p.*, nf.numero AS numero_nf
+      FROM promissorias p
+      JOIN notas_fiscais nf ON nf.id = p.nota_fiscal_id;
+    `;
+    const [results] = await connection.query(query);
     res.json(results);
   } catch (err) {
     console.error('Erro ao buscar promissórias:', err);
@@ -464,15 +469,16 @@ app.put('/api/promissorias/:promissoriaId/parcelas/:parcelaId', async (req, res)
   }
 });
 
-// Rota para listar promissórias com valores das parcelas
+// Rota para listar promissórias com valores das parcelas e número da NF
 app.get('/api/promissorias', async (req, res) => {
   try {
     const query = `
-      SELECT p.*, 
-             (SELECT GROUP_CONCAT(valor SEPARATOR ', ') FROM parcelas WHERE promissoria_id = p.id) AS valores_parcelas
+      SELECT p.*, nf.numero AS numero_nf
       FROM promissorias p
+      JOIN notas_fiscais nf ON nf.id = p.nota_fiscal_id;
     `;
     const [results] = await connection.query(query);
+    console.log(results); // Verifique aqui
     res.json(results);
   } catch (err) {
     console.error('Erro ao buscar promissórias:', err);
