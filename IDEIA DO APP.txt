@@ -19,7 +19,3 @@ Cadastro de promisorias de pagamentos - e controle da mesma - FEITA MAS FALTA AL
 =========================================
 FAZER UMA PÁGINA DE LOGIN - IRA AJUDAR PARA FUTURAS IDEIAS
 =========================================
-
-=========================================
-ATUALIZAR LIST-CLIETS PARA QUE ELE RETORNE OS VALORES REAIS DOS PEDIDOS - ATUALIZAR PARA PUXAR AS QUANTIDADES DE ITENS E VALORES CORRETOS
-=========================================
