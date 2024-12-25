@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `clients` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.clients: ~11 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.clients: ~9 rows (aproximadamente)
 INSERT INTO `clients` (`id`, `name`, `address`, `house_number`, `neighborhood`, `phone`) VALUES
 	(1, 'Guilherme Moraes', 'David Carvalho', '233', 'Pratinha', '1999544947'),
 	(2, 'Teste', 'Teste teste teste', '1', 'teste', '1999544948'),
@@ -69,9 +69,9 @@ CREATE TABLE IF NOT EXISTS `orders` (
   PRIMARY KEY (`id`),
   KEY `client_id` (`client_id`),
   CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=69 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=87 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.orders: ~8 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.orders: ~5 rows (aproximadamente)
 INSERT INTO `orders` (`id`, `client_id`, `payment_method`, `installments`, `total_cost`, `combined_payment_value`, `status`) VALUES
 	(77, 9, 'PIX', 1, 68.64, NULL, 'Pendente'),
 	(78, 8, 'PIX', 1, 79.90, NULL, 'Pendente'),
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS `order_products` (
   CONSTRAINT `order_products_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela cosmeticos_db.order_products: ~10 rows (aproximadamente)
+-- Copiando dados para a tabela cosmeticos_db.order_products: ~7 rows (aproximadamente)
 INSERT INTO `order_products` (`order_id`, `product_id`, `sale_price`, `not_came`, `promotion_price`, `quantity`) VALUES
 	(77, 8, 34.32, 0, NULL, 2),
 	(78, 9, 79.90, 0, NULL, 1),
