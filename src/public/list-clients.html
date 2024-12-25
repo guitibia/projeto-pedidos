@@ -171,50 +171,54 @@
 
           // Gerar detalhes do pedido
           let productsHtml = order.products.map(product => {
+            const totalCost = (product.cost_price * (product.quantity || 1)).toFixed(2);
+            const totalSale = (product.sale_price * (product.quantity || 1)).toFixed(2);
             return `
-              <p>
-                ${product.product_name} - COD ${product.code} / 
-                Valor de Custo: R$ ${product.cost_price.toFixed(2)} / 
-                Valor de Venda: R$ ${product.sale_price.toFixed(2)}
-              </p>
-            `;
+          <p>
+            ${product.product_name} - COD ${product.code} / 
+            Quantidade: ${product.quantity || 1} / 
+            Valor de Custo: R$ ${totalCost} / 
+            Valor de Venda: R$ ${totalSale}
+          </p>
+        `;
           }).join('');
 
           // Detalhes do pedido no modal
           let paymentDetails = `<p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>`;
 
           if (order.payment_method === 'PARCELADO' && order.installments) {
-            const installmentValue = (calculateTotalSale(order.products) / order.installments).toFixed(2);
+            const totalSaleValue = calculateTotalSale(order.products);
+            const installmentValue = (totalSaleValue / order.installments).toFixed(2);
             paymentDetails += `
-              <p><strong>Valor da Compra:</strong> R$ ${calculateTotalSale(order.products)}</p>
-              <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
-              <p><strong>Valor de cada parcela:</strong> R$ ${installmentValue}</p>
-            `;
+          <p><strong>Valor da Compra:</strong> R$ ${totalSaleValue}</p>
+          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+          <p><strong>Valor de cada parcela:</strong> R$ ${installmentValue}</p>
+        `;
           } else if (order.payment_method === 'PAGAMENTO COMBINADO') {
             const totalPaid = order.combined_payment_value ? parseFloat(order.combined_payment_value) : 0;
             const remainingValue = (calculateTotalSale(order.products) - totalPaid).toFixed(2);
 
             paymentDetails += `
-              <p><strong>Valor da Compra:</strong> R$ ${calculateTotalSale(order.products)}</p>
-              <p><strong>Valor Pago no PIX:</strong> R$ ${totalPaid.toFixed(2)}</p>
-              <p><strong>Restante:</strong> R$ ${remainingValue}</p>
-              <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
-              <p><strong>Valor restante por parcela:</strong> R$ ${(remainingValue / order.installments).toFixed(2)}</p>
-            `;
+          <p><strong>Valor da Compra:</strong> R$ ${calculateTotalSale(order.products)}</p>
+          <p><strong>Valor Pago no PIX:</strong> R$ ${totalPaid.toFixed(2)}</p>
+          <p><strong>Restante:</strong> R$ ${remainingValue}</p>
+          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+          <p><strong>Valor restante por parcela:</strong> R$ ${(remainingValue / order.installments).toFixed(2)}</p>
+        `;
           }
 
           orderDetailsContent.innerHTML = `
-            <h4>ID do Pedido: ${order.id}</h4>
-            <p><strong>Cliente:</strong> ${order.client_name}</p>
-            <p><strong>Endereço para entrega:</strong> Rua ${order.client_address}, N° ${order.client_house_number} - Bairro: ${order.client_neighborhood}</p>
-            ${paymentDetails}
-            <h5>Produtos Pedidos:</h5>
-            ${productsHtml}
-            <h5>Totais:</h5>
-            <p><strong>Valor Total de Custo:</strong> R$ ${calculateTotalCost(order.products)}</p>
-            <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
-            <p><strong>Lucro:</strong> R$ ${calculateProfit(order.products)}</p>
-          `;
+        <h4>ID do Pedido: ${order.id}</h4>
+        <p><strong>Cliente:</strong> ${order.client_name}</p>
+        <p><strong>Endereço para entrega:</strong> Rua ${order.client_address}, N° ${order.client_house_number} - Bairro: ${order.client_neighborhood}</p>
+        ${paymentDetails}
+        <h5>Produtos Pedidos:</h5>
+        ${productsHtml}
+        <h5>Totais:</h5>
+        <p><strong>Valor Total de Custo:</strong> R$ ${calculateTotalCost(order.products)}</p>
+        <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
+        <p><strong>Lucro:</strong> R$ ${calculateProfit(order.products)}</p>
+      `;
 
           // Exibir o modal
           const orderDetailsModal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
@@ -226,17 +230,21 @@
         });
     }
 
-    // Funções de cálculo
+    // Função para calcular o valor total de custo
     function calculateTotalCost(products) {
-      return products.reduce((total, product) => total + product.cost_price, 0).toFixed(2);
+      return products.reduce((total, product) => total + (product.cost_price * (product.quantity || 1)), 0).toFixed(2);
     }
 
+    // Função para calcular o valor total de venda
     function calculateTotalSale(products) {
-      return products.reduce((total, product) => total + product.sale_price, 0).toFixed(2);
+      return products.reduce((total, product) => total + (product.sale_price * (product.quantity || 1)), 0).toFixed(2);
     }
 
+    // Função para calcular o lucro
     function calculateProfit(products) {
-      return (calculateTotalSale(products) - calculateTotalCost(products)).toFixed(2);
+      const totalSaleValue = calculateTotalSale(products);
+      const totalCostValue = calculateTotalCost(products);
+      return (totalSaleValue - totalCostValue).toFixed(2);
     }
 
     // Carregar clientes ao carregar a página
