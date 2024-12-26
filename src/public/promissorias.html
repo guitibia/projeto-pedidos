@@ -245,8 +245,11 @@
             }
 
             statusBadge[parcelaIndex - 1].textContent = 'JÁ PAGA'; // Atualiza o texto do badge
-            statusBadge[parcelaIndex - 1].classList.remove('badge-warning');
-            statusBadge[parcelaIndex - 1].classList.add('badge-success');
+            statusBadge[parcelaIndex - 1].classList.remove('badge-warning'); // Remove classe 'PENDENTE'
+            statusBadge[parcelaIndex - 1].classList.add('badge-success'); // Adiciona classe 'JÁ PAGA'
+            console.log('Promissoria ID:', promissoriaId);
+            console.log('Parcela ID:', parcelaId);
+            console.log('Status enviado:', status);
 
             Swal.fire('Sucesso!', 'Parcela marcada como paga!', 'success');
           } else {
