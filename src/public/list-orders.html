@@ -125,7 +125,7 @@
               <td>${order.id}</td>
               <td>${order.client_name || 'Cliente Desconhecido'}</td>
               <td>${order.payment_method}</td>
-              <td>${order.status || 'Pendente'}</td>
+              <td>${order.status || 'Pendente'}</td> <!-- O status será atualizado aqui -->
               <td>
                 <button class="btn btn-info btn-sm btn-custom" onclick="viewOrder(${order.id})">
                   <i class="bi bi-eye"></i> Ver
@@ -156,8 +156,9 @@
         confirmButtonText: 'Sim, excluir!',
       }).then((result) => {
         if (result.isConfirmed) {
+          // Chama a API para excluir o pedido
           fetch(`/api/orders/${orderId}`, {
-            method: 'DELETE',
+            method: 'DELETE', // Método DELETE
           })
             .then(response => {
               if (!response.ok) {
@@ -178,50 +179,39 @@
     }
 
     // Função para visualizar o pedido
+    // Função para visualizar o pedido
     function viewOrder(orderId) {
       fetch(`/api/orders/${orderId}`)
         .then(response => response.json())
         .then(order => {
           const orderDetailsContent = document.getElementById('orderDetailsContent');
 
-          // Agrupar os produtos por franquia e somar quantidades
+          // Agrupar os produtos por franquia
           const groupedProducts = order.products.reduce((groups, product) => {
             const franchise = product.franchise || 'Desconhecido';
 
             if (!groups[franchise]) {
-              groups[franchise] = {};
+              groups[franchise] = [];
             }
-
-            const quantity = product.quantity || 1; // Garante que a quantidade não seja undefined
-
-            if (!groups[franchise][product.product_name]) {
-              groups[franchise][product.product_name] = {
-                ...product,
-                quantity: quantity // Inicializa a quantidade do produto
-              };
-            } else {
-              groups[franchise][product.product_name].quantity += quantity; // Soma a quantidade
-            }
-
+            groups[franchise].push(product);
             return groups;
           }, {});
 
           // Gerar a lista de produtos agrupados por franquia
           const productsList = Object.keys(groupedProducts).map(franchise => {
-            const products = Object.values(groupedProducts[franchise]);
+            const products = groupedProducts[franchise];
 
             // Gerar HTML para cada produto dentro da franquia
             const productDetails = products.map(product => {
+              // Verificar se existe um preço promocional
               const salePrice = product.promotion_price ? product.promotion_price : product.sale_price;
-              const totalSale = (parseFloat(salePrice) * product.quantity).toFixed(2); // Total de venda
-              const totalCost = (parseFloat(product.cost_price) * product.quantity).toFixed(2); // Total de custo
+              const promoText = product.promotion_price ? ' (PROMOÇÃO)' : ''; // Texto indicando promoção
 
               return `
             <p>
               ${product.product_name} - COD ${product.code} / 
-              Quantidade: ${product.quantity} / 
-              Valor de Custo: R$ ${totalCost} / 
-              Valor de Venda: R$ ${totalSale}
+              Valor de Custo: R$ ${product.cost_price.toFixed(2)} ${promoText} / 
+              Valor de Venda: R$ ${salePrice.toFixed(2)}
             </p>
           `;
             }).join('');
@@ -234,21 +224,47 @@
         `;
           }).join('');
 
-          // Calcular valores totais com base na quantidade
-          const totalSaleValue = order.products.reduce((total, product) => {
-            const salePrice = product.promotion_price || product.sale_price;
-            return total + (parseFloat(salePrice) * (product.quantity || 1)); // Usa a quantidade correta
-          }, 0).toFixed(2);
-
-          const totalCostValue = order.products.reduce((total, product) => {
-            return total + (parseFloat(product.cost_price) * (product.quantity || 1)); // Usa a quantidade correta
-          }, 0).toFixed(2);
-
+          // Calcular valores totais
+          const totalSaleValue = order.products.reduce((total, product) => total + (product.promotion_price || product.sale_price), 0).toFixed(2);
+          const totalCostValue = order.products.reduce((total, product) => total + product.cost_price, 0).toFixed(2);
           const profitValue = (totalSaleValue - totalCostValue).toFixed(2);
-          const totalCostFromDB = parseFloat(order.total_cost).toFixed(2);
+
+          // Exibição condicional do método de pagamento
+          let paymentDetails = `<p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>`;
+
+          // Caso o pagamento seja parcelado
+          if (order.payment_method === 'PARCELADO' && order.installments) {
+            const installmentValue = (totalSaleValue / order.installments).toFixed(2);  // Calcula o valor de cada parcela
+            paymentDetails += `
+          <p><strong>Valor da Compra:</strong> R$ ${totalSaleValue} </p>
+          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+          <p><strong>Valor de cada parcela:</strong> R$ ${installmentValue}</p>
+        `;
+          }
+          // Caso o pagamento seja combinado
+          else if (order.payment_method === 'PAGAMENTO COMBINADO') {
+            const totalPaid = order.combined_payment_value ? parseFloat(order.combined_payment_value) : 0;  // Garantir que totalPaid seja um número
+            const remainingValue = (totalSaleValue - totalPaid).toFixed(2);
+
+            // Exibir valor pago, restante e número de parcelas
+            paymentDetails += `
+          <p><strong>Valor da Compra:</strong> R$ ${totalSaleValue} </p>  
+          <p><strong>Valor Pago no PIX:</strong> R$ ${totalPaid.toFixed(2)}</p>
+          <p><strong>Restante:</strong> R$ ${remainingValue}</p>
+        `;
+
+            if (order.installments) {
+              const remainingValuePerInstallment = (remainingValue / order.installments).toFixed(2);
+              paymentDetails += `
+            <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+            <p><strong>Valor restante por parcela:</strong> R$ ${remainingValuePerInstallment}</p>
+          `;
+            }
+          }
 
           // Preencher os detalhes do modal
           orderDetailsContent.innerHTML = `
+<<<<<<< HEAD
             <h4>ID do Pedido: ${order.id}</h4>
             <p><strong>Cliente:</strong> ${order.client_name}</p>
             <p><strong>Endereço para entrega:</strong> 
@@ -262,26 +278,66 @@
            
             <p><strong>Lucro:</strong> R$ ${profitValue} Reais</p>
           `;
+=======
+        <h4>ID do Pedido: ${order.id}</h4>
+        <p><strong>Cliente:</strong> ${order.client_name}</p>
+        <p><strong>Endereço para entrega:</strong> 
+          Rua ${order.client_address}
+          N° ${order.client_house_number}
+          Bairro - ${order.client_neighborhood}</p>
+        ${paymentDetails}
+        <h5>Produtos Pedidos:</h5>
+        ${productsList} <!-- Exibe os produtos com as informações formatadas -->
+        <h5>Totais:</h5>
+        <p><strong>Valor Total de Custo:</strong> R$ ${totalCostValue} / <strong>Valor Total de Venda:</strong> R$ ${totalSaleValue}</p>
+        <p><strong>Lucro:</strong> R$ ${profitValue} Reais</p>
+      `;
+>>>>>>> parent of 951355e (att)
 
           // Exibir o modal
           const orderDetailsModal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
           orderDetailsModal.show();
 
-          // Atualizar o botão "Marcar como Entregue"
-          const markAsDeliveredButton = document.getElementById('markAsDeliveredButton');
-          markAsDeliveredButton.onclick = function () {
-            markAsDelivered(order.id);
-          };
-
-          // Atualizar o botão "Imprimir Pedido"
-          const printButton = document.getElementById('printButton');
-          printButton.onclick = function () {
-            printOrderDetails(order);
-          };
+          // Configurar os botões do modal
+          document.getElementById('printButton').onclick = () => printOrderDetails(order);
+          document.getElementById('markAsDeliveredButton').onclick = () => markOrderAsDelivered(order.id);
         })
         .catch(error => {
           console.error('Erro ao carregar detalhes do pedido:', error);
           Swal.fire('Erro', 'Erro ao carregar detalhes do pedido.', 'error');
+        });
+    }
+
+
+    // Função para marcar o pedido como entregue
+    function markOrderAsDelivered(orderId) {
+      fetch(`/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'Entregue' }) // Atualiza o status para "Entregue"
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Erro ao atualizar o status do pedido');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Log para verificar a resposta da API
+          console.log('Status do pedido atualizado:', data);  // Verifique aqui se o status retornado é 'Entregue'
+
+          // Exibe a mensagem de sucesso
+          Swal.fire('Sucesso', 'Pedido marcado como entregue!', 'success');
+
+          // Agora, vamos forçar a atualização da lista de pedidos na página
+          loadOrders(); // Recarrega a lista de pedidos
+
+        })
+        .catch(error => {
+          console.error('Erro ao atualizar status do pedido:', error);
+          Swal.fire('Erro', 'Erro ao marcar o pedido como entregue', 'error');
         });
     }
 
@@ -335,11 +391,21 @@
             margin-top: 20px;
             font-size: 16px;
             font-weight: bold;
+<<<<<<< HEAD
             text-align: center;
+=======
+            text-align: center;  /* Centraliza os totais */
+>>>>>>> parent of 951355e (att)
           }
           .totals p {
             margin: 4px 0;
           }
+<<<<<<< HEAD
+=======
+          .totals p span {
+            font-weight: normal;
+          }
+>>>>>>> parent of 951355e (att)
           .separator {
             border-top: 2px solid #2c3e50;
             margin: 20px 0;
@@ -351,6 +417,10 @@
           <h3>Detalhes do Pedido #${order.id}</h3>
         </div>
 
+<<<<<<< HEAD
+=======
+        <!-- Informações do cliente -->
+>>>>>>> parent of 951355e (att)
         <p><strong>Cliente:</strong> ${order.client_name}</p>
         <p><strong>Endereço para entrega:</strong><br>
           Rua ${order.client_address}<br>
@@ -359,15 +429,41 @@
 
         <div class="separator"></div>
 
+<<<<<<< HEAD
         <p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>
         <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
 
         <div class="separator"></div>
 
+=======
+        <!-- Método de Pagamento na impressão -->
+        <p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>
+        <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
+        ${order.payment_method === 'PARCELADO' ? `
+          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+          <p><strong>Valor por parcela:</strong> R$ ${(parseFloat(calculateTotalSale(order.products)) / order.installments).toFixed(2)}</p>
+        ` : ''}
+        
+        <!-- Se o pagamento for combinado, exibe o valor pago, restante e parcelas -->
+        ${order.payment_method === 'PAGAMENTO COMBINADO' ? `
+          <p><strong>Valor Pago:</strong> R$ ${parseFloat(order.combined_payment_value).toFixed(2)}</p>
+          <p><strong>Restante:</strong> R$ ${(parseFloat(order.total_cost) - parseFloat(order.combined_payment_value)).toFixed(2)}</p>
+          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+          <p><strong>Valor restante por parcela:</strong> R$ ${((parseFloat(order.total_cost) - parseFloat(order.combined_payment_value)) / order.installments).toFixed(2)}</p>
+        ` : ''}
+
+        <div class="separator"></div>
+
+        <!-- Status do pedido -->
+>>>>>>> parent of 951355e (att)
         <p><strong>Status:</strong> ${order.status || 'Pendente'}</p>
 
         <div class="section-title">Produtos Pedidos:</div>
         <div class="product-list">
+<<<<<<< HEAD
+=======
+          <!-- Agrupar produtos por franquia -->
+>>>>>>> parent of 951355e (att)
           ${groupProductsByFranchise(order.products)}
         </div>
 
@@ -405,7 +501,10 @@
           productHtml += `
         <div class="product-item">
           ${product.product_name} - COD ${product.code} / 
+<<<<<<< HEAD
           Quantidade: ${product.quantity} / 
+=======
+>>>>>>> parent of 951355e (att)
           Valor de Venda: R$ ${product.sale_price.toFixed(2)}
         </div>
       `;
@@ -417,12 +516,12 @@
 
     // Função para calcular o valor total de custo
     function calculateTotalCost(products) {
-      return products.reduce((total, product) => total + (product.cost_price * (product.quantity || 1)), 0).toFixed(2);
+      return products.reduce((total, product) => total + product.cost_price, 0).toFixed(2);
     }
 
     // Função para calcular o valor total de venda
     function calculateTotalSale(products) {
-      return products.reduce((total, product) => total + (product.sale_price * (product.quantity || 1)), 0).toFixed(2);
+      return products.reduce((total, product) => total + product.sale_price, 0).toFixed(2);
     }
 
     // Função para calcular o lucro
@@ -430,31 +529,6 @@
       const totalSaleValue = calculateTotalSale(products);
       const totalCostValue = calculateTotalCost(products);
       return (totalSaleValue - totalCostValue).toFixed(2);
-    }
-
-    // Função para marcar o pedido como entregue
-    function markAsDelivered(orderId) {
-      fetch(`/api/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'Entregue' }), // Passando o novo status
-      })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Erro ao marcar como entregue');
-          }
-          return response.json();
-        })
-        .then(data => {
-          Swal.fire('Sucesso', 'Pedido marcado como entregue!', 'success');
-          loadOrders(); // Recarrega a lista de pedidos
-        })
-        .catch(error => {
-          console.error('Erro ao marcar pedido como entregue:', error);
-          Swal.fire('Erro', 'Erro ao marcar pedido como entregue.', 'error');
-        });
     }
 
 
