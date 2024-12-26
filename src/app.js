@@ -287,23 +287,26 @@ app.get('/api/orders/:id', async (req, res) => {
 });
 
 // Rota para atualizar o status de um pedido
-app.put('/api/parcelas/:id', async (req, res) => {
-  const { id } = req.params;
+app.put('/api/orders/:id/status', async (req, res) => {
+  const orderId = req.params.id;
   const { status } = req.body;
 
-  try {
-    const query = `UPDATE parcelas SET status = ? WHERE id = ?`;
-    const result = await connection.query(query, [status, id]);
+  if (!status) {
+    return res.status(400).json({ error: 'O status é obrigatório!' });
+  }
 
-    // Verifique se a atualização foi bem-sucedida
+  try {
+    const query = 'UPDATE orders SET status = ? WHERE id = ?';
+    const [result] = await connection.query(query, [status, orderId]);
+
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Parcela não encontrada' });
+      return res.status(404).json({ error: 'Pedido não encontrado' });
     }
 
-    res.status(200).json({ message: 'Status da parcela atualizado com sucesso' });
+    res.status(200).json({ message: 'Status do pedido atualizado com sucesso!' });
   } catch (error) {
-    console.error('Erro ao atualizar status da parcela:', error);
-    res.status(500).json({ error: 'Erro ao atualizar status da parcela' });
+    console.error('Erro ao atualizar status do pedido:', error);
+    res.status(500).json({ error: 'Erro ao atualizar status do pedido' });
   }
 });
 
