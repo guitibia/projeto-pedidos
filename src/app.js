@@ -456,20 +456,32 @@ app.put('/api/promissorias/:promissoriaId/parcelas/:parcelaId', async (req, res)
   const { promissoriaId, parcelaId } = req.params;
   const { status } = req.body;
 
+  const promissoriaIdNum = parseInt(promissoriaId);
+  const parcelaIdNum = parseInt(parcelaId); // Aqui você captura o número da parcela
+
+  console.log(`Atualizando parcela: promissoriaId=${promissoriaIdNum}, parcelaId=${parcelaIdNum}, status=${status}`);
+
   if (!status) {
     return res.status(400).json({ error: 'O status é obrigatório!' });
+  }
+
+  const validStatuses = ['JÁ PAGA', 'PENDENTE', 'CANCELADA'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Status inválido!' });
   }
 
   try {
     const [result] = await connection.query(
       `UPDATE parcelas SET status = ? WHERE promissoria_id = ? AND numero_parcela = ?`,
-      [status, promissoriaId, parseInt(parcelaId)]
+      [status, promissoriaIdNum, parcelaIdNum]
     );
 
+    console.log(`Resultado da atualização: ${JSON.stringify(result)}`);
+
     if (result.affectedRows > 0) {
-      res.json({ message: 'Parcela atualizada com sucesso' });
+      res.json({ message: 'Status da parcela atualizado com sucesso' });
     } else {
-      res.status(404).json({ message: 'Parcela não encontrada.' });
+      res.status(404).json({ message: 'Parcela não encontrada ou não foi alterada.' });
     }
   } catch (error) {
     console.error('Erro ao atualizar status da parcela:', error);
