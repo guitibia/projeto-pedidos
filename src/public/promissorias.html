@@ -189,7 +189,7 @@
               const novaData = new Date(dataVencimento);
               novaData.setMonth(dataVencimento.getMonth() + i); // Adiciona meses
               vencimentos.push(novaData.toLocaleDateString('pt-BR')); // Formata a data
-              status.push('Pendente'); // Status inicial
+              status.push('PENDENTE'); // Status inicial
               parcelaIds.push(promissoria.id + '_' + (i + 1)); // Gera um ID único para cada parcela
             }
 
