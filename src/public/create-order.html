@@ -262,17 +262,16 @@
       addProductBtn.addEventListener('click', () => {
         const productId = productsSelect.value;
         const salePrice = parseFloat(salePriceInput.value);
-        const productQuantity = parseInt(document.getElementById('productQuantity').value);
+        const productQuantity = parseInt(document.getElementById('productQuantity').value); // Captura a quantidade
         const isPromotionalPrice = promotionalPriceCheckbox.checked;
         let productCost = parseFloat(productCostInput.value);
 
         // Validações
-        if (!productId || isNaN(salePrice) || salePrice <= 0 || productQuantity < 1) {
+        if (!productId || isNaN(salePrice) || salePrice <= 0 || productQuantity < 1) { // Use productQuantity aqui
           Swal.fire('Erro', 'Selecione um produto, insira um valor de venda válido e defina a quantidade.', 'error');
           return;
         }
 
-        // Se o preço promocional estiver ativo, e um valor de custo foi inserido, use-o.
         if (isPromotionalPrice && isNaN(productCost)) {
           Swal.fire('Erro', 'Insira um valor de custo válido para o produto promocional.', 'error');
           return;
@@ -284,7 +283,7 @@
 
         // Adicionar o produto à lista de produtos
         const productItem = document.createElement('li');
-        const totalProductPrice = salePrice * productQuantity;
+        const totalProductPrice = salePrice * productQuantity; // Calcular o preço total do produto
         productItem.classList.add('list-group-item');
         productItem.textContent = `${productName} - COD ${productCode} - Custo: ${productCost.toFixed(2)} - Venda: ${salePrice.toFixed(2)} - Quantidade: ${productQuantity} - Total: ${totalProductPrice.toFixed(2)}${isPromotionalPrice ? ' (Promoção)' : ''}`;
 
@@ -293,15 +292,15 @@
         removeButton.classList.add('btn', 'btn-danger', 'btn-sm', 'ms-2');
         removeButton.onclick = () => {
           productList.removeChild(productItem);
-          totalValue -= totalProductPrice;
+          totalValue -= totalProductPrice; // Atualizar totalValue
           totalValueInput.value = totalValue.toFixed(2);
-          productsList = productsList.filter(product => product.id !== productId || product.quantity !== productQuantity);
+          productsList = productsList.filter(product => product.id !== productId || product.quantity !== productQuantity); // Ajustar filtro
         };
 
         productItem.appendChild(removeButton);
         productList.appendChild(productItem);
 
-        totalValue += totalProductPrice;
+        totalValue += totalProductPrice; // Somar o total do produto
         totalValueInput.value = totalValue.toFixed(2);
 
         // Adicionar o produto à lista de produtos com a quantidade
@@ -311,8 +310,8 @@
           salePrice,
           code: productCode,
           isPromotionalPrice,
-          productCost: isPromotionalPrice ? productCost : null, // Aqui você garante que o custo promocional seja salvo
-          quantity: productQuantity,
+          productCost: isPromotionalPrice ? productCost : null,
+          quantity: productQuantity, // Aqui está a quantidade
         });
       });
 
@@ -364,9 +363,8 @@
             id: product.id,
             quantity: product.quantity,
             salePrice: product.salePrice,
-            promotionPrice: product.isPromotionalPrice ? product.productCost : null, // Aqui é onde você define promotion_price
             isPromotionalPrice: product.isPromotionalPrice,
-            productCost: product.isPromotionalPrice ? product.productCost : null
+            productCost: product.productCost
           })),
           totalValue: totalValue,
           paymentMethod: formObject.paymentMethod,
@@ -393,7 +391,6 @@
           });
       });
     });
-
   </script>
 
 </body>
