@@ -87,7 +87,12 @@ app.post('/api/orders', async (req, res) => {
     if (!product.id || isNaN(parseFloat(product.salePrice)) || parseFloat(product.salePrice) <= 0) {
       return { error: `Preço de venda inválido para o produto ID "${product.id || 'desconhecido'}"` };
     }
-    return { id: product.id, salePrice: parseFloat(product.salePrice), quantity: product.quantity }; // Captura a quantidade
+    return {
+      id: product.id,
+      salePrice: parseFloat(product.salePrice),
+      promotionPrice: product.promotionPrice || null, // Captura o preço promocional
+      quantity: product.quantity
+    };
   });
 
   const invalidProduct = validProducts.find(product => product.error);
@@ -97,29 +102,42 @@ app.post('/api/orders', async (req, res) => {
 
   try {
     const productQueries = validProducts.map(product => {
-      return connection.query('SELECT id FROM products WHERE id = ?', [product.id])
+      return connection.query('SELECT id, promotion_price FROM products WHERE id = ?', [product.id])
         .then(([results]) => {
           if (results.length === 0) {
             throw new Error(`Produto ID "${product.id}" não encontrado.`);
           }
-          return { productId: results[0].id, salePrice: product.salePrice, quantity: product.quantity }; // Inclui a quantidade
+          const promotionPrice = product.promotionPrice !== null ? product.promotionPrice : results[0].promotion_price; // Usa o preço promocional do payload ou do banco
+          return {
+            productId: results[0].id,
+            salePrice: product.salePrice,
+            promotionPrice: promotionPrice, // Inclui o preço promocional
+            quantity: product.quantity
+          };
         });
     });
 
-    const productData = await Promise.all(productQueries);
+    // Aguarda todas as consultas de produtos
+    const productsWithPrices = await Promise.all(productQueries);
 
-    const queryOrder = 'INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value) VALUES (?, ?, ?, ?, ?)';
-    const [orderResult] = await connection.query(queryOrder, [clientId, paymentMethod, installments || null, totalValue, combinedPaymentValue || null]);
+    // Salvar o pedido na tabela orders e obter o ID
+    const [orderResult] = await connection.query('INSERT INTO orders (client_id, payment_method, total_cost) VALUES (?, ?, ?)',
+      [clientId, paymentMethod, totalValue]);
 
-    const orderId = orderResult.insertId;
-    const productQuery = 'INSERT INTO order_products (order_id, product_id, sale_price, quantity) VALUES ?'; // Inclui a quantidade
-    const productsValues = productData.map(product => [orderId, product.productId, product.salePrice, product.quantity]); // Mapeia a quantidade
+    const orderId = orderResult.insertId; // Obter o ID do pedido inserido
 
-    await connection.query(productQuery, [productsValues]);
-    res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue });
+    // Insira os dados na tabela order_products
+    const insertQueries = productsWithPrices.map(product => {
+      return connection.query('INSERT INTO order_products (order_id, product_id, sale_price, promotion_price, quantity) VALUES (?, ?, ?, ?, ?)',
+        [orderId, product.productId, product.salePrice, product.promotionPrice, product.quantity]);
+    });
+
+    await Promise.all(insertQueries); // Aguarda todas as inserções
+
+    res.status(201).json({ orderId });
   } catch (error) {
-    console.error('Erro ao processar produtos:', error);
-    res.status(400).json({ error: error.message });
+    console.error('Erro ao processar o pedido:', error);
+    res.status(500).json({ error: 'Erro ao criar pedido' });
   }
 });
 
