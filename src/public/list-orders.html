@@ -265,6 +265,7 @@
           // Preencher os detalhes do modal
           orderDetailsContent.innerHTML = `
 <<<<<<< HEAD
+<<<<<<< HEAD
             <h4>ID do Pedido: ${order.id}</h4>
             <p><strong>Cliente:</strong> ${order.client_name}</p>
             <p><strong>Endereço para entrega:</strong> 
@@ -279,6 +280,8 @@
             <p><strong>Lucro:</strong> R$ ${profitValue} Reais</p>
           `;
 =======
+=======
+>>>>>>> parent of 951355e (att)
         <h4>ID do Pedido: ${order.id}</h4>
         <p><strong>Cliente:</strong> ${order.client_name}</p>
         <p><strong>Endereço para entrega:</strong> 
@@ -292,6 +295,9 @@
         <p><strong>Valor Total de Custo:</strong> R$ ${totalCostValue} / <strong>Valor Total de Venda:</strong> R$ ${totalSaleValue}</p>
         <p><strong>Lucro:</strong> R$ ${profitValue} Reais</p>
       `;
+<<<<<<< HEAD
+>>>>>>> parent of 951355e (att)
+=======
 >>>>>>> parent of 951355e (att)
 
           // Exibir o modal
@@ -392,7 +398,11 @@
             font-size: 16px;
             font-weight: bold;
 <<<<<<< HEAD
+<<<<<<< HEAD
             text-align: center;
+=======
+            text-align: center;  /* Centraliza os totais */
+>>>>>>> parent of 951355e (att)
 =======
             text-align: center;  /* Centraliza os totais */
 >>>>>>> parent of 951355e (att)
@@ -401,6 +411,12 @@
             margin: 4px 0;
           }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+          .totals p span {
+            font-weight: normal;
+          }
+>>>>>>> parent of 951355e (att)
 =======
           .totals p span {
             font-weight: normal;
@@ -418,6 +434,10 @@
         </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+        <!-- Informações do cliente -->
+>>>>>>> parent of 951355e (att)
 =======
         <!-- Informações do cliente -->
 >>>>>>> parent of 951355e (att)
@@ -429,6 +449,7 @@
 
         <div class="separator"></div>
 
+<<<<<<< HEAD
 <<<<<<< HEAD
         <p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>
         <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
@@ -467,6 +488,35 @@
           ${groupProductsByFranchise(order.products)}
         </div>
 
+=======
+        <!-- Método de Pagamento na impressão -->
+        <p><strong>Método de Pagamento:</strong> ${order.payment_method}</p>
+        <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
+        ${order.payment_method === 'PARCELADO' ? `
+          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+          <p><strong>Valor por parcela:</strong> R$ ${(parseFloat(calculateTotalSale(order.products)) / order.installments).toFixed(2)}</p>
+        ` : ''}
+        
+        <!-- Se o pagamento for combinado, exibe o valor pago, restante e parcelas -->
+        ${order.payment_method === 'PAGAMENTO COMBINADO' ? `
+          <p><strong>Valor Pago:</strong> R$ ${parseFloat(order.combined_payment_value).toFixed(2)}</p>
+          <p><strong>Restante:</strong> R$ ${(parseFloat(order.total_cost) - parseFloat(order.combined_payment_value)).toFixed(2)}</p>
+          <p><strong>Parcelado em:</strong> ${order.installments} vezes</p>
+          <p><strong>Valor restante por parcela:</strong> R$ ${((parseFloat(order.total_cost) - parseFloat(order.combined_payment_value)) / order.installments).toFixed(2)}</p>
+        ` : ''}
+
+        <div class="separator"></div>
+
+        <!-- Status do pedido -->
+        <p><strong>Status:</strong> ${order.status || 'Pendente'}</p>
+
+        <div class="section-title">Produtos Pedidos:</div>
+        <div class="product-list">
+          <!-- Agrupar produtos por franquia -->
+          ${groupProductsByFranchise(order.products)}
+        </div>
+
+>>>>>>> parent of 951355e (att)
         <div class="totals">
           <p><strong>Valor Total de Custo:</strong> R$ ${calculateTotalCost(order.products)}</p>
           <p><strong>Valor Total de Venda:</strong> R$ ${calculateTotalSale(order.products)}</p>
@@ -502,7 +552,10 @@
         <div class="product-item">
           ${product.product_name} - COD ${product.code} / 
 <<<<<<< HEAD
+<<<<<<< HEAD
           Quantidade: ${product.quantity} / 
+=======
+>>>>>>> parent of 951355e (att)
 =======
 >>>>>>> parent of 951355e (att)
           Valor de Venda: R$ ${product.sale_price.toFixed(2)}
