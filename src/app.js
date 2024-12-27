@@ -486,8 +486,6 @@ app.put('/api/promissorias/:promissoriaId/parcelas/:parcelaId', async (req, res)
   const promissoriaIdNum = parseInt(promissoriaId);
   const parcelaIdNum = parseInt(parcelaId); // Aqui você captura o número da parcela
 
-  console.log(`Atualizando parcela: promissoriaId=${promissoriaIdNum}, parcelaId=${parcelaIdNum}, status=${status}`);
-
   // Verifica se o status foi fornecido
   if (!status) {
     return res.status(400).json({ error: 'O status é obrigatório!' });
@@ -504,8 +502,6 @@ app.put('/api/promissorias/:promissoriaId/parcelas/:parcelaId', async (req, res)
       `UPDATE parcelas SET status = ? WHERE promissoria_id = ? AND numero_parcela = ?`,
       [status, promissoriaIdNum, parcelaIdNum]
     );
-
-    console.log(`Resultado da atualização: ${JSON.stringify(result)}`);
 
     // Verifica se a atualização foi bem-sucedida
     if (result.affectedRows > 0) {
