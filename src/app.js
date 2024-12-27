@@ -395,18 +395,20 @@ app.post('/api/promissorias', async (req, res) => {
   }
 
   try {
+    // Inserir Nota Fiscal
     const queryNF = 'INSERT INTO notas_fiscais (numero, data_emissao, valor) VALUES (?, ?, ?)';
     const [resultsNF] = await connection.query(queryNF, [numero_nf, data_emissao, valor_nf]);
     const notaFiscalId = resultsNF.insertId;
 
+    // Inserir Promissória
     const queryProm = 'INSERT INTO promissorias (nota_fiscal_id, valor, data_vencimento, parcelas) VALUES (?, ?, ?, ?)';
     const [resultsProm] = await connection.query(queryProm, [notaFiscalId, valor_parcela * parcelas, data_vencimento, parcelas]);
     const promissoriaId = resultsProm.insertId;
 
-    // Inserir parcelas na tabela "parcelas"
+    // Inserir Parcelas
     for (let i = 0; i < parcelas; i++) {
       const dataAtual = new Date(data_vencimento);
-      dataAtual.setMonth(dataAtual.getMonth() + i); // Ajusta a data de vencimento para cada parcela
+      dataAtual.setMonth(dataAtual.getMonth() + i); // Incrementa o mês para cada parcela
 
       await connection.query(
         'INSERT INTO parcelas (promissoria_id, numero_parcela, data_vencimento, valor) VALUES (?, ?, ?, ?)',
@@ -414,30 +416,14 @@ app.post('/api/promissorias', async (req, res) => {
       );
     }
 
-    res.status(201).json({ message: 'Promissória e Nota Fiscal cadastradas com sucesso!' });
+    res.status(201).json({ message: 'Promissória e Nota Fiscal cadastradas com sucesso!', promissoriaId });
   } catch (err) {
     console.error('Erro ao cadastrar promissória:', err);
     return res.status(500).json({ error: 'Erro ao cadastrar promissória' });
   }
 });
 
-app.delete('/api/promissorias/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    // Primeiro, excluir as parcelas associadas
-    await connection.query(`DELETE FROM parcelas WHERE promissoria_id = ?`, [id]);
-
-    // Agora, excluir a promissória
-    await connection.query(`DELETE FROM promissorias WHERE id = ?`, [id]);
-
-    res.status(200).json({ message: 'Promissória e suas parcelas excluídas com sucesso' });
-  } catch (error) {
-    console.error('Erro ao excluir promissória:', error);
-    res.status(500).json({ error: 'Erro ao excluir promissória' });
-  }
-});
-
+// Rota para listar promissórias com valores das parcelas e número da NF
 // Rota para listar promissórias com valores das parcelas e número da NF
 app.get('/api/promissorias', async (req, res) => {
   try {
@@ -525,6 +511,23 @@ app.get('/api/promissorias/:id/parcelas', async (req, res) => {
   } catch (err) {
     console.error('Erro ao buscar parcelas:', err);
     return res.status(500).json({ error: 'Erro ao buscar parcelas' });
+  }
+});
+
+// Rota para excluir a promissória
+app.delete('/api/promissorias/:id', async (req, res) => {
+  const id = req.params.id;
+  const query = 'DELETE FROM promissorias WHERE id = ?';
+
+  try {
+    const [results] = await connection.query(query, [id]);
+    if (results.affectedRows === 0) {
+      return res.status(404).send({ message: 'Promissória não encontrada' });
+    }
+    res.send({ message: 'Promissória excluída com sucesso' });
+  } catch (error) {
+    console.error('Erro ao excluir a promissória:', error);
+    return res.status(500).send({ message: 'Erro ao excluir a promissória' });
   }
 });
 

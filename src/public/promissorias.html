@@ -126,10 +126,19 @@
 
       const numeroNF = document.getElementById('numero_nf').value;
       const dataEmissao = document.getElementById('data_emissao').value;
-      const valorNF = document.getElementById('valor_nf').value;
-      const parcelas = document.getElementById('parcelas').value;
-      const valorParcela = document.getElementById('valor_parcela').value;
+      const valorNF = parseFloat(document.getElementById('valor_nf').value);
+      const parcelas = parseInt(document.getElementById('parcelas').value);
+      const valorParcela = parseFloat(document.getElementById('valor_parcela').value);
       const dataVencimento = document.getElementById('data_vencimento').value;
+
+      // Verificação básica
+      if (!numeroNF || !dataEmissao || isNaN(valorNF) || isNaN(parcelas) || isNaN(valorParcela) || !dataVencimento) {
+        return Swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: 'Todos os campos devem ser preenchidos corretamente!',
+        });
+      }
 
       fetch('/api/promissorias', {
         method: 'POST',
@@ -147,7 +156,9 @@
       })
         .then(response => {
           if (!response.ok) {
-            throw new Error('Erro ao cadastrar a promissória');
+            return response.json().then(err => {
+              throw new Error(err.error || 'Erro ao cadastrar a promissória');
+            });
           }
           return response.json();
         })
@@ -157,14 +168,14 @@
             title: 'Sucesso!',
             text: data.message,
           });
-          $('#cadastrarModal').modal('hide'); // Fecha o modal
+          $('#cadastrarModal').modal('hide');
           loadPromissorias();
         })
         .catch(error => {
           Swal.fire({
             icon: 'error',
             title: 'Erro!',
-            text: 'Ocorreu um erro ao cadastrar a promissória.',
+            text: error.message,
           });
         });
     });
@@ -176,36 +187,42 @@
           const list = document.getElementById('promissorias-list');
           list.innerHTML = ''; // Limpa a lista
           data.forEach(promissoria => {
-            const valorTotal = parseFloat(promissoria.valor) || 0; // Converte para número
-            const numeroNF = promissoria.numero_nf; // Acesse o número da NF aqui
+            console.log(`N° da NF: ${promissoria.numero_nf}`);
+            console.log(`Valor Total da NF: R$ ${promissoria.valor}`); // Certifique-se de que 'valor' está correto
+
+            const valorTotal = parseFloat(promissoria.valor) || 0;
+            const numeroNF = promissoria.numero_nf;
             const vencimentos = [];
-            const status = []; // Array para armazenar o status de cada parcela
-            const parcelaIds = []; // Array para armazenar os IDs das parcelas
+            const status = [];
+            const parcelaIds = [];
+
+            // Adiciona log para verificar as parcelas
+            console.log(promissoria.parcelas); // Verifique se as parcelas estão corretas
 
             promissoria.parcelas.forEach((parcela, index) => {
               const dataVencimento = new Date(parcela.data_vencimento);
               vencimentos.push(dataVencimento.toLocaleDateString('pt-BR')); // Formata a data
-              status.push(parcela.status); // Pega o status da parcela
-              parcelaIds.push(promissoria.id + '_' + (index + 1)); // Gera um ID único para cada parcela
+              status.push(parcela.status);
+              parcelaIds.push(promissoria.id + '_' + (index + 1));
             });
 
             const item = document.createElement('li');
             item.className = 'list-group-item';
-            item.setAttribute('data-id', promissoria.id); // ID da promissória
+            item.setAttribute('data-id', promissoria.id);
             item.innerHTML = `
-  <div>
-    <strong>N° da NF:</strong> ${numeroNF} <br>
-    <strong>Valor Total da NF:</strong> R$ ${valorTotal.toFixed(2)} <br>
-    <strong>N° de Parcelas:</strong> ${promissoria.parcelas.length} <br>
-    ${vencimentos.map((data, index) => `
-      Vencimento da ${index + 1}ª parcela: ${data} 
-      <span class="badge ${status[index] === 'Pago' ? 'bg-success' : 'bg-warning'} ms-2">${status[index]}</span>
-      <button class="btn btn-success btn-sm ms-2" onclick="marcarComoPaga(${promissoria.id}, '${parcelaIds[index]}', ${index + 1})">Marcar como Paga</button>
-      <br>
-    `).join('')}
-    <button class="btn btn-danger btn-sm mt-2" onclick="excluirPromissoria(${promissoria.id})">Excluir</button>
-  </div>
-`;
+                    <div>
+                        <strong>N° da NF:</strong> ${numeroNF} <br>
+                        <strong>Valor Total da NF:</strong> R$ ${valorTotal.toFixed(2)} <br>
+                        <strong>N° de Parcelas:</strong> ${promissoria.parcelas.length} <br>
+                        ${vencimentos.map((data, index) => `
+                            Vencimento da ${index + 1}ª parcela: ${data} 
+                            <span class="badge ${status[index] === 'Pago' ? 'bg-success' : 'bg-warning'} ms-2">${status[index]}</span>
+                            <button class="btn btn-success btn-sm ms-2" onclick="marcarComoPaga(${promissoria.id}, '${parcelaIds[index]}', ${index + 1})">Marcar como Paga</button>
+                            <br>
+                        `).join('')}
+                        <button class="btn btn-danger btn-sm mt-2" onclick="excluirPromissoria(${promissoria.id})">Excluir</button>
+                    </div>
+                `;
             list.appendChild(item);
           });
         })
@@ -213,6 +230,7 @@
           console.error('Erro ao carregar promissórias:', error);
         });
     }
+
 
     function excluirPromissoria(promissoriaId) {
       fetch(`/api/promissorias/${promissoriaId}`, {
