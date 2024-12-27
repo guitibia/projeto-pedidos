@@ -424,15 +424,14 @@ app.post('/api/promissorias', async (req, res) => {
 });
 
 // Rota para listar promissórias com valores das parcelas e número da NF
-// Rota para listar promissórias com valores das parcelas e número da NF
 app.get('/api/promissorias', async (req, res) => {
   try {
     const query = `
-      SELECT p.*, nf.numero AS numero_nf, parc.numero_parcela, parc.status
-      FROM promissorias p
-      JOIN notas_fiscais nf ON nf.id = p.nota_fiscal_id
-      LEFT JOIN parcelas parc ON parc.promissoria_id = p.id
-    `;
+  SELECT p.*, nf.numero AS numero_nf, parc.numero_parcela, parc.status, parc.data_vencimento
+  FROM promissorias p
+  JOIN notas_fiscais nf ON nf.id = p.nota_fiscal_id
+  LEFT JOIN parcelas parc ON parc.promissoria_id = p.id
+`;
     const [results] = await connection.query(query);
 
     // Agrupar parcelas por promissória
