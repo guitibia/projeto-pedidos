@@ -177,39 +177,35 @@
           list.innerHTML = ''; // Limpa a lista
           data.forEach(promissoria => {
             const valorTotal = parseFloat(promissoria.valor) || 0; // Converte para número
-            const parcelas = promissoria.parcelas; // Número de parcelas
             const numeroNF = promissoria.numero_nf; // Acesse o número da NF aqui
-            const dataVencimento = new Date(promissoria.data_vencimento);
-
             const vencimentos = [];
             const status = []; // Array para armazenar o status de cada parcela
             const parcelaIds = []; // Array para armazenar os IDs das parcelas
 
-            for (let i = 0; i < parcelas; i++) {
-              const novaData = new Date(dataVencimento);
-              novaData.setMonth(dataVencimento.getMonth() + i); // Adiciona meses
-              vencimentos.push(novaData.toLocaleDateString('pt-BR')); // Formata a data
-              status.push('PENDENTE'); // Status inicial
-              parcelaIds.push(promissoria.id + '_' + (i + 1)); // Gera um ID único para cada parcela
-            }
+            promissoria.parcelas.forEach((parcela, index) => {
+              const dataVencimento = new Date(parcela.data_vencimento);
+              vencimentos.push(dataVencimento.toLocaleDateString('pt-BR')); // Formata a data
+              status.push(parcela.status); // Pega o status da parcela
+              parcelaIds.push(promissoria.id + '_' + (index + 1)); // Gera um ID único para cada parcela
+            });
 
             const item = document.createElement('li');
             item.className = 'list-group-item';
             item.setAttribute('data-id', promissoria.id); // ID da promissória
             item.innerHTML = `
-              <div>
-                <strong>N° da NF:</strong> ${numeroNF} <br>
-                <strong>Valor Total:</strong> R$ ${valorTotal.toFixed(2)} <br>
-                <strong>N° de Parcelas:</strong> ${parcelas} <br>
-                ${vencimentos.map((data, index) => `
-                  Vencimento da ${index + 1}ª parcela: ${data} 
-                  <span class="badge badge-warning ml-2">${status[index]}</span>
-                  <button class="btn btn-success btn-sm ml-2" onclick="marcarComoPaga(${promissoria.id}, '${parcelaIds[index]}', ${index + 1})">Marcar como Paga</button>
-                  <br>
-                `).join('')}
-                <button class="btn btn-danger btn-sm mt-2" onclick="excluirPromissoria(${promissoria.id})">Excluir</button>
-              </div>
-            `;
+          <div>
+            <strong>N° da NF:</strong> ${numeroNF} <br>
+            <strong>Valor Total:</strong> R$ ${valorTotal.toFixed(2)} <br>
+            <strong>N° de Parcelas:</strong> ${promissoria.parcelas.length} <br>
+            ${vencimentos.map((data, index) => `
+              Vencimento da ${index + 1}ª parcela: ${data} 
+              <span class="badge badge-${status[index] === 'Pago' ? 'success' : 'warning'} ml-2">${status[index]}</span>
+              <button class="btn btn-success btn-sm ml-2" onclick="marcarComoPaga(${promissoria.id}, '${parcelaIds[index]}', ${index + 1})">Marcar como Paga</button>
+              <br>
+            `).join('')}
+            <button class="btn btn-danger btn-sm mt-2" onclick="excluirPromissoria(${promissoria.id})">Excluir</button>
+          </div>
+        `;
             list.appendChild(item);
           });
         })
@@ -219,12 +215,12 @@
     }
 
     function marcarComoPaga(promissoriaId, parcelaId, parcelaIndex) {
-      console.log('Atualizando parcela com ID:', parcelaId); // ID completo da parcela
+      const status = 'Pago'; // Status que queremos definir
 
-      const status = 'JÁ PAGA'; // Defina o status aqui
-      console.log('Status:', status); // Verifique se o status é capturado
+      // Extrai o ID da promissória e o número da parcela a partir do ID completo
+      const [promissoriaIdNum, parcelaNum] = parcelaId.split('_');
 
-      fetch(`/api/parcelas/${parcelaId}`, { // Usa o ID completo da parcela
+      fetch(`/api/promissorias/${promissoriaIdNum}/parcelas/${parcelaNum}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -232,18 +228,21 @@
         body: JSON.stringify({ status })
       })
         .then(response => {
-          console.log('Resposta da API:', response);
+          if (!response.ok) {
+            throw new Error('Erro na requisição: ' + response.statusText);
+          }
           return response.json();
         })
         .then(data => {
-          console.log('Dados da resposta:', data);
           if (data.message) {
             // Atualiza a interface do usuário
             const item = document.querySelector(`#promissorias-list .list-group-item[data-id="${promissoriaId}"]`);
             const statusBadge = item.querySelectorAll('.badge');
-            statusBadge[parcelaIndex - 1].textContent = 'JÁ PAGA'; // Atualiza o texto do badge
-            statusBadge[parcelaIndex - 1].classList.remove('badge-warning'); // Remove classe 'PENDENTE'
-            statusBadge[parcelaIndex - 1].classList.add('badge-success'); // Adiciona classe 'JÁ PAGA'
+
+            // Atualiza o texto do badge e suas classes
+            statusBadge[parcelaIndex - 1].textContent = 'Pago';
+            statusBadge[parcelaIndex - 1].classList.remove('badge-warning');
+            statusBadge[parcelaIndex - 1].classList.add('badge-success');
 
             Swal.fire('Sucesso!', 'Parcela marcada como paga!', 'success');
           } else {
@@ -269,6 +268,29 @@
         .catch(error => {
           Swal.fire('Erro!', 'Não foi possível excluir a promissória.', 'error');
           console.error('Erro ao excluir promissória:', error);
+        });
+    }
+
+    function marcarComoPaga(promissoriaId, parcelaId, numeroParcela) {
+      fetch(`/api/promissorias/${promissoriaId}/parcelas/${numeroParcela}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'Pago' })
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Erro ao marcar a parcela como paga');
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log(data.message);
+          loadPromissorias(); // Atualiza a lista após a mudança de status
+        })
+        .catch(error => {
+          console.error('Erro ao atualizar status da parcela:', error);
         });
     }
 

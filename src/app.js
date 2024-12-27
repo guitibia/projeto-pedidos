@@ -442,12 +442,36 @@ app.delete('/api/promissorias/:id', async (req, res) => {
 app.get('/api/promissorias', async (req, res) => {
   try {
     const query = `
-      SELECT p.*, nf.numero AS numero_nf
+      SELECT p.*, nf.numero AS numero_nf, parc.numero_parcela, parc.status
       FROM promissorias p
-      JOIN notas_fiscais nf ON nf.id = p.nota_fiscal_id;
+      JOIN notas_fiscais nf ON nf.id = p.nota_fiscal_id
+      LEFT JOIN parcelas parc ON parc.promissoria_id = p.id
     `;
     const [results] = await connection.query(query);
-    res.json(results);
+
+    // Agrupar parcelas por promissória
+    const promissorias = results.reduce((acc, row) => {
+      const promissoria = acc.find(p => p.id === row.id);
+      if (!promissoria) {
+        acc.push({
+          id: row.id,
+          valor: row.valor,
+          data_vencimento: row.data_vencimento,
+          numero_nf: row.numero_nf,
+          parcelas: [] // Inicializa array de parcelas
+        });
+      }
+      if (row.numero_parcela) {
+        acc[acc.length - 1].parcelas.push({
+          numero: row.numero_parcela,
+          status: row.status,
+          data_vencimento: new Date(row.data_vencimento) // Adiciona a data de vencimento
+        });
+      }
+      return acc;
+    }, []);
+
+    res.json(promissorias);
   } catch (err) {
     console.error('Erro ao buscar promissórias:', err);
     return res.status(500).json({ error: 'Erro ao buscar promissórias' });
@@ -464,11 +488,13 @@ app.put('/api/promissorias/:promissoriaId/parcelas/:parcelaId', async (req, res)
 
   console.log(`Atualizando parcela: promissoriaId=${promissoriaIdNum}, parcelaId=${parcelaIdNum}, status=${status}`);
 
+  // Verifica se o status foi fornecido
   if (!status) {
     return res.status(400).json({ error: 'O status é obrigatório!' });
   }
 
-  const validStatuses = ['JÁ PAGA', 'PENDENTE', 'CANCELADA'];
+  // Verifica se o status é válido
+  const validStatuses = ['Pago', 'Pendente'];
   if (!validStatuses.includes(status)) {
     return res.status(400).json({ error: 'Status inválido!' });
   }
@@ -481,6 +507,7 @@ app.put('/api/promissorias/:promissoriaId/parcelas/:parcelaId', async (req, res)
 
     console.log(`Resultado da atualização: ${JSON.stringify(result)}`);
 
+    // Verifica se a atualização foi bem-sucedida
     if (result.affectedRows > 0) {
       res.json({ message: 'Status da parcela atualizado com sucesso' });
     } else {
