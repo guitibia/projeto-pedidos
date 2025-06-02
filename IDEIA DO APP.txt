@@ -19,3 +19,5 @@ Cadastro de promisorias de pagamentos - e controle da mesma - FEITA MAS FALTA AL
 =========================================
 FAZER UMA PÁGINA DE LOGIN - IRA AJUDAR PARA FUTURAS IDEIAS
 =========================================
+
+npm run dev
