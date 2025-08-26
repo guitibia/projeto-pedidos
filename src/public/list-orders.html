@@ -170,35 +170,22 @@
           // Agrupar os produtos por franquia e somar quantidades
           const groupedProducts = order.products.reduce((groups, product) => {
             const franchise = product.franchise || 'Desconhecido';
-
-            if (!groups[franchise]) {
-              groups[franchise] = {};
-            }
-
-            const quantity = product.quantity || 1; // Garantir que a quantidade não seja indefinida
-
+            if (!groups[franchise]) groups[franchise] = {};
+            const quantity = product.quantity || 1;
             if (!groups[franchise][product.product_name]) {
-              groups[franchise][product.product_name] = {
-                ...product,
-                quantity: quantity // Inicializa a quantidade do produto
-              };
+              groups[franchise][product.product_name] = { ...product, quantity: quantity };
             } else {
-              groups[franchise][product.product_name].quantity += quantity; // Soma a quantidade
+              groups[franchise][product.product_name].quantity += quantity;
             }
-
             return groups;
           }, {});
 
-          // Gerar a lista de produtos agrupados por franquia
           const productsList = Object.keys(groupedProducts).map(franchise => {
             const products = Object.values(groupedProducts[franchise]);
-
-            // Gerar HTML para cada produto dentro da franquia
             const productDetails = products.map(product => {
               const salePrice = product.promotion_price ? product.promotion_price : product.sale_price;
-              const totalSale = (parseFloat(salePrice) * product.quantity).toFixed(2); // Total de venda
-              const totalCost = (parseFloat(product.cost_price) * product.quantity).toFixed(2); // Total de custo
-
+              const totalSale = (parseFloat(salePrice) * product.quantity).toFixed(2);
+              const totalCost = (parseFloat(product.cost_price) * product.quantity).toFixed(2);
               return `
             <p>
               ${product.product_name} - COD ${product.code} / 
@@ -208,7 +195,6 @@
             </p>
           `;
             }).join('');
-
             return `
           <div>
             <h5>${franchise}:</h5>
@@ -217,18 +203,43 @@
         `;
           }).join('');
 
-          // Calcular valores totais com base na quantidade
+          // Calcular valores totais
           const totalSaleValue = order.products.reduce((total, product) => {
             const salePrice = product.promotion_price || product.sale_price;
-            return total + (parseFloat(salePrice) * (product.quantity || 1)); // Usa a quantidade correta
+            return total + (parseFloat(salePrice) * (product.quantity || 1));
           }, 0).toFixed(2);
 
           const totalCostValue = order.products.reduce((total, product) => {
-            return total + (parseFloat(product.cost_price) * (product.quantity || 1)); // Usa a quantidade correta
+            return total + (parseFloat(product.cost_price) * (product.quantity || 1));
           }, 0).toFixed(2);
 
           const profitValue = (totalSaleValue - totalCostValue).toFixed(2);
-          const totalCostFromDB = parseFloat(order.total_cost).toFixed(2);
+
+          // Montar detalhes do método de pagamento e parcelas
+          let paymentDetails = `<strong>Método de Pagamento: </strong>${order.payment_method || '-'}`;
+          if (
+            order.payment_method === 'PARCELADO' ||
+            (order.installments && Number(order.installments) > 1)
+          ) {
+            const parcelas = order.installments || 1;
+            const valorParcela = (totalSaleValue / parcelas).toFixed(2);
+            paymentDetails += `<br><strong>Parcelado em:</strong> ${parcelas}x de R$ ${valorParcela}`;
+            // Se houver datas de vencimento das parcelas, mostre-as
+            if (order.parcelas && Array.isArray(order.parcelas)) {
+              paymentDetails += `<ul style="margin-bottom:0;">`;
+              order.parcelas.forEach((parcela, idx) => {
+                paymentDetails += `<li>Parcela ${idx + 1}: R$ ${Number(parcela.valor).toFixed(2)} - Vencimento: ${parcela.data_vencimento ? new Date(parcela.data_vencimento).toLocaleDateString('pt-BR') : '-'}</li>`;
+              });
+              paymentDetails += `</ul>`;
+            }
+          } else if (order.payment_method === 'PAGAMENTO COMBINADO' && order.combined_payment_value) {
+            const totalPaid = parseFloat(order.combined_payment_value) || 0;
+            const remainingValue = (totalSaleValue - totalPaid).toFixed(2);
+            paymentDetails += `<br><strong>Valor Pago no PIX/Dinheiro:</strong> R$ ${totalPaid.toFixed(2)}`;
+            if (order.installments && Number(order.installments) > 1) {
+              paymentDetails += `<br><strong>Restante parcelado em:</strong> ${order.installments}x de R$ ${(remainingValue / order.installments).toFixed(2)}`;
+            }
+          }
 
           // Preencher os detalhes do modal
           orderDetailsContent.innerHTML = `
@@ -236,6 +247,7 @@
         <p><strong>Cliente:</strong> ${order.client_name}</p>
         <p><strong>Endereço para entrega:</strong> 
           Rua ${order.client_address} N° ${order.client_house_number} Bairro - ${order.client_neighborhood}</p>
+        <div class="mb-2">${paymentDetails}</div>
         <h5>Produtos Pedidos:</h5>
         ${productsList} 
         <h5>Totais:</h5>
@@ -256,7 +268,11 @@
           // Atualizar o botão "Imprimir Pedido"
           const printButton = document.getElementById('printButton');
           printButton.onclick = function () {
-            printOrderDetails(order);
+            fetch(`/api/orders/${order.id}`)
+              .then(response => response.json())
+              .then(updatedOrder => {
+                printOrderDetails(updatedOrder);
+              });
           };
         })
         .catch(error => {
