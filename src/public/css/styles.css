@@ -79,13 +79,14 @@ body {
 }
 
 .sidebar .nav-link {
-  color: #fff;
+  color: #fff !important;
   margin-bottom: 10px;
   font-size: 1.1rem;
 }
 
 .sidebar .nav-link.active, .sidebar .nav-link:hover {
-  background: #495057;
+  background: #495057 !important;
+  color: #fff !important;
   border-radius: 5px;
 }
 
@@ -99,7 +100,7 @@ body {
     position: static;
     width: 100%;
     min-height: auto;
-    padding-top: 10px;
+    padding-top: 100px;
   }
   .main-content {
     margin-left: 0;

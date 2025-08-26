@@ -11,90 +11,69 @@
 </head>
 
 <body>
-
-  <!-- Barra de Navegação -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="/">INÍCIO</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-        aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/create-order.html">Criar Pedido</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link active" href="/promissorias.html">Promissórias</a>
-          </li>
-        </ul>
-      </div>
+  <!-- Sidebar -->
+  <div class="sidebar d-flex flex-column align-items-start">
+    <div class="w-100 text-center mb-4">
+      <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar" width="80" class="rounded-circle mt-3 mb-2">
+      <h5 class="text-white">Olá, Usuário!</h5>
     </div>
-  </nav>
+    <a class="nav-link" href="/">Dashboard</a>
+    <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
+    <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
+    <a class="nav-link" href="/create-order.html">Criar Pedido</a>
+    <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
+    <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
+    <a class="nav-link active" href="/promissorias.html">Promissórias</a>
+  </div>
 
-  <div class="container">
-    <h1 class="text-center">Promissórias Cadastradas</h1>
-    <button class="btn btn-primary mb-4" data-toggle="modal" data-target="#cadastrarModal">Cadastrar
-      Promissória</button>
+  <div class="main-content">
+    <div class="container mt-4">
+      <h1 class="text-center">Promissórias Cadastradas</h1>
+      <button class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#cadastrarModal">Cadastrar Promissória</button>
 
-    <div class="card">
-      <div class="card-body">
-        <ul id="promissorias-list" class="list-group mt-3"></ul>
+      <div class="card">
+        <div class="card-body">
+          <ul id="promissorias-list" class="list-group mt-3"></ul>
+        </div>
       </div>
-    </div>
 
-    <!-- Modal -->
-    <div class="modal fade" id="cadastrarModal" tabindex="-1" role="dialog" aria-labelledby="cadastrarModalLabel"
-      aria-hidden="true">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="cadastrarModalLabel">Cadastrar Promissória</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <form id="promissoria-form">
-              <div class="form-group">
-                <label for="numero_nf">Número da Nota Fiscal:</label>
-                <input type="text" class="form-control" id="numero_nf" required>
-              </div>
-              <div class="form-group">
-                <label for="data_emissao">Data de Emissão:</label>
-                <input type="date" class="form-control" id="data_emissao" required>
-              </div>
-              <div class="form-group">
-                <label for="valor_nf">Valor da Nota Fiscal:</label>
-                <input type="number" step="0.01" class="form-control" id="valor_nf" required>
-              </div>
-              <div class="form-group">
-                <label for="parcelas">Número de Parcelas:</label>
-                <input type="number" class="form-control" id="parcelas" min="1" required>
-              </div>
-              <div class="form-group">
-                <label for="valor_parcela">Valor da Parcela:</label>
-                <input type="text" class="form-control" id="valor_parcela" readonly>
-              </div>
-              <div class="form-group">
-                <label for="data_vencimento">Data Vencimento Primeira Parcela:</label>
-                <input type="date" class="form-control" id="data_vencimento" required>
-              </div>
-              <button type="submit" class="btn btn-primary">Cadastrar</button>
-            </form>
+      <!-- Modal -->
+      <div class="modal fade" id="cadastrarModal" tabindex="-1" aria-labelledby="cadastrarModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="cadastrarModalLabel">Cadastrar Promissória</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+              <form id="promissoria-form">
+                <div class="mb-3">
+                  <label for="numero_nf" class="form-label">Número da Nota Fiscal:</label>
+                  <input type="text" class="form-control" id="numero_nf" required>
+                </div>
+                <div class="mb-3">
+                  <label for="data_emissao" class="form-label">Data de Emissão:</label>
+                  <input type="date" class="form-control" id="data_emissao" required>
+                </div>
+                <div class="mb-3">
+                  <label for="valor_nf" class="form-label">Valor da Nota Fiscal:</label>
+                  <input type="number" step="0.01" class="form-control" id="valor_nf" required>
+                </div>
+                <div class="mb-3">
+                  <label for="parcelas" class="form-label">Número de Parcelas:</label>
+                  <input type="number" class="form-control" id="parcelas" min="1" required>
+                </div>
+                <div class="mb-3">
+                  <label for="valor_parcela" class="form-label">Valor da Parcela:</label>
+                  <input type="text" class="form-control" id="valor_parcela" readonly>
+                </div>
+                <div class="mb-3">
+                  <label for="data_vencimento" class="form-label">Data Vencimento Primeira Parcela:</label>
+                  <input type="date" class="form-control" id="data_vencimento" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Cadastrar</button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
@@ -108,7 +87,7 @@
 
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.getElementById('valor_nf').addEventListener('input', calcularValorParcela);
     document.getElementById('parcelas').addEventListener('input', calcularValorParcela);
@@ -117,7 +96,6 @@
       const valorNF = parseFloat(document.getElementById('valor_nf').value) || 0;
       const parcelas = parseInt(document.getElementById('parcelas').value) || 1;
       const valorParcela = valorNF / parcelas;
-
       document.getElementById('valor_parcela').value = valorParcela.toFixed(2);
     }
 
@@ -131,7 +109,6 @@
       const valorParcela = parseFloat(document.getElementById('valor_parcela').value);
       const dataVencimento = document.getElementById('data_vencimento').value;
 
-      // Verificação básica
       if (!numeroNF || !dataEmissao || isNaN(valorNF) || isNaN(parcelas) || isNaN(valorParcela) || !dataVencimento) {
         return Swal.fire({
           icon: 'error',
@@ -185,23 +162,17 @@
         .then(response => response.json())
         .then(data => {
           const list = document.getElementById('promissorias-list');
-          list.innerHTML = ''; // Limpa a lista
+          list.innerHTML = '';
           data.forEach(promissoria => {
-            console.log(`N° da NF: ${promissoria.numero_nf}`);
-            console.log(`Valor Total da NF: R$ ${promissoria.valor}`); // Certifique-se de que 'valor' está correto
-
             const valorTotal = parseFloat(promissoria.valor) || 0;
             const numeroNF = promissoria.numero_nf;
             const vencimentos = [];
             const status = [];
             const parcelaIds = [];
 
-            // Adiciona log para verificar as parcelas
-            console.log(promissoria.parcelas); // Verifique se as parcelas estão corretas
-
             promissoria.parcelas.forEach((parcela, index) => {
               const dataVencimento = new Date(parcela.data_vencimento);
-              vencimentos.push(dataVencimento.toLocaleDateString('pt-BR')); // Formata a data
+              vencimentos.push(dataVencimento.toLocaleDateString('pt-BR'));
               status.push(parcela.status);
               parcelaIds.push(promissoria.id + '_' + (index + 1));
             });
@@ -231,7 +202,6 @@
         });
     }
 
-
     function excluirPromissoria(promissoriaId) {
       fetch(`/api/promissorias/${promissoriaId}`, {
         method: 'DELETE',
@@ -241,7 +211,7 @@
             throw new Error('Erro ao excluir a promissória');
           }
           Swal.fire('Sucesso!', 'Promissória excluída com sucesso!', 'success');
-          loadPromissorias(); // Recarrega a lista de promissórias
+          loadPromissorias();
         })
         .catch(error => {
           Swal.fire('Erro!', 'Não foi possível excluir a promissória.', 'error');
@@ -264,20 +234,16 @@
           return response.json();
         })
         .then(data => {
-          // Mostrar mensagem de sucesso
           Swal.fire('Sucesso!', 'Parcela marcada como paga!', 'success');
-          // Atualiza a lista após a mudança de status
           loadPromissorias();
         })
         .catch(error => {
-          // Mostrar mensagem de erro
           Swal.fire('Erro!', 'Não foi possível marcar a parcela como paga.', 'error');
           console.error('Erro ao atualizar status da parcela:', error);
         });
     }
 
-    loadPromissorias(); // Carrega as promissórias ao iniciar
+    loadPromissorias();
   </script>
 </body>
-
 </html>

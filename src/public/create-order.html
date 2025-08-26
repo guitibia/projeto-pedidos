@@ -13,135 +13,121 @@
 </head>
 
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="/">INÍCIO</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-        aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link active" href="/create-order.html">Criar Pedido</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/promissorias.html">Promissórias</a>
-          </li>
-        </ul>
-      </div>
+  <!-- Sidebar -->
+  <div class="sidebar d-flex flex-column align-items-start">
+    <div class="w-100 text-center mb-4">
+      <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar" width="80" class="rounded-circle mt-3 mb-2">
+      <h5 class="text-white">Olá, Usuário!</h5>
     </div>
-  </nav>
+    <a class="nav-link" href="/">Dashboard</a>
+    <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
+    <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
+    <a class="nav-link active" href="/create-order.html">Criar Pedido</a>
+    <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
+    <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
+    <a class="nav-link" href="/promissorias.html">Promissórias</a>
+  </div>
 
-  <div class="container mt-5">
-    <div class="row justify-content-center">
-      <div class="col-md-8">
-        <div class="card shadow-lg">
-          <div class="card-header bg-primary text-white text-center">
-            <h2>Criar Pedido</h2>
-          </div>
-          <div class="card-body">
-            <form id="orderForm">
-              <div class="mb-3">
-                <label for="clientId" class="form-label">Cliente</label>
-                <select id="clientId" name="clientId" class="form-select" required>
-                  <option value="">Selecione um cliente</option>
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label for="franchiseId" class="form-label">Franquia</label>
-                <select id="franchiseId" name="franchiseId" class="form-select" required>
-                  <option value="">Selecione uma franquia</option>
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label for="products" class="form-label me-2">Produtos</label>
-                <div class="input-group">
-                  <select id="products" name="products" class="form-select" required>
-                    <option value="">Selecione um produto</option>
+  <!-- Conteúdo principal -->
+  <div class="main-content">
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white text-center">
+              <h2>Criar Pedido</h2>
+            </div>
+            <div class="card-body">
+              <form id="orderForm">
+                <div class="mb-3">
+                  <label for="clientId" class="form-label">Cliente</label>
+                  <select id="clientId" name="clientId" class="form-select" required>
+                    <option value="">Selecione um cliente</option>
                   </select>
                 </div>
-              </div>
 
-              <div class="mb-3">
-                <label for="productQuantity" class="form-label">Quantidade</label>
-                <input type="number" id="productQuantity" name="productQuantity" class="form-control" required value="1"
-                  min="1">
-              </div>
-
-              <div class="mb-3">
-                <label for="promotionalPrice" class="form-label">Valor Promocional</label>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="promotionalPrice" name="promotionalPrice">
-                  <label class="form-check-label" for="promotionalPrice">Produto com valor promocional</label>
+                <div class="mb-3">
+                  <label for="franchiseId" class="form-label">Franquia</label>
+                  <select id="franchiseId" name="franchiseId" class="form-select" required>
+                    <option value="">Selecione uma franquia</option>
+                  </select>
                 </div>
-              </div>
 
-              <div class="mb-3">
-                <label for="productCost" class="form-label">Valor de Custo</label>
-                <input type="text" id="productCost" name="productCost" class="form-control" readonly>
-              </div>
+                <div class="mb-3">
+                  <label for="products" class="form-label me-2">Produtos</label>
+                  <div class="input-group">
+                    <select id="products" name="products" class="form-select" required>
+                      <option value="">Selecione um produto</option>
+                    </select>
+                  </div>
+                </div>
 
-              <div class="mb-3">
-                <label for="salePrice" class="form-label">Valor de Venda</label>
-                <input type="text" id="salePrice" name="salePrice" class="form-control" required
-                  placeholder="Digite o valor de venda">
-              </div>
+                <div class="mb-3">
+                  <label for="productQuantity" class="form-label">Quantidade</label>
+                  <input type="number" id="productQuantity" name="productQuantity" class="form-control" required value="1"
+                    min="1">
+                </div>
 
-              <button type="button" id="addProductBtn" class="btn btn-info w-100">Adicionar Produto</button>
-              <ul id="productList" class="list-group mt-3"></ul>
+                <div class="mb-3">
+                  <label for="promotionalPrice" class="form-label">Valor Promocional</label>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="promotionalPrice" name="promotionalPrice">
+                    <label class="form-check-label" for="promotionalPrice">Produto com valor promocional</label>
+                  </div>
+                </div>
 
-              <div class="mb-3">
-                <label for="totalValue" class="form-label">Valor da Compra</label>
-                <input type="text" id="totalValue" name="totalValue" class="form-control" readonly>
-              </div>
+                <div class="mb-3">
+                  <label for="productCost" class="form-label">Valor de Custo</label>
+                  <input type="text" id="productCost" name="productCost" class="form-control" readonly>
+                </div>
 
-              <div class="mb-3">
-                <label for="paymentMethod" class="form-label">Método de Pagamento</label>
-                <select id="paymentMethod" name="paymentMethod" class="form-select" required>
-                  <option value="">Selecione um estilo de pagamento</option>
-                  <option value="PIX">PIX</option>
-                  <option value="DINHEIRO">DINHEIRO</option>
-                  <option value="CARTÃO DE CRÉDITO">CARTÃO DE CRÉDITO</option>
-                  <option value="PARCELADO">PARCELADO</option>
-                  <option value="PAGAMENTO COMBINADO">PAGAMENTO COMBINADO</option>
-                </select>
-              </div>
+                <div class="mb-3">
+                  <label for="salePrice" class="form-label">Valor de Venda</label>
+                  <input type="text" id="salePrice" name="salePrice" class="form-control" required
+                    placeholder="Digite o valor de venda">
+                </div>
 
-              <div class="mb-3" id="combinedPaymentDiv" style="display: none;">
-                <label for="combinedPaymentValue" class="form-label">Valor a ser pago via PIX/DINHEIRO</label>
-                <input type="number" id="combinedPaymentValue" name="combinedPaymentValue" class="form-control"
-                  placeholder="Digite o valor a ser pago de forma imediata">
-              </div>
+                <button type="button" id="addProductBtn" class="btn btn-info w-100">Adicionar Produto</button>
+                <ul id="productList" class="list-group mt-3"></ul>
 
-              <div class="mb-3" id="installmentsDiv" style="display: none;">
-                <label for="installments" class="form-label">Número de Parcelas</label>
-                <select id="installments" name="installments" class="form-select">
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5">5</option>
-                </select>
-                <p id="installmentAmount" style="display:none; font-weight: bold;">Valor da Parcela: R$ 0.00</p>
-              </div>
+                <div class="mb-3">
+                  <label for="totalValue" class="form-label">Valor da Compra</label>
+                  <input type="text" id="totalValue" name="totalValue" class="form-control" readonly>
+                </div>
 
-              <button type="submit" class="btn btn-success w-100">Criar Pedido</button>
-            </form>
+                <div class="mb-3">
+                  <label for="paymentMethod" class="form-label">Método de Pagamento</label>
+                  <select id="paymentMethod" name="paymentMethod" class="form-select" required>
+                    <option value="">Selecione um estilo de pagamento</option>
+                    <option value="PIX">PIX</option>
+                    <option value="DINHEIRO">DINHEIRO</option>
+                    <option value="CARTÃO DE CRÉDITO">CARTÃO DE CRÉDITO</option>
+                    <option value="PARCELADO">PARCELADO</option>
+                    <option value="PAGAMENTO COMBINADO">PAGAMENTO COMBINADO</option>
+                  </select>
+                </div>
+
+                <div class="mb-3" id="combinedPaymentDiv" style="display: none;">
+                  <label for="combinedPaymentValue" class="form-label">Valor a ser pago via PIX/DINHEIRO</label>
+                  <input type="number" id="combinedPaymentValue" name="combinedPaymentValue" class="form-control"
+                    placeholder="Digite o valor a ser pago de forma imediata">
+                </div>
+
+                <div class="mb-3" id="installmentsDiv" style="display: none;">
+                  <label for="installments" class="form-label">Número de Parcelas</label>
+                  <select id="installments" name="installments" class="form-select">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                  </select>
+                  <p id="installmentAmount" style="display:none; font-weight: bold;">Valor da Parcela: R$ 0.00</p>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100">Criar Pedido</button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
@@ -384,6 +370,15 @@
           .then(response => response.json())
           .then(order => {
             Swal.fire('Sucesso', `Pedido #${order.orderId} criado com sucesso!`, 'success');
+            // Limpar formulário e listas após sucesso
+            document.getElementById('orderForm').reset();
+            productList.innerHTML = '';
+            productsList = [];
+            totalValue = 0;
+            totalValueInput.value = '';
+            installmentAmountDiv.style.display = 'none';
+            installmentsDiv.style.display = 'none';
+            combinedPaymentDiv.style.display = 'none';
           })
           .catch(error => {
             console.error('Erro ao criar o pedido:', error);
@@ -396,3 +391,4 @@
 </body>
 
 </html>
+``` 

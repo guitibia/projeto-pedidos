@@ -13,78 +13,59 @@
 </head>
 
 <body>
-    <!-- Barra de Navegação -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">INÍCIO</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/create-client.html">Cadastrar Cliente</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/create-order.html">Criar Pedido</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/promissorias.html">Promissórias</a>
-                    </li>
-                </ul>
-            </div>
+    <!-- Sidebar -->
+    <div class="sidebar d-flex flex-column align-items-start">
+        <div class="w-100 text-center mb-4">
+            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar" width="80" class="rounded-circle mt-3 mb-2">
+            <h5 class="text-white">Olá, Usuário!</h5>
         </div>
-    </nav>
+        <a class="nav-link" href="/">Dashboard</a>
+        <a class="nav-link active" href="/create-client.html">Cadastrar Cliente</a>
+        <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
+        <a class="nav-link" href="/create-order.html">Criar Pedido</a>
+        <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
+        <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
+        <a class="nav-link" href="/promissorias.html">Promissórias</a>
+    </div>
 
-    <!-- Formulário de Cadastro -->
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card shadow-lg">
-                    <div class="card-header bg-primary text-white text-center">
-                        <h2>Cadastro de Clientes</h2>
-                    </div>
-                    <div class="card-body">
-                        <form id="clientForm">
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Nome</label>
-                                <input type="text" class="form-control" id="name" placeholder="Nome completo" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="cep" class="form-label">CEP</label>
-                                <input type="text" class="form-control" id="cep" placeholder="Digite o CEP" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="address" class="form-label">Endereço</label>
-                                <input type="text" class="form-control" id="address" placeholder="Digite o endereço"
-                                    required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="neighborhood" class="form-label">Bairro</label>
-                                <input type="text" class="form-control" id="neighborhood" placeholder="Digite o bairro"
-                                    required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="houseNumber" class="form-label">Número</label>
-                                <input type="text" class="form-control" id="houseNumber"
-                                    placeholder="Digite o número da casa" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="phone" class="form-label">Telefone</label>
-                                <input type="text" class="form-control" id="phone" placeholder="(XX) XXXXX-XXXX">
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-block w-100">Cadastrar</button>
-                        </form>
+    <!-- Conteúdo principal -->
+    <div class="main-content">
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card shadow-lg">
+                        <div class="card-header bg-primary text-white text-center">
+                            <h2>Cadastro de Clientes</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="clientForm">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Nome</label>
+                                    <input type="text" class="form-control" id="name" placeholder="Nome completo" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="cep" class="form-label">CEP</label>
+                                    <input type="text" class="form-control" id="cep" placeholder="Digite o CEP" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="address" class="form-label">Endereço</label>
+                                    <input type="text" class="form-control" id="address" placeholder="Digite o endereço" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="neighborhood" class="form-label">Bairro</label>
+                                    <input type="text" class="form-control" id="neighborhood" placeholder="Digite o bairro" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="houseNumber" class="form-label">Número</label>
+                                    <input type="text" class="form-control" id="houseNumber" placeholder="Digite o número da casa" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Telefone</label>
+                                    <input type="text" class="form-control" id="phone" placeholder="(XX) XXXXX-XXXX">
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block w-100">Cadastrar</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -113,9 +94,6 @@
             // Remover qualquer caractere não numérico do telefone
             phone = phone.replace(/[^\d]/g, '');
 
-            // Verifique os dados antes de enviar
-            console.log({ name, address, houseNumber, neighborhood, phone });
-
             try {
                 const response = await fetch('/api/clients', {
                     method: 'POST',
@@ -127,13 +105,10 @@
                     Swal.fire('Sucesso', 'Cliente cadastrado com sucesso!', 'success');
                     document.getElementById('clientForm').reset();
                 } else {
-                    // Obtenha o erro retornado pela API
                     const error = await response.json();
-                    console.error('Erro do servidor:', error);
                     Swal.fire('Erro', error.message || 'Erro ao cadastrar cliente', 'error');
                 }
             } catch (err) {
-                console.error('Erro:', err);
                 Swal.fire('Erro', 'Erro ao conectar ao servidor', 'error');
             }
         });
@@ -141,47 +116,30 @@
         //Busca CEP
         document.getElementById('cep').addEventListener('blur', async () => {
             const cep = document.getElementById('cep').value.trim();
-
-            // Remover qualquer caractere não numérico do CEP
             const formattedCep = cep.replace(/[^\d]/g, '');
 
-            // Verificar se o CEP é válido (8 dígitos)
             if (formattedCep.length === 8) {
                 try {
                     const response = await fetch(`https://viacep.com.br/ws/${formattedCep}/json/`);
-
-                    if (!response.ok) {
-                        throw new Error('Não foi possível buscar o endereço');
-                    }
-
+                    if (!response.ok) throw new Error('Não foi possível buscar o endereço');
                     const data = await response.json();
-
                     if (data.erro) {
                         Swal.fire('Aviso', 'CEP não encontrado!', 'warning');
                         return;
                     }
-
-                    // Preencher os campos de endereço e bairro
                     const addressField = document.getElementById('address');
                     const neighborhoodField = document.getElementById('neighborhood');
-
                     addressField.value = data.logradouro || '';
                     neighborhoodField.value = data.bairro || '';
-
-                    // Tornar os campos "somente leitura"
                     addressField.readOnly = true;
                     neighborhoodField.readOnly = true;
-
                 } catch (error) {
-                    console.error('Erro ao buscar CEP:', error);
                     Swal.fire('Erro', 'Erro ao buscar o endereço. Tente novamente.', 'error');
                 }
             } else if (cep) {
                 Swal.fire('Aviso', 'CEP inválido. Digite um CEP com 8 dígitos.', 'warning');
             }
         });
-
-
     </script>
 </body>
 
