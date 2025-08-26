@@ -11,107 +11,81 @@
   <link rel="stylesheet" href="/css/styles.css">
   <!-- SweetAlert2 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.2/dist/sweetalert2.min.css" rel="stylesheet">
+  <!-- Chart.js para gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
-  <!-- Navbar (Menu superior) -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand active" href="/">Sistema de Pedidos</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-        aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/create-order.html">Criar Pedido</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/promissorias.html">Promissórias</a>
-          </li>
-        </ul>
-      </div>
+  <!-- Sidebar -->
+  <div class="sidebar d-flex flex-column align-items-start">
+    <div class="w-100 text-center mb-4">
+      <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar" width="80" class="rounded-circle mt-3 mb-2">
+      <h5 class="text-white">Olá, Usuário!</h5>
     </div>
-  </nav>
-
-  <!-- Jumbotron (Cabeçalho principal) -->
-  <div class="jumbotron text-center bg-primary text-white py-5">
-    <h1 class="display-4">Bem-vindo ao Sistema de Pedidos</h1>
-    <p class="lead">Gerencie clientes e pedidos com facilidade!</p>
-    <hr class="my-4">
-    <p>Utilize os links acima para navegar.</p>
-    <button class="btn btn-light btn-lg" onclick="showWelcomeAlert()">Saiba Mais</button>
+    <a class="nav-link active" href="/">Dashboard</a>
+    <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
+    <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
+    <a class="nav-link" href="/create-order.html">Criar Pedido</a>
+    <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
+    <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
+    <a class="nav-link" href="/promissorias.html">Promissórias</a>
   </div>
 
   <!-- Main Content -->
-  <div class="container my-5">
-    <h2 class="text-center">O que você deseja fazer?</h2>
-    <div class="row justify-content-center mt-4">
-      <div class="col-md-4">
-        <div class="card text-center shadow-lg">
-          <div class="card-body">
-            <h4 class="card-title">Cadastrar Cliente</h4>
-            <p class="card-text">Adicione novos clientes ao sistema.</p>
-            <a href="/create-client.html" class="btn btn-primary">Cadastrar Cliente</a>
+  <div class="main-content">
+    <div class="container-fluid py-4">
+      <h2 class="mb-4">Dashboard</h2>
+      <div class="row g-4 mb-4">
+        <div class="col-md-3">
+          <div class="card text-white bg-success shadow h-100">
+            <div class="card-body">
+              <h6 class="card-title">Total de Ganhos</h6>
+              <p class="card-text fs-4" id="totalGanho">R$ 0,00</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card text-white bg-danger shadow h-100">
+            <div class="card-body">
+              <h6 class="card-title">Total de Gastos</h6>
+              <p class="card-text fs-4" id="totalGasto">R$ 0,00</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card text-white bg-primary shadow h-100">
+            <div class="card-body">
+              <h6 class="card-title">Promissórias Pagas</h6>
+              <p class="card-text fs-4" id="promissoriasPagas">R$ 0,00</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card text-white bg-warning shadow h-100">
+            <div class="card-body">
+              <h6 class="card-title">Promissórias a Pagar</h6>
+              <p class="card-text fs-4" id="promissoriasPendentes">R$ 0,00</p>
+            </div>
           </div>
         </div>
       </div>
-      <div class="col-md-4">
-        <div class="card text-center shadow-lg">
-          <div class="card-body">
-            <h4 class="card-title">Cadastrar Produto</h4>
-            <p class="card-text">Adicione novos produtos ao sistema.</p>
-            <a href="/create-product.html" class="btn btn-primary">Cadastrar Produto</a>
+      <!-- Gráfico de exemplo -->
+      <div class="row g-4">
+        <div class="col-md-8">
+          <div class="card shadow h-100">
+            <div class="card-body">
+              <h6 class="card-title">Vendas nos Últimos Meses</h6>
+              <canvas id="salesChart" height="100"></canvas>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card text-center shadow-lg">
-          <div class="card-body">
-            <h4 class="card-title">Criar Pedido</h4>
-            <p class="card-text">Crie novos pedidos para seus clientes.</p>
-            <a href="/create-order.html" class="btn btn-primary">Criar Pedido</a>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card text-center shadow-lg">
-          <div class="card-body">
-            <h4 class="card-title">Listar Pedidos</h4>
-            <p class="card-text">Veja todos os pedidos registrados.</p>
-            <a href="/list-orders.html" class="btn btn-primary">Listar Pedidos</a>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card text-center shadow-lg">
-          <div class="card-body">
-            <h4 class="card-title">Listar Clientes</h4>
-            <p class="card-text">Veja todos os pedidos registrados por Cliente.</p>
-            <a href="/list-clients.html" class="btn btn-primary">Listar Clientes</a>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card text-center shadow-lg">
-          <div class="card-body">
-            <h4 class="card-title">Listar Promossórias</h4>
-            <p class="card-text">Veja todos os pedidos registrados por Cliente.</p>
-            <a href="/promissorias.html" class="btn btn-primary">Listar Promossórias</a>
+        <div class="col-md-4">
+          <div class="card shadow h-100">
+            <div class="card-body">
+              <h6 class="card-title">Resumo de Promissórias</h6>
+              <canvas id="promissoriaChart" height="180"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -130,15 +104,61 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    // Função para exibir o alerta de boas-vindas
-    function showWelcomeAlert() {
-      Swal.fire({
-        title: 'Bem-vindo ao Sistema de Pedidos!',
-        text: 'Aqui você pode cadastrar clientes, criar pedidos e visualizar todos os pedidos registrados.',
-        icon: 'info',
-        confirmButtonText: 'Ok'
-      });
+    async function loadDashboard() {
+      try {
+        const res = await fetch('/api/dashboard');
+        const data = await res.json();
+        document.getElementById('totalGanho').textContent = `R$ ${Number(data.totalGanho).toFixed(2)}`;
+        document.getElementById('totalGasto').textContent = `R$ ${Number(data.totalGasto).toFixed(2)}`;
+        document.getElementById('promissoriasPagas').textContent = `R$ ${Number(data.promissoriasPagas).toFixed(2)}`;
+        document.getElementById('promissoriasPendentes').textContent = `R$ ${Number(data.promissoriasPendentes).toFixed(2)}`;
+        // Atualiza gráficos (exemplo com dados fake)
+        salesChart.data.datasets[0].data = [12, 19, 3, 5, 2, 3, 7, 8, 6, 10, 15, 9];
+        salesChart.update();
+        promissoriaChart.data.datasets[0].data = [data.promissoriasPagas, data.promissoriasPendentes];
+        promissoriaChart.update();
+      } catch (err) {
+        console.error('Erro ao carregar dashboard', err);
+      }
     }
+
+    // Gráfico de vendas (exemplo)
+    const salesChart = new Chart(document.getElementById('salesChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+        datasets: [{
+          label: 'Vendas',
+          data: [0,0,0,0,0,0,0,0,0,0,0,0],
+          borderColor: '#007bff',
+          backgroundColor: 'rgba(0,123,255,0.1)',
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // Gráfico de promissórias (exemplo)
+    const promissoriaChart = new Chart(document.getElementById('promissoriaChart').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Pagas', 'A Pagar'],
+        datasets: [{
+          data: [0, 0],
+          backgroundColor: ['#0d6efd', '#ffc107']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+
+    loadDashboard();
   </script>
 
 </body>

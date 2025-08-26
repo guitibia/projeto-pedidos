@@ -530,6 +530,47 @@ app.delete('/api/promissorias/:id', async (req, res) => {
   }
 });
 
+// Rota para dashboard
+app.get('/api/dashboard', async (req, res) => {
+  try {
+    // Ganho = Lucro dos pedidos entregues (descontando produtos que não vieram)
+    const [orders] = await connection.query(`
+      SELECT 
+        SUM((op.sale_price - p.cost) * op.quantity) AS totalLucro,
+        SUM(p.cost * op.quantity) AS totalGasto
+      FROM orders o
+      JOIN order_products op ON o.id = op.order_id
+      JOIN products p ON op.product_id = p.id
+      WHERE o.status = 'Entregue'
+        AND (op.not_came IS NULL OR op.not_came = 0)
+    `);
+
+    // Promissórias pagas (parcelas pagas)
+    const [pagas] = await connection.query(`
+      SELECT IFNULL(SUM(valor),0) AS promissoriasPagas
+      FROM parcelas
+      WHERE status = 'Pago'
+    `);
+
+    // Promissórias pendentes (parcelas pendentes)
+    const [pendentes] = await connection.query(`
+      SELECT IFNULL(SUM(valor),0) AS promissoriasPendentes
+      FROM parcelas
+      WHERE status = 'Pendente'
+    `);
+
+    res.json({
+      totalGanho: orders[0].totalLucro || 0,
+      totalGasto: orders[0].totalGasto || 0,
+      promissoriasPagas: pagas[0].promissoriasPagas || 0,
+      promissoriasPendentes: pendentes[0].promissoriasPendentes || 0
+    });
+  } catch (err) {
+    console.error('Erro no dashboard:', err);
+    res.status(500).json({ error: 'Erro ao buscar dados do dashboard' });
+  }
+});
+
 // Porta para o servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
