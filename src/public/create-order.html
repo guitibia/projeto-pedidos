@@ -1,24 +1,22 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Criar Pedido</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
-  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.2/dist/sweetalert2.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
-
 <body>
-  <!-- Sidebar -->
-  <div class="sidebar d-flex flex-column align-items-start">
-    <div class="w-100 text-center mb-4">
-      <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar" width="80" class="rounded-circle mt-3 mb-2">
-      <h5 class="text-white">Olá, Usuário!</h5>
-    </div>
+
+<button class="sidebar-toggle" id="sidebarToggle">☰</button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="system-name">📦 Sistema de Pedidos</div>
+    <div class="user-name" id="sidebar-user">Carregando...</div>
+  </div>
+  <nav class="sidebar-nav">
     <a class="nav-link" href="/">Dashboard</a>
     <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
     <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
@@ -26,369 +24,236 @@
     <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
     <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
     <a class="nav-link" href="/promissorias.html">Promissórias</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" id="btn-logout">Sair</button>
   </div>
+</div>
 
-  <!-- Conteúdo principal -->
-  <div class="main-content">
-    <div class="container mt-5">
-      <div class="row justify-content-center">
-        <div class="col-md-8">
-          <div class="card shadow-lg">
-            <div class="card-header bg-primary text-white text-center">
-              <h2>Criar Pedido</h2>
-            </div>
-            <div class="card-body">
-              <form id="orderForm">
-                <div class="mb-3">
-                  <label for="clientId" class="form-label">Cliente</label>
-                  <select id="clientId" name="clientId" class="form-select" required>
-                    <option value="">Selecione um cliente</option>
-                  </select>
+<div class="main-content">
+  <div class="container py-2">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header bg-primary text-white text-center">Criar Pedido</div>
+          <div class="card-body p-4">
+            <form id="orderForm">
+              <div class="mb-3">
+                <label class="form-label">Cliente</label>
+                <select id="clientId" class="form-select" required>
+                  <option value="">Selecione um cliente</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Franquia</label>
+                <select id="franchiseId" class="form-select" required>
+                  <option value="">Selecione uma franquia</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Produto</label>
+                <select id="products" class="form-select">
+                  <option value="">Selecione um produto</option>
+                </select>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col">
+                  <label class="form-label">Quantidade</label>
+                  <input type="number" id="productQuantity" class="form-control" value="1" min="1">
                 </div>
-
-                <div class="mb-3">
-                  <label for="franchiseId" class="form-label">Franquia</label>
-                  <select id="franchiseId" name="franchiseId" class="form-select" required>
-                    <option value="">Selecione uma franquia</option>
-                  </select>
+                <div class="col">
+                  <label class="form-label">Custo</label>
+                  <input type="text" id="productCost" class="form-control" readonly>
                 </div>
-
-                <div class="mb-3">
-                  <label for="products" class="form-label me-2">Produtos</label>
-                  <div class="input-group">
-                    <select id="products" name="products" class="form-select" required>
-                      <option value="">Selecione um produto</option>
-                    </select>
-                  </div>
+                <div class="col">
+                  <label class="form-label">Valor de Venda</label>
+                  <input type="number" step="0.01" id="salePrice" class="form-control" placeholder="0,00">
                 </div>
+              </div>
 
-                <div class="mb-3">
-                  <label for="productQuantity" class="form-label">Quantidade</label>
-                  <input type="number" id="productQuantity" name="productQuantity" class="form-control" required value="1"
-                    min="1">
-                </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="promotionalPrice">
+                <label class="form-check-label" for="promotionalPrice">Produto com valor promocional</label>
+              </div>
 
-                <div class="mb-3">
-                  <label for="promotionalPrice" class="form-label">Valor Promocional</label>
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="promotionalPrice" name="promotionalPrice">
-                    <label class="form-check-label" for="promotionalPrice">Produto com valor promocional</label>
-                  </div>
-                </div>
+              <button type="button" id="addProductBtn" class="btn btn-info w-100 mb-2">+ Adicionar Produto</button>
+              <ul id="productList" class="list-group mb-3"></ul>
 
-                <div class="mb-3">
-                  <label for="productCost" class="form-label">Valor de Custo</label>
-                  <input type="text" id="productCost" name="productCost" class="form-control" readonly>
-                </div>
+              <div class="mb-3">
+                <label class="form-label">Valor Total da Compra</label>
+                <input type="text" id="totalValue" class="form-control" readonly>
+              </div>
 
-                <div class="mb-3">
-                  <label for="salePrice" class="form-label">Valor de Venda</label>
-                  <input type="text" id="salePrice" name="salePrice" class="form-control" required
-                    placeholder="Digite o valor de venda">
-                </div>
+              <div class="mb-3">
+                <label class="form-label">Método de Pagamento</label>
+                <select id="paymentMethod" class="form-select" required>
+                  <option value="">Selecione o método</option>
+                  <option>PIX</option>
+                  <option>DINHEIRO</option>
+                  <option>CARTÃO DE CRÉDITO</option>
+                  <option>PARCELADO</option>
+                  <option>PAGAMENTO COMBINADO</option>
+                </select>
+              </div>
 
-                <button type="button" id="addProductBtn" class="btn btn-info w-100">Adicionar Produto</button>
-                <ul id="productList" class="list-group mt-3"></ul>
+              <div id="combinedPaymentDiv" class="mb-3" style="display:none">
+                <label class="form-label">Valor pago via PIX/Dinheiro</label>
+                <input type="number" step="0.01" id="combinedPaymentValue" class="form-control">
+              </div>
 
-                <div class="mb-3">
-                  <label for="totalValue" class="form-label">Valor da Compra</label>
-                  <input type="text" id="totalValue" name="totalValue" class="form-control" readonly>
-                </div>
+              <div id="installmentsDiv" class="mb-3" style="display:none">
+                <label class="form-label">Número de Parcelas</label>
+                <select id="installments" class="form-select">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+                <small id="installmentAmount" class="text-muted mt-1 d-none fw-500"></small>
+              </div>
 
-                <div class="mb-3">
-                  <label for="paymentMethod" class="form-label">Método de Pagamento</label>
-                  <select id="paymentMethod" name="paymentMethod" class="form-select" required>
-                    <option value="">Selecione um estilo de pagamento</option>
-                    <option value="PIX">PIX</option>
-                    <option value="DINHEIRO">DINHEIRO</option>
-                    <option value="CARTÃO DE CRÉDITO">CARTÃO DE CRÉDITO</option>
-                    <option value="PARCELADO">PARCELADO</option>
-                    <option value="PAGAMENTO COMBINADO">PAGAMENTO COMBINADO</option>
-                  </select>
-                </div>
-
-                <div class="mb-3" id="combinedPaymentDiv" style="display: none;">
-                  <label for="combinedPaymentValue" class="form-label">Valor a ser pago via PIX/DINHEIRO</label>
-                  <input type="number" id="combinedPaymentValue" name="combinedPaymentValue" class="form-control"
-                    placeholder="Digite o valor a ser pago de forma imediata">
-                </div>
-
-                <div class="mb-3" id="installmentsDiv" style="display: none;">
-                  <label for="installments" class="form-label">Número de Parcelas</label>
-                  <select id="installments" name="installments" class="form-select">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                  </select>
-                  <p id="installmentAmount" style="display:none; font-weight: bold;">Valor da Parcela: R$ 0.00</p>
-                </div>
-
-                <button type="submit" class="btn btn-success w-100">Criar Pedido</button>
-              </form>
-            </div>
+              <button type="submit" class="btn btn-success w-100">Criar Pedido</button>
+            </form>
           </div>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <footer class="bg-dark text-white text-center py-3 mt-5">
-    <p>&copy; 2024 Sistema de Pedidos. Todos os direitos reservados.</p>
-  </footer>
+<footer class="bg-dark text-white text-center py-3 mt-4">
+  <small>&copy; 2025 Sistema de Pedidos</small>
+</footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.2/dist/sweetalert2.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const clientIdSelect = document.getElementById('clientId');
-      const franchiseIdSelect = document.getElementById('franchiseId');
-      const productsSelect = document.getElementById('products');
-      const productCostInput = document.getElementById('productCost');
-      const salePriceInput = document.getElementById('salePrice');
-      const totalValueInput = document.getElementById('totalValue');
-      const addProductBtn = document.getElementById('addProductBtn');
-      const productList = document.getElementById('productList');
-      const paymentMethodSelect = document.getElementById('paymentMethod');
-      const installmentsDiv = document.getElementById('installmentsDiv');
-      const combinedPaymentDiv = document.getElementById('combinedPaymentDiv');
-      const combinedPaymentValueInput = document.getElementById('combinedPaymentValue');
-      const installmentsInput = document.getElementById('installments');
-      const installmentAmountDiv = document.getElementById('installmentAmount');
-      const promotionalPriceCheckbox = document.getElementById('promotionalPrice');
-      let totalValue = 0;
-      let productsList = [];  // Lista de produtos
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  Auth.requireAuth();
+  Auth.initSidebar();
+  document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
 
-      // Ao marcar a caixa de valor promocional, permitir a edição do campo de valor de custo
-      promotionalPriceCheckbox.addEventListener('change', () => {
-        productCostInput.readOnly = !promotionalPriceCheckbox.checked; // Alternar a propriedade readonly
-      });
+  let totalValue = 0;
+  let productsList = [];
 
-      // Carregar clientes do backend
-      fetch('/api/clients')
-        .then(response => response.json())
-        .then(clients => {
-          clients.forEach(client => {
-            const option = document.createElement('option');
-            option.value = client.id;
-            option.textContent = client.name;
-            clientIdSelect.appendChild(option);
-          });
-        })
-        .catch(error => {
-          console.error('Erro ao carregar clientes:', error);
-          Swal.fire('Erro', 'Não foi possível carregar a lista de clientes.', 'error');
-        });
+  // Carregar clientes e franquias
+  async function init() {
+    const [clientRes, franchiseRes] = await Promise.all([
+      Auth.apiFetch('/api/clients'),
+      Auth.apiFetch('/api/franchises')
+    ]);
+    const clients   = await clientRes.json();
+    const franchises = await franchiseRes.json();
 
-      // Carregar franquias do backend
-      fetch('/api/franchises')
-        .then(response => response.json())
-        .then(franchises => {
-          if (Array.isArray(franchises)) {
-            franchises.forEach(franchise => {
-              const option = document.createElement('option');
-              option.value = franchise;
-              option.textContent = franchise;
-              franchiseIdSelect.appendChild(option);
-            });
-          }
-        })
-        .catch(error => {
-          console.error('Erro ao carregar franquias:', error);
-          Swal.fire('Erro', 'Não foi possível carregar a lista de franquias.', 'error');
-        });
+    const cs = document.getElementById('clientId');
+    clients.forEach(c => cs.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name}</option>`));
 
-      // Carregar produtos quando selecionar uma franquia
-      franchiseIdSelect.addEventListener('change', (event) => {
-        const franchiseId = event.target.value;
-        if (franchiseId) {
-          fetch(`/api/products?franchise=${franchiseId}`)
-            .then(response => response.json())
-            .then(data => {
-              const products = data.products || data;
-              productsSelect.innerHTML = '<option value="">Selecione um produto</option>';
+    const fs = document.getElementById('franchiseId');
+    franchises.forEach(f => fs.insertAdjacentHTML('beforeend', `<option value="${f}">${f}</option>`));
+  }
+  init();
 
-              products.forEach(product => {
-                const option = document.createElement('option');
-                option.value = product.id;
-                option.textContent = `${product.name} - COD ${product.code}`;
-                productsSelect.appendChild(option);
-              });
-            })
-            .catch(error => {
-              console.error('Erro ao carregar produtos:', error);
-              Swal.fire('Erro', 'Não foi possível carregar a lista de produtos.', 'error');
-            });
-        } else {
-          productsSelect.innerHTML = '<option value="">Selecione um produto</option>';
-        }
-      });
+  document.getElementById('franchiseId').addEventListener('change', async (e) => {
+    const f = e.target.value;
+    const ps = document.getElementById('products');
+    ps.innerHTML = '<option value="">Selecione um produto</option>';
+    if (!f) return;
+    const res = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
+    const data = await res.json();
+    data.forEach(p => ps.insertAdjacentHTML('beforeend', `<option value="${p.id}" data-cost="${p.cost}">${p.name} — COD ${p.code}</option>`));
+  });
 
-      // Exibir custo do produto e atualizar o total
-      productsSelect.addEventListener('change', (event) => {
-        const productId = event.target.value;
-        if (productId) {
-          fetch(`/api/products/${productId}`)
-            .then(response => response.json())
-            .then(product => {
-              if (product && product.cost) {
-                productCostInput.value = parseFloat(product.cost).toFixed(2);  // Exibir o custo no campo
-                salePriceInput.focus();  // Dar foco para o campo de valor de venda
-              }
-            })
-            .catch(error => {
-              console.error('Erro ao carregar o produto:', error);
-              Swal.fire('Erro', 'Não foi possível carregar as informações do produto.', 'error');
-            });
-        }
-      });
+  document.getElementById('products').addEventListener('change', (e) => {
+    const opt = e.target.selectedOptions[0];
+    document.getElementById('productCost').value = opt?.dataset.cost ? parseFloat(opt.dataset.cost).toFixed(2) : '';
+  });
 
-      // Adicionar produto à lista
-      addProductBtn.addEventListener('click', () => {
-        const productId = productsSelect.value;
-        const salePrice = parseFloat(salePriceInput.value);
-        const productQuantity = parseInt(document.getElementById('productQuantity').value); // Captura a quantidade
-        const isPromotionalPrice = promotionalPriceCheckbox.checked;
-        let productCost = parseFloat(productCostInput.value);
+  document.getElementById('promotionalPrice').addEventListener('change', (e) => {
+    document.getElementById('productCost').readOnly = !e.target.checked;
+  });
 
-        // Validações
-        if (!productId || isNaN(salePrice) || salePrice <= 0 || productQuantity < 1) { // Use productQuantity aqui
-          Swal.fire('Erro', 'Selecione um produto, insira um valor de venda válido e defina a quantidade.', 'error');
-          return;
-        }
+  document.getElementById('addProductBtn').addEventListener('click', () => {
+    const sel      = document.getElementById('products');
+    const opt      = sel.selectedOptions[0];
+    const productId = sel.value;
+    const salePrice = parseFloat(document.getElementById('salePrice').value);
+    const qty       = parseInt(document.getElementById('productQuantity').value) || 1;
+    const isPromo   = document.getElementById('promotionalPrice').checked;
+    const cost      = parseFloat(document.getElementById('productCost').value);
 
-        if (isPromotionalPrice && isNaN(productCost)) {
-          Swal.fire('Erro', 'Insira um valor de custo válido para o produto promocional.', 'error');
-          return;
-        }
+    if (!productId || isNaN(salePrice) || salePrice <= 0 || qty < 1) {
+      return Swal.fire('Erro', 'Preencha produto, valor de venda e quantidade corretamente.', 'error');
+    }
 
-        const productOption = productsSelect.selectedOptions[0];
-        const productName = productOption.textContent.split(' - ')[0];
-        const productCode = productOption.textContent.split(' - ')[1].replace('COD ', '');
+    const [productName, codePart] = opt.textContent.split(' — COD ');
+    const totalProduct = salePrice * qty;
 
-        // Adicionar o produto à lista de produtos
-        const productItem = document.createElement('li');
-        const totalProductPrice = salePrice * productQuantity; // Calcular o preço total do produto
-        productItem.classList.add('list-group-item');
-        productItem.textContent = `${productName} - COD ${productCode} - Custo: ${productCost.toFixed(2)} - Venda: ${salePrice.toFixed(2)} - Quantidade: ${productQuantity} - Total: ${totalProductPrice.toFixed(2)}${isPromotionalPrice ? ' (Promoção)' : ''}`;
+    const li = document.createElement('li');
+    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    li.innerHTML = `<span>${productName} × ${qty} — R$ ${totalProduct.toFixed(2)}${isPromo ? ' 🏷️' : ''}</span>
+      <button class="btn btn-danger btn-sm">Remover</button>`;
+    li.querySelector('button').onclick = () => {
+      productList = productList.filter(p => p !== entry);
+      li.remove();
+      totalValue -= totalProduct;
+      document.getElementById('totalValue').value = totalValue.toFixed(2);
+    };
+    document.getElementById('productList').appendChild(li);
 
-        const removeButton = document.createElement('button');
-        removeButton.textContent = 'Remover';
-        removeButton.classList.add('btn', 'btn-danger', 'btn-sm', 'ms-2');
-        removeButton.onclick = () => {
-          productList.removeChild(productItem);
-          totalValue -= totalProductPrice; // Atualizar totalValue
-          totalValueInput.value = totalValue.toFixed(2);
-          productsList = productsList.filter(product => product.id !== productId || product.quantity !== productQuantity); // Ajustar filtro
-        };
+    const entry = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null };
+    productsList.push(entry);
+    totalValue += totalProduct;
+    document.getElementById('totalValue').value = totalValue.toFixed(2);
+  });
 
-        productItem.appendChild(removeButton);
-        productList.appendChild(productItem);
+  document.getElementById('paymentMethod').addEventListener('change', (e) => {
+    const m = e.target.value;
+    document.getElementById('installmentsDiv').style.display   = (m === 'PARCELADO' || m === 'PAGAMENTO COMBINADO') ? 'block' : 'none';
+    document.getElementById('combinedPaymentDiv').style.display = m === 'PAGAMENTO COMBINADO' ? 'block' : 'none';
+  });
 
-        totalValue += totalProductPrice; // Somar o total do produto
-        totalValueInput.value = totalValue.toFixed(2);
+  document.getElementById('installments').addEventListener('change', updateInstallmentAmount);
+  document.getElementById('combinedPaymentValue').addEventListener('input', updateInstallmentAmount);
 
-        // Adicionar o produto à lista de produtos com a quantidade
-        productsList.push({
-          id: productId,
-          name: productName,
-          salePrice,
-          code: productCode,
-          isPromotionalPrice,
-          productCost: isPromotionalPrice ? productCost : null,
-          quantity: productQuantity, // Aqui está a quantidade
-        });
-      });
+  function updateInstallmentAmount() {
+    const combined = parseFloat(document.getElementById('combinedPaymentValue').value) || 0;
+    const n = parseInt(document.getElementById('installments').value) || 1;
+    const remaining = Math.max(totalValue - combined, totalValue);
+    const small = document.getElementById('installmentAmount');
+    small.textContent = `Parcela: R$ ${(remaining / n).toFixed(2)}`;
+    small.classList.remove('d-none');
+  }
 
-      // Exibir campos específicos com base no método de pagamento selecionado
-      paymentMethodSelect.addEventListener('change', (event) => {
-        const selectedMethod = event.target.value;
+  document.getElementById('orderForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (productsList.length === 0) return Swal.fire('Erro', 'Adicione ao menos um produto.', 'error');
 
-        installmentsDiv.style.display = 'none';
-        combinedPaymentDiv.style.display = 'none';
-        installmentAmountDiv.style.display = 'none';
+    const payload = {
+      clientId:             document.getElementById('clientId').value,
+      paymentMethod:        document.getElementById('paymentMethod').value,
+      products:             productsList,
+      totalValue,
+      installments:         document.getElementById('installments').value || null,
+      combinedPaymentValue: document.getElementById('combinedPaymentValue').value || null
+    };
 
-        if (selectedMethod === 'PAGAMENTO COMBINADO') {
-          combinedPaymentDiv.style.display = 'block';
-        }
-        if (selectedMethod === 'PARCELADO') {
-          installmentsDiv.style.display = 'block';
-        }
-      });
-
-      // Atualizar o valor total após inserir o valor pago via PIX/DINHEIRO
-      combinedPaymentValueInput.addEventListener('input', () => {
-        const combinedPaymentValue = parseFloat(combinedPaymentValueInput.value);
-        const remainingAmount = totalValue - combinedPaymentValue;
-
-        installmentsDiv.style.display = remainingAmount > 0 ? 'block' : 'none';
-      });
-
-      // Exibir o valor da parcela ao selecionar o número de parcelas
-      installmentsInput.addEventListener('change', () => {
-        const installmentsCount = parseInt(installmentsInput.value);
-        const remainingAmount = totalValue - (combinedPaymentValueInput.value ? parseFloat(combinedPaymentValueInput.value) : 0);
-        const installmentValue = remainingAmount / installmentsCount;
-
-        installmentAmountDiv.textContent = `Valor da Parcela: R$ ${installmentValue.toFixed(2)}`;
-        installmentAmountDiv.style.display = 'block';
-      });
-
-      // Enviar o pedido
-      document.getElementById('orderForm').addEventListener('submit', (event) => {
-        event.preventDefault();
-
-        const formData = new FormData(event.target);
-        const formObject = Object.fromEntries(formData);
-
-        const payload = {
-          clientId: formObject.clientId,
-          franchiseId: formObject.franchiseId,
-          products: productsList.map(product => ({
-            id: product.id,
-            quantity: product.quantity,
-            salePrice: product.salePrice,
-            isPromotionalPrice: product.isPromotionalPrice,
-            productCost: product.productCost
-          })),
-          totalValue: totalValue,
-          paymentMethod: formObject.paymentMethod,
-          installments: formObject.installments || null,
-          combinedPaymentValue: formObject.combinedPaymentValue || null,
-        };
-
-        console.log('Payload enviado:', JSON.stringify(payload, null, 2));
-
-        fetch('/api/orders', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        })
-          .then(response => response.json())
-          .then(order => {
-            Swal.fire('Sucesso', `Pedido #${order.orderId} criado com sucesso!`, 'success');
-            // Limpar formulário e listas após sucesso
-            document.getElementById('orderForm').reset();
-            productList.innerHTML = '';
-            productsList = [];
-            totalValue = 0;
-            totalValueInput.value = '';
-            installmentAmountDiv.style.display = 'none';
-            installmentsDiv.style.display = 'none';
-            combinedPaymentDiv.style.display = 'none';
-          })
-          .catch(error => {
-            console.error('Erro ao criar o pedido:', error);
-            Swal.fire('Erro', 'Erro ao criar pedido', 'error');
-          });
-      });
-    });
-  </script>
-
+    try {
+      const res  = await Auth.apiFetch('/api/orders', { method: 'POST', body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) return Swal.fire('Erro', data.error, 'error');
+      Swal.fire('Sucesso', `Pedido #${data.orderId} criado!`, 'success');
+      document.getElementById('orderForm').reset();
+      document.getElementById('productList').innerHTML = '';
+      productsList = []; totalValue = 0;
+      document.getElementById('totalValue').value = '';
+    } catch {
+      Swal.fire('Erro', 'Erro ao conectar ao servidor.', 'error');
+    }
+  });
+</script>
 </body>
-
 </html>
-``` 

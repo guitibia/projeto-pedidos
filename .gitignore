@@ -1,2 +1,3 @@
-# Ignorar dependências de Node.js
 node_modules/
+.env
+*.log
