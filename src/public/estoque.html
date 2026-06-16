@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estoque</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .page-hero-icon {
+      width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+      background: linear-gradient(135deg, #0d6efd 0%, #6f42c1 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff;
+      box-shadow: 0 4px 14px rgba(13,110,253,.3);
+    }
+    .page-hero-title { font-size: 1.3rem; font-weight: 700; margin: 0; }
+    .page-hero-sub   { font-size: .8rem; color: var(--text-muted); margin: 0; }
+
+    /* Franquia header */
+    .fr-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .7rem 1rem; border-radius: 12px;
+      background: var(--card-bg); border: 1px solid var(--border-color);
+      cursor: pointer; user-select: none; margin-bottom: .4rem;
+      transition: border-color .15s;
+    }
+    .fr-header:hover { border-color: rgba(13,110,253,.3); }
+    .fr-header-left { display: flex; align-items: center; gap: .65rem; }
+    .fr-icon {
+      width: 34px; height: 34px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .fr-name   { font-size: .9rem; font-weight: 700; }
+    .fr-count  { font-size: .72rem; color: var(--text-muted); }
+    .fr-badge  { font-size: .72rem; border-radius: 6px; padding: .18rem .55rem; font-weight: 600; }
+    .badge-ok    { background: rgba(63,185,80,.1);   border: 1px solid rgba(63,185,80,.2);   color: #3fb950; }
+    .badge-low   { background: rgba(210,153,34,.1);  border: 1px solid rgba(210,153,34,.25); color: #d29922; }
+    .badge-zero  { background: rgba(248,81,73,.1);   border: 1px solid rgba(248,81,73,.25);  color: #f85149; }
+
+    /* Accordion suave */
+    .fr-body { overflow: hidden; max-height: 0; opacity: 0; transition: max-height .35s ease, opacity .25s ease; }
+    .fr-body.open { max-height: 4000px; opacity: 1; transition: max-height .4s ease, opacity .3s ease .05s; }
+
+    /* Produto row */
+    .produto-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      align-items: center; gap: .75rem;
+      padding: .6rem 1rem;
+      border-radius: 9px; border: 1px solid var(--border-color);
+      background: var(--card-bg); margin-bottom: .35rem;
+      transition: border-color .15s;
+    }
+    .produto-row:hover { border-color: rgba(13,110,253,.25); }
+    .produto-nome  { font-size: .88rem; font-weight: 500; }
+    .produto-code  { font-size: .72rem; color: var(--text-muted); }
+    .estoque-badge {
+      font-size: .8rem; font-weight: 700; min-width: 52px; text-align: center;
+      padding: .2rem .55rem; border-radius: 7px;
+    }
+    .est-ok   { background: rgba(63,185,80,.12);  color: #3fb950; }
+    .est-low  { background: rgba(210,153,34,.12); color: #d29922; }
+    .est-zero { background: rgba(248,81,73,.1);   color: #f85149; }
+
+    .btn-mov {
+      padding: .28rem .65rem; border-radius: 7px; font-size: .78rem; font-weight: 600;
+      border: 1px solid rgba(13,110,253,.35); background: rgba(13,110,253,.08);
+      color: #58a6ff; cursor: pointer; transition: background .15s; white-space: nowrap;
+    }
+    .btn-mov:hover { background: rgba(13,110,253,.18); }
+    .btn-hist {
+      padding: .28rem .55rem; border-radius: 7px; font-size: .8rem;
+      border: 1px solid var(--border-color); background: transparent;
+      color: var(--text-muted); cursor: pointer; transition: background .15s;
+    }
+    .btn-hist:hover { background: rgba(255,255,255,.06); }
+
+    /* Resumo cards */
+    .resumo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: .65rem; margin-bottom: 1.2rem; }
+    .resumo-card {
+      background: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 12px; padding: .75rem 1rem;
+    }
+    .resumo-label { font-size: .7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+    .resumo-val   { font-size: 1.4rem; font-weight: 700; margin-top: .1rem; }
+
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .empty-state i { font-size: 2.8rem; opacity: .3; display: block; margin-bottom: .6rem; }
+
+    /* Modal histórico */
+    .hist-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .5rem 0; border-bottom: 1px solid var(--border-color); gap: .5rem;
+    }
+    .hist-row:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle">☰</button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-box-seam"></i> Produtos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-sub-link" href="/create-product.html"><i class="bi bi-plus-lg"></i> Cadastrar Produto</a>
+        <a class="nav-sub-link" href="/list-products.html"><i class="bi bi-list-ul"></i> Lista de Produtos</a>
+      </div>
+    </div>
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-bag-check"></i> Pedidos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-sub-link" href="/create-order.html"><i class="bi bi-plus-lg"></i> Criar Pedido</a>
+        <a class="nav-sub-link" href="/list-orders.html"><i class="bi bi-list-ul"></i> Listar Pedidos</a>
+      </div>
+    </div>
+    <a class="nav-link active" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="container-fluid py-3" style="max-width:900px">
+
+    <!-- Hero -->
+    <div class="d-flex align-items-center justify-content-between mb-4 gap-3 flex-wrap">
+      <div class="d-flex align-items-center gap-3">
+        <div class="page-hero-icon"><i class="bi bi-archive-fill"></i></div>
+        <div>
+          <div class="page-hero-title">Estoque</div>
+          <div class="page-hero-sub" id="estoque-sub">Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumo -->
+    <div class="resumo-grid" id="resumo-grid"></div>
+
+    <!-- Lista -->
+    <div id="estoque-container">
+      <div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal movimentação -->
+<div class="modal fade" id="movModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#0d6efd,#6f42c1);color:#fff">
+        <h5 class="modal-title" id="movModalTitle"><i class="bi bi-archive me-2"></i>Movimentação</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div id="mov-produto-nome" style="font-weight:700;margin-bottom:1rem;font-size:.95rem"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:1rem" id="tipo-pills">
+          <button type="button" class="tipo-pill active" data-tipo="Entrada"
+            style="padding:.5rem;border-radius:9px;font-size:.85rem;font-weight:600;border:1px solid rgba(63,185,80,.4);background:rgba(63,185,80,.12);color:#3fb950;cursor:pointer">
+            <i class="bi bi-plus-circle"></i> Entrada
+          </button>
+          <button type="button" class="tipo-pill" data-tipo="Saída"
+            style="padding:.5rem;border-radius:9px;font-size:.85rem;font-weight:600;border:1px solid var(--border-color);background:transparent;color:var(--text-muted);cursor:pointer">
+            <i class="bi bi-dash-circle"></i> Saída
+          </button>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Quantidade</label>
+          <input type="number" class="form-control" id="mov-quantidade" min="1" placeholder="0">
+        </div>
+        <div class="mb-4">
+          <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Observação <span style="opacity:.5;font-weight:400">(opcional)</span></label>
+          <input type="text" class="form-control" id="mov-obs" placeholder="Ex: Recebimento NF 001">
+        </div>
+        <button id="btn-confirmar-mov" style="width:100%;padding:.65rem;border-radius:10px;border:none;background:linear-gradient(135deg,#0d6efd,#6f42c1);color:#fff;font-size:.92rem;font-weight:600;cursor:pointer">
+          <i class="bi bi-check-circle me-1"></i> Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal histórico -->
+<div class="modal fade" id="histModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#0d6efd,#6f42c1);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i><span id="hist-produto-nome">Histórico</span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3" id="hist-body">
+        <div class="empty-state"><i class="bi bi-clock-history"></i>Nenhuma movimentação ainda.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center py-3 mt-4">
+  <small>&copy; 2025 Sistema de Pedidos</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  Auth.requireAuth();
+  Auth.initSidebar();
+  document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+  const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtDt = d => new Date(d).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+
+  const LOW_STOCK = 5; // abaixo disso = baixo estoque
+
+  const franchiseMap = {
+    'Boticário':      { icon: 'bi-flower1',      color: '#a855f7', bg: 'rgba(168,85,247,.12)' },
+    'Natura':         { icon: 'bi-tree',          color: '#22c55e', bg: 'rgba(34,197,94,.12)'  },
+    'Avon':           { icon: 'bi-heart-fill',    color: '#f43f5e', bg: 'rgba(244,63,94,.12)'  },
+    'Abelha Rainha':  { icon: 'bi-star-fill',     color: '#f59e0b', bg: 'rgba(245,158,11,.12)' },
+    'Eudora':         { icon: 'bi-gem',           color: '#06b6d4', bg: 'rgba(6,182,212,.12)'  },
+    'Outros':         { icon: 'bi-bag',           color: '#94a3b8', bg: 'rgba(148,163,184,.12)' },
+  };
+  function frInfo(name) {
+    return franchiseMap[name] || { icon: 'bi-bag', color: '#94a3b8', bg: 'rgba(148,163,184,.12)' };
+  }
+
+  function nivelClass(q) {
+    if (q <= 0)        return 'est-zero';
+    if (q <= LOW_STOCK) return 'est-low';
+    return 'est-ok';
+  }
+  function nivelBadgeClass(zerados, baixos) {
+    if (zerados > 0)  return 'badge-zero';
+    if (baixos > 0)   return 'badge-low';
+    return 'badge-ok';
+  }
+  function nivelBadgeLabel(zerados, baixos, total) {
+    if (zerados > 0) return `${zerados} zerado${zerados>1?'s':''}`;
+    if (baixos  > 0) return `${baixos} baixo${baixos>1?'s':''}`;
+    return `${total} OK`;
+  }
+
+  let allEstoque = [];
+  let openFr = new Set();
+
+  async function loadEstoque() {
+    const res  = await Auth.apiFetch('/api/estoque');
+    allEstoque = await res.json();
+    render(allEstoque);
+  }
+
+  function render(items) {
+    const container = document.getElementById('estoque-container');
+    if (!items.length) {
+      container.innerHTML = '<div class="empty-state"><i class="bi bi-archive"></i>Nenhum produto cadastrado.</div>';
+      return;
+    }
+
+    // Resumo geral
+    const total   = items.length;
+    const zerados = items.filter(p => p.estoque <= 0).length;
+    const baixos  = items.filter(p => p.estoque > 0 && p.estoque <= LOW_STOCK).length;
+    const ok      = total - zerados - baixos;
+    document.getElementById('estoque-sub').textContent = `${total} produto${total!==1?'s':''} · ${zerados} zerado${zerados!==1?'s':''}`;
+    document.getElementById('resumo-grid').innerHTML = `
+      <div class="resumo-card">
+        <div class="resumo-label">Total produtos</div>
+        <div class="resumo-val">${total}</div>
+      </div>
+      <div class="resumo-card">
+        <div class="resumo-label">Em estoque</div>
+        <div class="resumo-val" style="color:#3fb950">${ok}</div>
+      </div>
+      <div class="resumo-card">
+        <div class="resumo-label">Estoque baixo</div>
+        <div class="resumo-val" style="color:#d29922">${baixos}</div>
+      </div>
+      <div class="resumo-card">
+        <div class="resumo-label">Zerados</div>
+        <div class="resumo-val" style="color:#f85149">${zerados}</div>
+      </div>`;
+
+    // Agrupa por franquia
+    const grupos = {};
+    items.forEach(p => {
+      if (!grupos[p.franchise]) grupos[p.franchise] = [];
+      grupos[p.franchise].push(p);
+    });
+
+    container.innerHTML = Object.keys(grupos).sort().map(fr => {
+      const prods   = grupos[fr];
+      const fr0     = prods.filter(p => p.estoque <= 0).length;
+      const frLow   = prods.filter(p => p.estoque > 0 && p.estoque <= LOW_STOCK).length;
+      const info    = frInfo(fr);
+      const isOpen  = openFr.has(fr);
+      const frId    = 'fr-' + fr.replace(/\s/g,'');
+
+      return `
+      <div style="margin-bottom:.5rem">
+        <div class="fr-header" onclick="toggleFr('${frId}','${fr}')">
+          <div class="fr-header-left">
+            <div class="fr-icon" style="background:${info.bg};color:${info.color}">
+              <i class="bi ${info.icon}"></i>
+            </div>
+            <div>
+              <div class="fr-name">${fr}</div>
+              <div class="fr-count">${prods.length} produto${prods.length!==1?'s':''}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <span class="fr-badge ${nivelBadgeClass(fr0, frLow)}">${nivelBadgeLabel(fr0, frLow, prods.length)}</span>
+            <i class="bi bi-chevron-${isOpen?'up':'down'}" id="${frId}-chev" style="color:var(--text-muted);font-size:.85rem"></i>
+          </div>
+        </div>
+        <div class="fr-body ${isOpen?'open':''}" id="${frId}">
+          <div style="padding:.2rem 0 .5rem">
+            ${prods.map(p => `
+            <div class="produto-row">
+              <div>
+                <div class="produto-nome">${p.name}</div>
+                <div class="produto-code">${p.code}</div>
+              </div>
+              <div class="estoque-badge ${nivelClass(p.estoque)}">${p.estoque} un</div>
+              <button class="btn-mov" onclick="abrirMov(${p.id},'${p.name.replace(/'/g,"\\'")}')">
+                <i class="bi bi-arrow-left-right"></i> Movimentar
+              </button>
+              <button class="btn-hist" onclick="abrirHist(${p.id},'${p.name.replace(/'/g,"\\'")}')">
+                <i class="bi bi-clock-history"></i>
+              </button>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleFr(frId, name) {
+    const body    = document.getElementById(frId);
+    const chevron = document.getElementById(frId + '-chev');
+    if (!body) return;
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    chevron.className = isOpen ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+    if (!isOpen) openFr.add(name); else openFr.delete(name);
+  }
+
+  // ── Movimentação ──
+  let movProdId = null;
+  let tipoSelecionado = 'Entrada';
+
+  document.querySelectorAll('.tipo-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.tipo-pill').forEach(p => {
+        p.style.background   = 'transparent';
+        p.style.borderColor  = 'var(--border-color)';
+        p.style.color        = 'var(--text-muted)';
+      });
+      tipoSelecionado = pill.dataset.tipo;
+      if (tipoSelecionado === 'Entrada') {
+        pill.style.background  = 'rgba(63,185,80,.12)';
+        pill.style.borderColor = 'rgba(63,185,80,.4)';
+        pill.style.color       = '#3fb950';
+      } else {
+        pill.style.background  = 'rgba(248,81,73,.1)';
+        pill.style.borderColor = 'rgba(248,81,73,.35)';
+        pill.style.color       = '#f85149';
+      }
+    });
+  });
+
+  function abrirMov(id, nome) {
+    movProdId = id;
+    tipoSelecionado = 'Entrada';
+    document.getElementById('mov-produto-nome').textContent = nome;
+    document.getElementById('mov-quantidade').value = '';
+    document.getElementById('mov-obs').value = '';
+    // reset pills
+    document.querySelectorAll('.tipo-pill').forEach(p => {
+      const isEntrada = p.dataset.tipo === 'Entrada';
+      p.style.background  = isEntrada ? 'rgba(63,185,80,.12)' : 'transparent';
+      p.style.borderColor = isEntrada ? 'rgba(63,185,80,.4)' : 'var(--border-color)';
+      p.style.color       = isEntrada ? '#3fb950' : 'var(--text-muted)';
+    });
+    new bootstrap.Modal(document.getElementById('movModal')).show();
+  }
+
+  document.getElementById('btn-confirmar-mov').addEventListener('click', async () => {
+    const quantidade = parseInt(document.getElementById('mov-quantidade').value);
+    const obs        = document.getElementById('mov-obs').value.trim();
+    if (!quantidade || quantidade <= 0) return Swal.fire('Atenção', 'Informe uma quantidade válida.', 'warning');
+
+    const res  = await Auth.apiFetch(`/api/estoque/${movProdId}/movimentacao`, {
+      method: 'POST', body: JSON.stringify({ tipo: tipoSelecionado, quantidade, observacao: obs })
+    });
+    const data = await res.json();
+    if (!res.ok) return Swal.fire('Erro', data.error, 'error');
+
+    bootstrap.Modal.getInstance(document.getElementById('movModal')).hide();
+    Swal.fire({ icon: 'success', title: `${tipoSelecionado} registrada!`, text: `Estoque atual: ${data.estoque} un`, timer: 2000, showConfirmButton: false });
+    loadEstoque();
+  });
+
+  // ── Histórico ──
+  async function abrirHist(id, nome) {
+    document.getElementById('hist-produto-nome').textContent = nome;
+    document.getElementById('hist-body').innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted)">Carregando...</div>';
+    new bootstrap.Modal(document.getElementById('histModal')).show();
+
+    const res  = await Auth.apiFetch(`/api/estoque/${id}/historico`);
+    const rows = await res.json();
+
+    if (!rows.length) {
+      document.getElementById('hist-body').innerHTML = '<div class="empty-state"><i class="bi bi-clock-history"></i>Nenhuma movimentação ainda.</div>';
+      return;
+    }
+
+    document.getElementById('hist-body').innerHTML = rows.map(r => `
+      <div class="hist-row">
+        <div>
+          <div style="font-size:.82rem;font-weight:600;color:${r.tipo==='Entrada'?'#3fb950':'#f85149'}">
+            <i class="bi bi-${r.tipo==='Entrada'?'plus':'dash'}-circle"></i> ${r.tipo}
+          </div>
+          <div style="font-size:.72rem;color:var(--text-muted)">${r.observacao || '—'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.9rem;font-weight:700">${r.quantidade} un</div>
+          <div style="font-size:.7rem;color:var(--text-muted)">${fmtDt(r.created_at)}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  loadEstoque();
+</script>
+</body>
+</html>

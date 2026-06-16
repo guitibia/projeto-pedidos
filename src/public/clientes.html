@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clientes</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .form-page-hero {
+      display: flex; align-items: center; gap: 1rem; margin-bottom: 0;
+    }
+    .form-page-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: linear-gradient(135deg, #0d9488 0%, #2dd4bf 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff; flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(45,212,191,.35);
+    }
+    .form-page-title { font-size: 1.3rem; font-weight: 700; margin: 0; }
+    .form-page-sub   { font-size: .8rem; color: var(--text-muted); margin: 0; }
+
+    /* Tabs */
+    .clientes-tabs {
+      display: inline-flex; gap: .3rem; padding: .3rem;
+      background: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 12px; margin: 1.5rem 0;
+    }
+    .clientes-tab {
+      padding: .5rem 1.1rem; border-radius: 9px; font-size: .85rem; font-weight: 600;
+      border: none; background: transparent; color: var(--text-muted);
+      cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: .45rem;
+    }
+    .clientes-tab:hover { color: var(--text-color); }
+    .clientes-tab.active {
+      background: linear-gradient(135deg, #0d9488 0%, #2dd4bf 100%);
+      color: #fff; box-shadow: 0 4px 12px rgba(45,212,191,.3);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Cadastro */
+    .field-group {
+      background: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 1.25rem 1.25rem .75rem; margin-bottom: 1rem;
+    }
+    .field-group-title {
+      font-size: .7rem; text-transform: uppercase; letter-spacing: .8px;
+      color: var(--text-muted); margin-bottom: .9rem;
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .field-group-title i { font-size: .85rem; }
+    .form-label { font-size: .8rem; font-weight: 600; color: var(--text-muted); margin-bottom: .3rem; }
+    .input-icon-wrap { position: relative; }
+    .input-icon-wrap i {
+      position: absolute; left: .75rem; top: 50%;
+      transform: translateY(-50%); color: var(--text-muted); font-size: .95rem; pointer-events: none;
+    }
+    .input-icon-wrap .form-control,
+    .input-icon-wrap .form-select { padding-left: 2.3rem; }
+    .cep-row { display: flex; gap: .5rem; }
+    .cep-row .input-icon-wrap { flex: 1; }
+    .btn-cep {
+      padding: .375rem .85rem; background: rgba(45,212,191,.12);
+      border: 1px solid rgba(45,212,191,.25); color: #2dd4bf;
+      border-radius: 8px; font-size: .82rem; white-space: nowrap; cursor: pointer; transition: background .15s;
+    }
+    .btn-cep:hover { background: rgba(45,212,191,.22); }
+    .btn-submit-form {
+      width: 100%; padding: .7rem; font-size: .95rem; font-weight: 600;
+      border-radius: 10px; border: none;
+      background: linear-gradient(135deg, #0d9488 0%, #2dd4bf 100%);
+      color: #fff; cursor: pointer; transition: opacity .15s, box-shadow .15s;
+      box-shadow: 0 4px 14px rgba(45,212,191,.3);
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+    }
+    .btn-submit-form:hover { opacity: .92; box-shadow: 0 6px 18px rgba(45,212,191,.4); }
+
+    /* Listagem */
+    .controls-bar {
+      background: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 1.25rem;
+      display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;
+    }
+    .controls-bar .field-wrap { flex: 1; min-width: 200px; }
+    .controls-bar label {
+      font-size: .75rem; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: .35rem; display: block;
+    }
+    .filter-pills { display: flex; gap: .4rem; }
+    .filter-pill {
+      padding: .35rem .9rem; border-radius: 20px; font-size: .8rem; font-weight: 600;
+      border: 1.5px solid var(--border-color); background: transparent;
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .filter-pill:hover { border-color: #2dd4bf; color: var(--text-color); }
+    .filter-pill.active { background: rgba(45,212,191,.12); border-color: #2dd4bf; color: #2dd4bf; }
+    .list-card {
+      background: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 14px; overflow: hidden;
+    }
+    .list-card table { margin: 0; }
+    .list-card thead th {
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .6px;
+      color: var(--text-muted); font-weight: 600; padding: .75rem 1rem;
+      border-bottom: 1px solid var(--border-color); background: transparent;
+    }
+    .list-card tbody tr { transition: background .12s; }
+    .list-card tbody tr:hover { background: rgba(255,255,255,.03); }
+    .list-card tbody td {
+      padding: .65rem 1rem; font-size: .875rem;
+      border-bottom: 1px solid var(--border-color); vertical-align: middle;
+    }
+    .list-card tbody tr:last-child td { border-bottom: none; }
+    .order-id   { color: var(--text-muted); font-size: .8rem; }
+    .order-value { font-weight: 700; color: #3fb950; }
+    .btn-action {
+      padding: .3rem .75rem; border-radius: 7px; font-size: .8rem;
+      border: 1px solid transparent; cursor: pointer; transition: all .15s;
+      display: inline-flex; align-items: center; gap: .3rem;
+    }
+    .btn-view { background: rgba(45,212,191,.1); border-color: rgba(45,212,191,.25); color: #2dd4bf; }
+    .btn-view:hover { background: rgba(45,212,191,.22); }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .empty-state i { font-size: 2.5rem; opacity: .35; display: block; margin-bottom: .75rem; }
+  </style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle">☰</button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link active" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-box-seam"></i> Produtos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-sub-link" href="/create-product.html"><i class="bi bi-plus-lg"></i> Cadastrar Produto</a>
+        <a class="nav-sub-link" href="/list-products.html"><i class="bi bi-list-ul"></i> Lista de Produtos</a>
+      </div>
+    </div>
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-bag-check"></i> Pedidos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-sub-link" href="/create-order.html"><i class="bi bi-plus-lg"></i> Criar Pedido</a>
+        <a class="nav-sub-link" href="/list-orders.html"><i class="bi bi-list-ul"></i> Listar Pedidos</a>
+      </div>
+    </div>
+    <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="container-fluid py-3">
+
+    <!-- Hero -->
+    <div class="form-page-hero">
+      <div class="form-page-icon"><i class="bi bi-people-fill"></i></div>
+      <div>
+        <div class="form-page-title">Clientes</div>
+        <div class="form-page-sub">Cadastre novos clientes e consulte seus pedidos</div>
+      </div>
+    </div>
+
+    <!-- Abas -->
+    <div class="clientes-tabs">
+      <button class="clientes-tab active" data-tab="cadastrar" onclick="switchTab(this)">
+        <i class="bi bi-person-plus"></i> Cadastrar cliente
+      </button>
+      <button class="clientes-tab" data-tab="listar" onclick="switchTab(this)">
+        <i class="bi bi-people"></i> Listar clientes
+      </button>
+    </div>
+
+    <!-- ============ ABA: LISTAR ============ -->
+    <div class="tab-panel" id="panel-listar">
+      <div class="controls-bar">
+        <div class="field-wrap" style="flex:2">
+          <label><i class="bi bi-person me-1"></i>Cliente</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-search"></i>
+            <select id="clientSelect" class="form-select" onchange="loadClientOrders()">
+              <option value="">Escolha um cliente...</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap" style="flex:0 0 auto">
+          <label><i class="bi bi-funnel me-1"></i>Status</label>
+          <div class="filter-pills">
+            <button class="filter-pill active" data-status="Todos" onclick="setFilter(this)">Todos</button>
+            <button class="filter-pill" data-status="Pendente" onclick="setFilter(this)"><i class="bi bi-hourglass-split"></i> Pendente</button>
+            <button class="filter-pill" data-status="Entregue" onclick="setFilter(this)"><i class="bi bi-check-circle"></i> Entregue</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="list-card">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Pagamento</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Detalhes</th>
+            </tr>
+          </thead>
+          <tbody id="ordersList">
+            <tr><td colspan="5" class="text-center py-5" style="color:var(--text-muted)">
+              <i class="bi bi-person-circle" style="font-size:2rem;opacity:.35;display:block;margin-bottom:.5rem"></i>
+              Selecione um cliente para ver os pedidos.
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============ ABA: CADASTRAR ============ -->
+    <div class="tab-panel active" id="panel-cadastrar">
+      <div style="max-width:560px">
+        <form id="clientForm">
+          <div class="field-group">
+            <div class="field-group-title"><i class="bi bi-person-circle"></i> Dados Pessoais</div>
+            <div class="mb-3">
+              <label class="form-label">Nome completo</label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-person"></i>
+                <input type="text" class="form-control" id="name" placeholder="Nome do cliente" required>
+              </div>
+            </div>
+            <div class="mb-0">
+              <label class="form-label">Telefone</label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-telephone"></i>
+                <input type="text" class="form-control" id="phone" placeholder="(XX) XXXXX-XXXX">
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-group-title"><i class="bi bi-geo-alt"></i> Endereço</div>
+            <div class="mb-3">
+              <label class="form-label">CEP</label>
+              <div class="cep-row">
+                <div class="input-icon-wrap">
+                  <i class="bi bi-mailbox"></i>
+                  <input type="text" class="form-control" id="cep" placeholder="00000-000" maxlength="9">
+                </div>
+                <button type="button" class="btn-cep" id="btn-buscar-cep">
+                  <i class="bi bi-search"></i> Buscar
+                </button>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Rua / Avenida</label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-signpost"></i>
+                <input type="text" class="form-control" id="address" placeholder="Nome da rua" required>
+              </div>
+            </div>
+            <div class="row g-2 mb-0">
+              <div class="col-8">
+                <label class="form-label">Bairro</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-map"></i>
+                  <input type="text" class="form-control" id="neighborhood" placeholder="Bairro" required>
+                </div>
+              </div>
+              <div class="col-4">
+                <label class="form-label">Número</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-hash"></i>
+                  <input type="text" class="form-control" id="houseNumber" placeholder="Nº" required>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit-form">
+            <i class="bi bi-person-check-fill"></i> Cadastrar Cliente
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal detalhes -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#0d9488,#2dd4bf);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-bag-check-fill me-2"></i>Detalhes do Pedido</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="orderDetailsContent"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center py-3 mt-4">
+  <small>&copy; 2025 Sistema de Pedidos</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  Auth.requireAuth();
+  Auth.initSidebar();
+  document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+  // ---------- Troca de abas ----------
+  function switchTab(btn) {
+    document.querySelectorAll('.clientes-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  }
+
+  const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  // ---------- Listagem ----------
+  let currentStatus = 'Todos';
+
+  function setFilter(btn) {
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.status;
+    loadClientOrders();
+  }
+
+  async function loadClients() {
+    const res     = await Auth.apiFetch('/api/clients');
+    const clients = await res.json();
+    const sel = document.getElementById('clientSelect');
+    sel.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+    clients.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name}</option>`));
+  }
+
+  async function loadClientOrders() {
+    const clientId = document.getElementById('clientSelect').value;
+    const tbody    = document.getElementById('ordersList');
+
+    if (!clientId) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">
+        <i class="bi bi-person-circle"></i>Selecione um cliente para ver os pedidos.</div></td></tr>`;
+      return;
+    }
+
+    const res    = await Auth.apiFetch(`/api/client-orders/${clientId}?status=${currentStatus}`);
+    const orders = await res.json();
+    tbody.innerHTML = '';
+
+    if (!orders.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">
+        <i class="bi bi-inbox"></i>Nenhum pedido encontrado.</div></td></tr>`;
+      return;
+    }
+
+    orders.forEach(o => {
+      const badge = o.status === 'Entregue'
+        ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Entregue</span>'
+        : '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Pendente</span>';
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td class="order-id">#${o.id}</td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${o.payment_method}</td>
+          <td class="order-value">${fmt(o.total_cost)}</td>
+          <td>${badge}</td>
+          <td><button class="btn-action btn-view" onclick="viewOrderDetails(${o.id})"><i class="bi bi-eye"></i> Ver</button></td>
+        </tr>`);
+    });
+  }
+
+  async function viewOrderDetails(id) {
+    const res   = await Auth.apiFetch(`/api/orders/${id}`);
+    const order = await res.json();
+
+    const totalVenda = order.products.reduce((s, p) => s + p.sale_price * (p.quantity || 1), 0);
+    const totalCusto = order.products.reduce((s, p) => s + p.cost_price * (p.quantity || 1), 0);
+
+    const byFranchise = {};
+    order.products.forEach(p => {
+      const f = p.franchise || 'Outros';
+      if (!byFranchise[f]) byFranchise[f] = [];
+      byFranchise[f].push(p);
+    });
+
+    const prodHTML = Object.entries(byFranchise).map(([franchise, prods]) => `
+      <div style="margin-bottom:.75rem">
+        <div style="font-size:.7rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)">${franchise}</div>
+        ${prods.map(p => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.5rem .65rem;border-radius:7px;background:var(--bg-hover);border:1px solid var(--border);margin-bottom:.3rem">
+            <div>
+              <div style="font-size:.875rem;font-weight:500;color:var(--text-heading)">${p.product_name}</div>
+              <div style="font-size:.75rem;color:var(--text-muted)">COD ${p.code} &nbsp;·&nbsp; Qtd: ${p.quantity}</div>
+            </div>
+            <div style="display:flex;gap:.4rem;flex-shrink:0">
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.25rem .55rem;text-align:center;min-width:70px">
+                <div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Custo</div>
+                <div style="font-size:.8rem;color:var(--text-primary);font-weight:500;margin-top:1px">${fmt(p.cost_price * p.quantity)}</div>
+              </div>
+              <div style="background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.25);border-radius:6px;padding:.25rem .55rem;text-align:center;min-width:70px">
+                <div style="font-size:.62rem;color:var(--success);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Venda</div>
+                <div style="font-size:.8rem;color:var(--success);font-weight:700;margin-top:1px">${fmt(p.sale_price * p.quantity)}</div>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>`).join('');
+
+    const pagamento = `${order.payment_method}${order.installments > 1 ? ` &nbsp;·&nbsp; ${order.installments}x de ${fmt(totalVenda / order.installments)}` : ''}${order.combined_payment_value ? ` &nbsp;·&nbsp; PIX/Dinheiro: ${fmt(order.combined_payment_value)}` : ''}`;
+
+    document.getElementById('orderDetailsContent').innerHTML = `
+      <div style="margin-bottom:1rem">
+        <div style="font-size:1rem;font-weight:700;color:var(--text-heading)">Pedido #${order.id} &nbsp;·&nbsp; ${order.client_name}</div>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem">📍 ${order.client_address}, ${order.client_house_number} — ${order.client_neighborhood}</div>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.15rem">💳 ${pagamento}</div>
+        ${order.delivery_fee > 0 ? `<div style="font-size:.82rem;color:#f0883e;margin-top:.15rem">🚗 Taxa de entrega: ${fmt(order.delivery_fee)}</div>` : ''}
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:.75rem;margin-bottom:.75rem">${prodHTML}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;border-top:1px solid var(--border);padding-top:.75rem">
+        <div style="text-align:center;padding:.5rem;border-radius:8px;background:var(--bg-hover)">
+          <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Custo</div>
+          <div style="font-size:.95rem;font-weight:600;color:var(--text-primary)">${fmt(totalCusto)}</div>
+        </div>
+        <div style="text-align:center;padding:.5rem;border-radius:8px;background:var(--bg-hover)">
+          <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Venda</div>
+          <div style="font-size:.95rem;font-weight:600;color:var(--accent)">${fmt(totalVenda)}</div>
+        </div>
+        <div style="text-align:center;padding:.5rem;border-radius:8px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2)">
+          <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Lucro</div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--success)">${fmt(totalVenda - totalCusto)}</div>
+        </div>
+      </div>`;
+
+    const modalEl  = document.getElementById('orderDetailsModal');
+    const existing = bootstrap.Modal.getInstance(modalEl);
+    if (existing) existing.show(); else new bootstrap.Modal(modalEl).show();
+  }
+
+  // ---------- Cadastro ----------
+  document.getElementById('cep').addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+    e.target.value = v;
+  });
+
+  async function buscarCep() {
+    const cep = document.getElementById('cep').value.replace(/\D/g, '');
+    if (cep.length !== 8) return Swal.fire('Atenção', 'Digite um CEP válido (8 dígitos).', 'warning');
+    try {
+      const res  = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (data.erro) return Swal.fire('Aviso', 'CEP não encontrado.', 'warning');
+      const addr  = document.getElementById('address');
+      const neigh = document.getElementById('neighborhood');
+      addr.value  = data.logradouro || '';
+      neigh.value = data.bairro || '';
+      addr.readOnly  = !!data.logradouro;
+      neigh.readOnly = !!data.bairro;
+      document.getElementById('houseNumber').focus();
+    } catch { /* silencioso */ }
+  }
+
+  document.getElementById('btn-buscar-cep').addEventListener('click', buscarCep);
+  document.getElementById('cep').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarCep(); } });
+
+  document.getElementById('clientForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      name:         document.getElementById('name').value.trim(),
+      address:      document.getElementById('address').value.trim(),
+      houseNumber:  document.getElementById('houseNumber').value.trim(),
+      neighborhood: document.getElementById('neighborhood').value.trim(),
+      phone:        document.getElementById('phone').value.replace(/\D/g, '')
+    };
+
+    try {
+      const res  = await Auth.apiFetch('/api/clients', { method: 'POST', body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) return Swal.fire('Erro', data.error, 'error');
+      Swal.fire({ icon: 'success', title: 'Cliente cadastrado!', text: 'O cliente foi registrado com sucesso.', timer: 2000, showConfirmButton: false });
+      document.getElementById('clientForm').reset();
+      document.getElementById('address').readOnly      = false;
+      document.getElementById('neighborhood').readOnly = false;
+      loadClients(); // atualiza o select da aba de listagem
+    } catch {
+      Swal.fire('Erro', 'Erro ao conectar ao servidor.', 'error');
+    }
+  });
+
+  loadClients();
+</script>
+</body>
+</html>

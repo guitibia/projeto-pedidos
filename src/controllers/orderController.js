@@ -1,4 +1,5 @@
 const db = require('../database/connection');
+const { deliveryFee, geocodeClient } = require('../utils/geo');
 
 const VALID_PAYMENT_METHODS = ['PIX', 'DINHEIRO', 'CARTÃO DE CRÉDITO', 'PARCELADO', 'PAGAMENTO COMBINADO'];
 
@@ -31,24 +32,46 @@ async function createOrder(req, res) {
     }
   }
 
+  // Calcular taxa de entrega antes de abrir transação
+  let fee = 0;
+  try {
+    const [[client]] = await db.query('SELECT lat, lng, address, house_number, neighborhood FROM clients WHERE id = ?', [clientId]);
+    if (client) {
+      let lat = client.lat, lng = client.lng;
+      // Se o cliente ainda não foi geocodificado, tenta agora e persiste
+      if (!lat || !lng) {
+        const coords = await geocodeClient(client.address, client.house_number, client.neighborhood);
+        if (coords) {
+          lat = coords.lat; lng = coords.lng;
+          await db.query('UPDATE clients SET lat=?, lng=? WHERE id=?', [lat, lng, clientId]);
+        }
+      }
+      fee = await deliveryFee(lat, lng);
+    }
+  } catch (_) {}
+
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
 
-    // Verificar que todos os produtos existem
+    // Verificar que todos os produtos existem e têm estoque suficiente
     for (const product of productArray) {
-      const [rows] = await conn.query('SELECT id FROM products WHERE id = ?', [product.id]);
-      if (rows.length === 0) throw new Error(`Produto ID "${product.id}" não encontrado.`);
+      const [[row]] = await conn.query('SELECT id, name, estoque FROM products WHERE id = ?', [product.id]);
+      if (!row) throw new Error(`Produto ID "${product.id}" não encontrado.`);
+      const qtd = product.quantity || 1;
+      if (row.estoque < qtd) {
+        throw new Error(`Estoque insuficiente para "${row.name}". Disponível: ${row.estoque}, solicitado: ${qtd}.`);
+      }
     }
 
-    // Inserir pedido
+    // Inserir pedido com taxa de entrega
     const [orderResult] = await conn.query(
-      'INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value) VALUES (?, ?, ?, ?, ?)',
-      [clientId, paymentMethod, installments || null, totalValue, combinedPaymentValue || null]
+      'INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value, delivery_fee) VALUES (?, ?, ?, ?, ?, ?)',
+      [clientId, paymentMethod, installments || null, totalValue, combinedPaymentValue || null, fee]
     );
     const orderId = orderResult.insertId;
 
-    // Inserir produtos do pedido
+    // Inserir produtos do pedido e descontar estoque
     const productsValues = productArray.map(p => [
       orderId,
       p.id,
@@ -57,8 +80,17 @@ async function createOrder(req, res) {
     ]);
     await conn.query('INSERT INTO order_products (order_id, product_id, sale_price, quantity) VALUES ?', [productsValues]);
 
+    for (const product of productArray) {
+      const qtd = product.quantity || 1;
+      await conn.query('UPDATE products SET estoque = estoque - ? WHERE id = ?', [qtd, product.id]);
+      await conn.query(
+        'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)',
+        [product.id, 'Saída', qtd, `Pedido #${orderId}`]
+      );
+    }
+
     await conn.commit();
-    return res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue });
+    return res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue, deliveryFee: fee });
   } catch (err) {
     await conn.rollback();
     console.error('Erro ao criar pedido:', err);
@@ -99,6 +131,7 @@ async function getOrderById(req, res) {
     // Buscar cabeçalho do pedido
     const [orderRows] = await db.query(
       `SELECT o.id, o.payment_method, o.total_cost, o.installments, o.combined_payment_value, o.status,
+              o.delivery_fee,
               c.name AS client_name, c.address AS client_address,
               c.house_number AS client_house_number, c.neighborhood AS client_neighborhood
        FROM orders o JOIN clients c ON o.client_id = c.id
@@ -184,4 +217,61 @@ async function updateNotCame(req, res) {
   }
 }
 
-module.exports = { createOrder, listOrders, getOrderById, updateOrderStatus, deleteOrder, updateNotCame };
+// GET /api/orders/:id/parcelas  — lista (e lazy-cria) parcelas do pedido
+async function getOrderParcelas(req, res) {
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+
+  try {
+    const [[order]] = await db.query(
+      'SELECT installments, total_cost, payment_method, combined_payment_value FROM orders WHERE id = ?', [id]
+    );
+    if (!order) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    // Só mostra parcelas para métodos que realmente parcelam
+    if (!['PARCELADO', 'PAGAMENTO COMBINADO'].includes(order.payment_method)) return res.json([]);
+    if (!order.installments || order.installments <= 1) return res.json([]);
+
+    // Verifica se já existem parcelas
+    const [existing] = await db.query('SELECT * FROM order_parcelas WHERE order_id = ? ORDER BY numero', [id]);
+    if (existing.length > 0) return res.json(existing);
+
+    // Para PAGAMENTO COMBINADO, a parte parcelada é total - valor já pago no PIX/Dinheiro
+    const baseParcelado = order.payment_method === 'PAGAMENTO COMBINADO' && order.combined_payment_value
+      ? order.total_cost - parseFloat(order.combined_payment_value)
+      : order.total_cost;
+
+    const valor = parseFloat((baseParcelado / order.installments).toFixed(2));
+    const rows = Array.from({ length: order.installments }, (_, i) => [id, i + 1, valor]);
+    await db.query('INSERT INTO order_parcelas (order_id, numero, valor) VALUES ?', [rows]);
+
+    const [created] = await db.query('SELECT * FROM order_parcelas WHERE order_id = ? ORDER BY numero', [id]);
+    return res.json(created);
+  } catch (err) {
+    console.error('Erro ao buscar parcelas:', err);
+    return res.status(500).json({ error: 'Erro ao buscar parcelas.' });
+  }
+}
+
+// PUT /api/orders/:id/parcelas/:num  — alterna status da parcela
+async function updateOrderParcela(req, res) {
+  const id  = parseInt(req.params.id);
+  const num = parseInt(req.params.num);
+  if (!Number.isInteger(id) || !Number.isInteger(num)) return res.status(400).json({ error: 'ID inválido.' });
+
+  const { status } = req.body;
+  if (!['Pendente', 'Pago'].includes(status)) return res.status(400).json({ error: 'Status inválido.' });
+
+  try {
+    const dataPagamento = status === 'Pago' ? new Date() : null;
+    await db.query(
+      'UPDATE order_parcelas SET status=?, data_pagamento=? WHERE order_id=? AND numero=?',
+      [status, dataPagamento, id, num]
+    );
+    return res.json({ message: 'Parcela atualizada.' });
+  } catch (err) {
+    console.error('Erro ao atualizar parcela:', err);
+    return res.status(500).json({ error: 'Erro ao atualizar parcela.' });
+  }
+}
+
+module.exports = { createOrder, listOrders, getOrderById, updateOrderStatus, deleteOrder, updateNotCame, getOrderParcelas, updateOrderParcela };

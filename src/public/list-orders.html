@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
@@ -6,59 +6,144 @@
   <title>Lista de Pedidos</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.0/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .form-page-hero {
+      display: flex; align-items: center; gap: 1rem; margin-bottom: 0;
+    }
+    .form-page-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: linear-gradient(135deg, #8957e5 0%, #bc8cff 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff; flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(188,140,255,.35);
+    }
+    .form-page-title { font-size: 1.3rem; font-weight: 700; margin: 0; }
+    .form-page-sub   { font-size: .8rem; color: var(--text-muted); margin: 0; }
+
+    /* Filter pills */
+    .filter-pills { display: flex; gap: .4rem; }
+    .filter-pill {
+      padding: .35rem .9rem; border-radius: 20px; font-size: .8rem; font-weight: 600;
+      border: 1.5px solid var(--border-color); background: transparent;
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .filter-pill:hover { border-color: #bc8cff; color: var(--text-color); }
+    .filter-pill.active { background: rgba(188,140,255,.15); border-color: #bc8cff; color: #bc8cff; }
+
+    /* Table card */
+    .list-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px; overflow: hidden;
+    }
+    .list-card table { margin: 0; }
+    .list-card thead th {
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .6px;
+      color: var(--text-muted); font-weight: 600; padding: .75rem 1rem;
+      border-bottom: 1px solid var(--border-color); background: transparent;
+    }
+    .list-card tbody tr { transition: background .12s; }
+    .list-card tbody tr:hover { background: rgba(255,255,255,.03); }
+    .list-card tbody td {
+      padding: .65rem 1rem; font-size: .875rem;
+      border-bottom: 1px solid var(--border-color); vertical-align: middle;
+    }
+    .list-card tbody tr:last-child td { border-bottom: none; }
+
+    .order-id { color: var(--text-muted); font-size: .8rem; }
+    .order-value { font-weight: 700; color: #3fb950; }
+
+    .btn-action {
+      padding: .3rem .6rem; border-radius: 7px; font-size: .8rem;
+      border: 1px solid transparent; cursor: pointer; transition: all .15s;
+      display: inline-flex; align-items: center; gap: .25rem;
+    }
+    .btn-view   { background: rgba(88,166,255,.12); border-color: rgba(88,166,255,.25); color: #58a6ff; }
+    .btn-view:hover   { background: rgba(88,166,255,.22); }
+    .btn-delete { background: rgba(248,81,73,.10); border-color: rgba(248,81,73,.22); color: #f85149; }
+    .btn-delete:hover { background: rgba(248,81,73,.22); }
+  </style>
 </head>
 <body>
 
 <button class="sidebar-toggle" id="sidebarToggle">☰</button>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="system-name">📦 Sistema de Pedidos</div>
-    <div class="user-name" id="sidebar-user">Carregando...</div>
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
   </div>
   <nav class="sidebar-nav">
-    <a class="nav-link" href="/">Dashboard</a>
-    <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
-    <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
-    <a class="nav-link" href="/create-order.html">Criar Pedido</a>
-    <a class="nav-link active" href="/list-orders.html">Listar Pedidos</a>
-    <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
-    <a class="nav-link" href="/promissorias.html">Promissórias</a>
+    <a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-box-seam"></i> Produtos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-sub-link" href="/create-product.html"><i class="bi bi-plus-lg"></i> Cadastrar Produto</a>
+        <a class="nav-sub-link" href="/list-products.html"><i class="bi bi-list-ul"></i> Lista de Produtos</a>
+      </div>
+    </div>
+    <div class="nav-group">
+      <button class="nav-group-toggle has-active open" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-bag-check"></i> Pedidos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items open">
+        <a class="nav-sub-link" href="/create-order.html"><i class="bi bi-plus-lg"></i> Criar Pedido</a>
+        <a class="nav-sub-link active" href="/list-orders.html"><i class="bi bi-list-ul"></i> Listar Pedidos</a>
+      </div>
+    </div>
+    <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
   </nav>
   <div class="sidebar-footer">
-    <button class="btn-logout" id="btn-logout">Sair</button>
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
   </div>
 </div>
 
 <div class="main-content">
-  <div class="container py-2">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-      <h4 class="mb-0">Pedidos</h4>
-      <select id="statusFilter" class="form-select w-auto" onchange="loadOrders()">
-        <option value="Todos">Todos</option>
-        <option value="Pendente">Pendente</option>
-        <option value="Entregue">Entregue</option>
-      </select>
-    </div>
+  <div class="container-fluid py-3">
 
-    <div class="card">
-      <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th class="ps-3">#</th>
-              <th>Cliente</th>
-              <th>Pagamento</th>
-              <th>Status</th>
-              <th>Total</th>
-              <th class="pe-3">Ações</th>
-            </tr>
-          </thead>
-          <tbody id="ordersList"></tbody>
-        </table>
+    <div class="d-flex align-items-center justify-content-between mb-4 gap-3 flex-wrap">
+      <div class="form-page-hero">
+        <div class="form-page-icon"><i class="bi bi-bag-check-fill"></i></div>
+        <div>
+          <div class="form-page-title">Lista de Pedidos</div>
+          <div class="form-page-sub" id="order-count">Carregando...</div>
+        </div>
+      </div>
+      <div class="filter-pills">
+        <button class="filter-pill active" data-status="Todos" onclick="setFilter(this)">Todos</button>
+        <button class="filter-pill" data-status="Pendente" onclick="setFilter(this)"><i class="bi bi-hourglass-split"></i> Pendente</button>
+        <button class="filter-pill" data-status="Entregue" onclick="setFilter(this)"><i class="bi bi-check-circle"></i> Entregue</button>
       </div>
     </div>
+
+    <div class="list-card">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cliente</th>
+            <th>Pagamento</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="ordersList">
+          <tr><td colspan="6" class="text-center py-4" style="color:var(--text-muted)">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 
@@ -66,21 +151,21 @@
 <div class="modal fade" id="orderDetailsModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">Detalhes do Pedido</h5>
+      <div class="modal-header" style="background:linear-gradient(135deg,#8957e5,#bc8cff);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-bag-check-fill me-2"></i>Detalhes do Pedido</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="orderDetailsContent"></div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <button class="btn btn-outline-primary" id="printButton"><i class="bi bi-printer"></i> Imprimir</button>
-        <button class="btn btn-success" id="markAsDeliveredButton"><i class="bi bi-check-circle"></i> Marcar como Entregue</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Fechar</button>
+        <button class="btn btn-outline-primary" id="printButton"><i class="bi bi-printer me-1"></i>Imprimir</button>
+        <button class="btn btn-success" id="markAsDeliveredButton"><i class="bi bi-check-circle me-1"></i>Marcar como Entregue</button>
       </div>
     </div>
   </div>
 </div>
 
-<footer class="bg-dark text-white text-center py-3 mt-4">
+<footer class="text-center py-3 mt-4">
   <small>&copy; 2025 Sistema de Pedidos</small>
 </footer>
 
@@ -93,32 +178,43 @@
   document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
 
   const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  let currentStatus = 'Todos';
+
+  function setFilter(btn) {
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.status;
+    loadOrders();
+  }
 
   async function loadOrders() {
-    const status = document.getElementById('statusFilter').value;
-    const url = status === 'Todos' ? '/api/orders' : `/api/orders?status=${status}`;
-    const res = await Auth.apiFetch(url);
+    const url = currentStatus === 'Todos' ? '/api/orders' : `/api/orders?status=${currentStatus}`;
+    const res    = await Auth.apiFetch(url);
     const orders = await res.json();
-    const tbody = document.getElementById('ordersList');
+    const tbody  = document.getElementById('ordersList');
+    document.getElementById('order-count').textContent = `${orders.length} pedido${orders.length !== 1 ? 's' : ''} encontrado${orders.length !== 1 ? 's' : ''}`;
+
     tbody.innerHTML = '';
     if (!orders.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Nenhum pedido encontrado.</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5" style="color:var(--text-muted)">
+        <i class="bi bi-inbox" style="font-size:2rem;opacity:.35;display:block;margin-bottom:.5rem"></i>
+        Nenhum pedido encontrado.</td></tr>`;
       return;
     }
     orders.forEach(o => {
       const badge = o.status === 'Entregue'
-        ? '<span class="badge bg-success">Entregue</span>'
-        : '<span class="badge bg-warning text-dark">Pendente</span>';
+        ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Entregue</span>'
+        : '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Pendente</span>';
       tbody.insertAdjacentHTML('beforeend', `
         <tr>
-          <td class="ps-3">${o.id}</td>
-          <td>${o.client_name}</td>
-          <td>${o.payment_method}</td>
+          <td class="order-id">#${o.id}</td>
+          <td class="td-client" style="font-weight:500">${o.client_name}</td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${o.payment_method}</td>
           <td>${badge}</td>
-          <td>${fmt(o.total_cost)}</td>
-          <td class="pe-3">
-            <button class="btn btn-sm btn-info me-1" onclick="viewOrder(${o.id})"><i class="bi bi-eye"></i></button>
-            <button class="btn btn-sm btn-danger" onclick="deleteOrder(${o.id})"><i class="bi bi-trash"></i></button>
+          <td class="order-value">${fmt(o.total_cost)}</td>
+          <td>
+            <button class="btn-action btn-view me-1" onclick="viewOrder(${o.id})"><i class="bi bi-eye"></i> Ver</button>
+            <button class="btn-action btn-delete" onclick="deleteOrder(${o.id})"><i class="bi bi-trash3"></i></button>
           </td>
         </tr>`);
     });
@@ -133,54 +229,138 @@
     });
     if (!isConfirmed) return;
     const res = await Auth.apiFetch(`/api/orders/${id}`, { method: 'DELETE' });
-    if (res.ok) { Swal.fire('Excluído!', '', 'success'); loadOrders(); }
+    if (res.ok) { Swal.fire({ icon: 'success', title: 'Excluído!', timer: 1200, showConfirmButton: false }); loadOrders(); }
     else Swal.fire('Erro', 'Não foi possível excluir.', 'error');
   }
 
   async function viewOrder(id) {
-    const res   = await Auth.apiFetch(`/api/orders/${id}`);
-    const order = await res.json();
+    const [res, resParc] = await Promise.all([
+      Auth.apiFetch(`/api/orders/${id}`),
+      Auth.apiFetch(`/api/orders/${id}/parcelas`)
+    ]);
+    const order    = await res.json();
+    const parcelas = await resParc.json();
 
     const totalVenda = order.products.reduce((s, p) => s + p.sale_price * (p.quantity || 1), 0);
     const totalCusto = order.products.reduce((s, p) => s + p.cost_price * (p.quantity || 1), 0);
 
-    // Agrupar por franquia
     const grouped = order.products.reduce((acc, p) => {
-      (acc[p.franchise] = acc[p.franchise] || []).push(p);
-      return acc;
+      (acc[p.franchise] = acc[p.franchise] || []).push(p); return acc;
     }, {});
 
     const prodHTML = Object.entries(grouped).map(([fr, prods]) => `
-      <div class="mb-2"><strong>${fr}</strong>
-        ${prods.map(p => `<div class="ms-3 text-muted" style="font-size:.9rem">
-          ${p.product_name} — COD ${p.code} &nbsp;|&nbsp;
-          Qtd: ${p.quantity} &nbsp;|&nbsp;
-          Custo: ${fmt(p.cost_price * p.quantity)} &nbsp;|&nbsp;
-          Venda: ${fmt(p.sale_price * p.quantity)}
-          ${p.not_came ? '<span class="badge bg-danger ms-1">Não veio</span>' : ''}
-        </div>`).join('')}
+      <div class="mb-3">
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem">${fr}</div>
+        ${prods.map(p => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.5rem .65rem;border-radius:7px;background:var(--bg-hover);border:1px solid var(--border);margin-bottom:.3rem">
+            <div>
+              <div style="color:var(--text-heading);font-size:.875rem;font-weight:500">${p.product_name} ${p.not_came ? '<span class="badge bg-danger" style="font-size:.7rem">Não veio</span>' : ''}</div>
+              <div style="color:var(--text-muted);font-size:.75rem">COD ${p.code} &nbsp;·&nbsp; Qtd: ${p.quantity}</div>
+            </div>
+            <div style="display:flex;gap:.4rem;flex-shrink:0">
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.25rem .55rem;text-align:center;min-width:70px">
+                <div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Custo</div>
+                <div style="font-size:.8rem;color:var(--text-primary);font-weight:500;margin-top:1px">${fmt(p.cost_price * p.quantity)}</div>
+              </div>
+              <div style="background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.25);border-radius:6px;padding:.25rem .55rem;text-align:center;min-width:70px">
+                <div style="font-size:.62rem;color:var(--success);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Venda</div>
+                <div style="font-size:.8rem;color:var(--success);font-weight:700;margin-top:1px">${fmt(p.sale_price * p.quantity)}</div>
+              </div>
+            </div>
+          </div>`).join('')}
       </div>`).join('');
 
+    const pagamento = `${order.payment_method}${order.installments > 1 ? ` &nbsp;·&nbsp; ${order.installments}x de ${fmt(totalVenda / order.installments)}` : ''}${order.combined_payment_value ? ` &nbsp;·&nbsp; PIX/Dinheiro: ${fmt(order.combined_payment_value)}` : ''}`;
+
+    const pagas = parcelas.filter(p => p.status === 'Pago').length;
+    const parcelasHTML = parcelas.length > 0 ? `
+      <div id="controle-parcelas-${id}" style="border-top:1px solid var(--border);padding-top:.75rem;margin-bottom:.75rem">
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem">
+          Controle de Parcelas &nbsp;<span class="parcelas-count" style="font-weight:400;opacity:.7">${pagas}/${parcelas.length} pagas</span>
+        </div>
+        <div class="parcelas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.4rem">
+          ${parcelas.map(p => {
+            const paga = p.status === 'Pago';
+            return `<div style="padding:.6rem .75rem;border-radius:8px;border:1px solid ${paga ? 'rgba(63,185,80,.3)' : 'var(--border)'};background:${paga ? 'rgba(63,185,80,.08)' : 'var(--bg-hover)'};display:flex;flex-direction:column;gap:.45rem">
+              <div>
+                <div style="font-size:.7rem;color:var(--text-muted)">${p.numero}ª parcela</div>
+                <div style="font-size:.85rem;font-weight:600;color:${paga ? 'var(--success)' : 'var(--text-primary)'}">${fmt(p.valor)}</div>
+              </div>
+              <button onclick="toggleParcela(${id},${p.numero},'${paga ? 'Pendente' : 'Pago'}')"
+                style="border:1px solid ${paga ? 'rgba(248,81,73,.4)' : 'rgba(63,185,80,.4)'};border-radius:6px;padding:.3rem 0;font-size:.75rem;font-weight:600;cursor:pointer;background:transparent;color:${paga ? 'var(--danger)' : 'var(--success)'};width:100%;transition:all .15s">
+                ${paga ? 'Desfazer' : 'Pagar'}
+              </button>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : '';
+
     document.getElementById('orderDetailsContent').innerHTML = `
-      <p><strong>Pedido #${order.id}</strong> — ${order.client_name}</p>
-      <p class="text-muted mb-3">${order.client_address}, ${order.client_house_number} — ${order.client_neighborhood}</p>
-      <p><strong>Pagamento:</strong> ${order.payment_method}
-        ${order.installments > 1 ? ` — ${order.installments}x de ${fmt(totalVenda / order.installments)}` : ''}
-        ${order.combined_payment_value ? ` | PIX/Dinheiro: ${fmt(order.combined_payment_value)}` : ''}</p>
-      <hr>${prodHTML}<hr>
-      <p class="mb-1"><strong>Custo total:</strong> ${fmt(totalCusto)} &nbsp; <strong>Venda total:</strong> ${fmt(totalVenda)}</p>
-      <p><strong>Lucro:</strong> ${fmt(totalVenda - totalCusto)}</p>`;
+      <div style="margin-bottom:1rem">
+        <div style="font-size:1rem;font-weight:700;color:var(--text-heading)">Pedido #${order.id} &nbsp;·&nbsp; ${order.client_name}</div>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem">📍 ${order.client_address}, ${order.client_house_number} — ${order.client_neighborhood}</div>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.15rem">💳 ${pagamento}</div>
+        ${order.delivery_fee > 0 ? `<div style="font-size:.82rem;color:#f0883e;margin-top:.15rem">🚗 Taxa de entrega: ${fmt(order.delivery_fee)}</div>` : ''}
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:.75rem;margin-bottom:.75rem">${prodHTML}</div>
+      ${parcelasHTML}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;border-top:1px solid var(--border);padding-top:.75rem">
+        <div style="text-align:center;padding:.5rem;border-radius:8px;background:var(--bg-hover)">
+          <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Custo</div>
+          <div style="font-size:.95rem;font-weight:600;color:var(--text-primary)">${fmt(totalCusto)}</div>
+        </div>
+        <div style="text-align:center;padding:.5rem;border-radius:8px;background:var(--bg-hover)">
+          <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Venda</div>
+          <div style="font-size:.95rem;font-weight:600;color:var(--accent)">${fmt(totalVenda)}</div>
+        </div>
+        <div style="text-align:center;padding:.5rem;border-radius:8px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2)">
+          <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Lucro</div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--success)">${fmt(totalVenda - totalCusto)}</div>
+        </div>
+      </div>`;
 
     document.getElementById('markAsDeliveredButton').onclick = () => markDelivered(id);
     document.getElementById('printButton').onclick = () => printOrder(order);
-    new bootstrap.Modal(document.getElementById('orderDetailsModal')).show();
+
+    const modalEl = document.getElementById('orderDetailsModal');
+    const existing = bootstrap.Modal.getInstance(modalEl);
+    if (existing) existing.show(); else new bootstrap.Modal(modalEl).show();
+  }
+
+  async function toggleParcela(orderId, numero, novoStatus) {
+    const res = await Auth.apiFetch(`/api/orders/${orderId}/parcelas/${numero}`, {
+      method: 'PUT', body: JSON.stringify({ status: novoStatus })
+    });
+    if (!res.ok) { Swal.fire('Erro', 'Não foi possível atualizar a parcela.', 'error'); return; }
+
+    const parcRes  = await Auth.apiFetch(`/api/orders/${orderId}/parcelas`);
+    const parcelas = await parcRes.json();
+    const pagas    = parcelas.filter(p => p.status === 'Pago').length;
+
+    const controle = document.getElementById(`controle-parcelas-${orderId}`);
+    if (controle) {
+      controle.querySelector('.parcelas-count').textContent = `${pagas}/${parcelas.length} pagas`;
+      controle.querySelector('.parcelas-grid').innerHTML = parcelas.map(p => {
+        const paga = p.status === 'Pago';
+        return `<div style="padding:.6rem .75rem;border-radius:8px;border:1px solid ${paga ? 'rgba(63,185,80,.3)' : 'var(--border)'};background:${paga ? 'rgba(63,185,80,.08)' : 'var(--bg-hover)'};display:flex;flex-direction:column;gap:.45rem">
+          <div>
+            <div style="font-size:.7rem;color:var(--text-muted)">${p.numero}ª parcela</div>
+            <div style="font-size:.85rem;font-weight:600;color:${paga ? 'var(--success)' : 'var(--text-primary)'}">${fmt(p.valor)}</div>
+          </div>
+          <button onclick="toggleParcela(${orderId},${p.numero},'${paga ? 'Pendente' : 'Pago'}')"
+            style="border:1px solid ${paga ? 'rgba(248,81,73,.4)' : 'rgba(63,185,80,.4)'};border-radius:6px;padding:.3rem 0;font-size:.75rem;font-weight:600;cursor:pointer;background:transparent;color:${paga ? 'var(--danger)' : 'var(--success)'};width:100%;transition:all .15s">
+            ${paga ? 'Desfazer' : 'Pagar'}
+          </button>
+        </div>`;
+      }).join('');
+    }
   }
 
   async function markDelivered(id) {
     const res = await Auth.apiFetch(`/api/orders/${id}/status`, {
       method: 'PUT', body: JSON.stringify({ status: 'Entregue' })
     });
-    if (res.ok) { Swal.fire('Sucesso', 'Pedido marcado como entregue!', 'success'); loadOrders(); }
+    if (res.ok) { Swal.fire({ icon: 'success', title: 'Pedido entregue!', timer: 1500, showConfirmButton: false }); loadOrders(); }
     else Swal.fire('Erro', 'Não foi possível atualizar.', 'error');
   }
 

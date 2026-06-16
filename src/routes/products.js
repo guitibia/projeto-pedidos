@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const {
-  createProduct, listProducts, searchProductByCode,
-  getProductById, listFranchises
+  createProduct, listProducts, listAllProducts, searchProductByCode,
+  getProductById, listFranchises, updateProduct, deleteProduct
 } = require('../controllers/productController');
 
 router.post('/', createProduct);
-router.get('/franchises', listFranchises);  // /api/products/franchises
-router.get('/search', searchProductByCode); // /api/products/search?code=  — ANTES de /:id
-router.get('/', listProducts);              // /api/products?franchise=
-router.get('/:id', getProductById);         // /api/products/:id
+router.get('/franchises', listFranchises);
+router.get('/search', searchProductByCode);
+router.get('/all', listAllProducts);
+router.get('/', listProducts);
+router.put('/:id', updateProduct);
+router.delete('/:id', deleteProduct);
+router.get('/:id', getProductById);
 
 module.exports = router;

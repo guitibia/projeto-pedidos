@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
@@ -6,92 +6,300 @@
   <title>Dashboard — Sistema de Pedidos</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Sininho */
+    .bell-btn {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1.1rem; color: var(--text-muted);
+      transition: border-color .15s, color .15s;
+      flex-shrink: 0;
+    }
+    .bell-btn:hover { border-color: rgba(88,166,255,.4); color: #58a6ff; }
+    .bell-badge {
+      position: absolute; top: -5px; right: -5px;
+      background: #f85149; color: #fff;
+      font-size: .6rem; font-weight: 700;
+      min-width: 16px; height: 16px;
+      border-radius: 8px; padding: 0 4px;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--bg-color);
+    }
+    /* Dropdown alertas */
+    .alertas-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px); right: 0;
+      width: 320px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      z-index: 9999;
+      overflow: hidden;
+    }
+    .alertas-dropdown.open { display: block; }
+    .alertas-drop-header {
+      padding: .75rem 1rem .6rem;
+      border-bottom: 1px solid var(--border-color);
+      font-size: .78rem; font-weight: 700;
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .alertas-drop-body { max-height: 320px; overflow-y: auto; padding: .4rem 0; }
+    .alerta-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .5rem 1rem; gap: .5rem;
+      transition: background .12s;
+    }
+    .alerta-item:hover { background: rgba(255,255,255,.04); }
+    .alerta-nome  { font-size: .82rem; font-weight: 500; }
+    .alerta-fr    { font-size: .7rem; color: var(--text-muted); }
+    .alerta-qtd   { font-size: .8rem; font-weight: 700; white-space: nowrap; }
+    .qtd-zero  { color: #f85149; }
+    .qtd-baixo { color: #d29922; }
+    .alertas-drop-footer {
+      padding: .6rem 1rem;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+    }
+    .alertas-drop-footer a {
+      font-size: .78rem; color: #58a6ff; text-decoration: none; font-weight: 600;
+    }
+    .alertas-drop-footer a:hover { text-decoration: underline; }
+    /* Card alertas estoque (substitui doughnut) */
+    .alerta-card-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .45rem .6rem; border-radius: 8px; gap: .5rem;
+      margin-bottom: .3rem;
+    }
+    .alerta-card-item:last-child { margin-bottom: 0; }
+    .alerta-card-zero  { background: rgba(248,81,73,.07);  border: 1px solid rgba(248,81,73,.18); }
+    .alerta-card-baixo { background: rgba(210,153,34,.07); border: 1px solid rgba(210,153,34,.2); }
+  </style>
 </head>
 <body>
 
 <button class="sidebar-toggle" id="sidebarToggle">☰</button>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="system-name">📦 Sistema de Pedidos</div>
-    <div class="user-name" id="sidebar-user">Carregando...</div>
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
   </div>
   <nav class="sidebar-nav">
-    <a class="nav-link active" href="/">Dashboard</a>
-    <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
-    <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
-    <a class="nav-link" href="/create-order.html">Criar Pedido</a>
-    <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
-    <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
-    <a class="nav-link" href="/promissorias.html">Promissórias</a>
+    <a class="nav-link active" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-box-seam"></i> Produtos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-sub-link" href="/create-product.html"><i class="bi bi-plus-lg"></i> Cadastrar Produto</a>
+        <a class="nav-sub-link" href="/list-products.html"><i class="bi bi-list-ul"></i> Lista de Produtos</a>
+      </div>
+    </div>
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-bag-check"></i> Pedidos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-sub-link" href="/create-order.html"><i class="bi bi-plus-lg"></i> Criar Pedido</a>
+        <a class="nav-sub-link" href="/list-orders.html"><i class="bi bi-list-ul"></i> Listar Pedidos</a>
+      </div>
+    </div>
+    <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
   </nav>
   <div class="sidebar-footer">
-    <button class="btn-logout" id="btn-logout">Sair</button>
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
   </div>
 </div>
 
 <div class="main-content">
   <div class="container-fluid py-2">
-    <h4 class="mb-4 fw-600">Dashboard</h4>
 
-    <div class="row g-3 mb-4">
+    <!-- Título -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="mb-0">Dashboard</h4>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:2px" id="dash-date"></div>
+      </div>
+    </div>
+
+    <!-- Linha 1: financeiro -->
+    <div class="row g-3 mb-3">
       <div class="col-sm-6 col-xl-3">
-        <div class="card border-0 h-100" style="background:#d1fae5">
-          <div class="card-body">
-            <div class="text-success fw-600 mb-1" style="font-size:.8rem">LUCRO TOTAL</div>
-            <div class="fs-4 fw-700 text-success" id="totalGanho">R$ 0,00</div>
+        <div class="stat-card green" style="display:flex;flex-direction:column;gap:.5rem">
+          <div class="stat-header">
+            <div class="stat-label">Lucro Total</div>
+            <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+          </div>
+          <div class="stat-value" id="totalLucro">R$ 0,00</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2);border-radius:8px;padding:.3rem .6rem;margin-top:.1rem">
+            <span style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600">Este mês</span>
+            <span style="font-size:.85rem;font-weight:700;color:#3fb950" id="lucroMes">R$ 0,00</span>
           </div>
         </div>
       </div>
       <div class="col-sm-6 col-xl-3">
-        <div class="card border-0 h-100" style="background:#fee2e2">
-          <div class="card-body">
-            <div class="text-danger fw-600 mb-1" style="font-size:.8rem">TOTAL GASTO</div>
-            <div class="fs-4 fw-700 text-danger" id="totalGasto">R$ 0,00</div>
+        <div class="stat-card blue">
+          <div class="stat-header">
+            <div class="stat-label">Receita Total</div>
+            <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
           </div>
+          <div class="stat-value" id="totalReceita">R$ 0,00</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem">Valor de venda entregue</div>
         </div>
       </div>
       <div class="col-sm-6 col-xl-3">
-        <div class="card border-0 h-100" style="background:#dbeafe">
-          <div class="card-body">
-            <div class="text-primary fw-600 mb-1" style="font-size:.8rem">PROMISSÓRIAS PAGAS</div>
-            <div class="fs-4 fw-700 text-primary" id="promissoriasPagas">R$ 0,00</div>
+        <div class="stat-card purple" style="display:flex;flex-direction:column;gap:.55rem">
+          <div class="stat-header">
+            <div class="stat-label">Desempenho</div>
+            <div class="stat-icon"><i class="bi bi-pie-chart"></i></div>
           </div>
+          <div class="stat-value" id="margemLucro" style="color:#bc8cff">0%</div>
+          <div style="font-size:.68rem;color:var(--text-muted);margin-top:-.3rem">Margem de lucro</div>
+          <!-- Top 3 produtos -->
+          <div id="topProdutos" style="display:flex;flex-direction:column;gap:.25rem;border-top:1px solid var(--border-color);padding-top:.45rem;margin-top:.1rem"></div>
         </div>
       </div>
       <div class="col-sm-6 col-xl-3">
-        <div class="card border-0 h-100" style="background:#fef9c3">
-          <div class="card-body">
-            <div class="text-warning fw-600 mb-1" style="font-size:.8rem">PROMISSÓRIAS A PAGAR</div>
-            <div class="fs-4 fw-700 text-warning" id="promissoriasPendentes">R$ 0,00</div>
+        <div class="stat-card yellow">
+          <div class="stat-header">
+            <div class="stat-label">Promissórias a Pagar</div>
+            <div class="stat-icon"><i class="bi bi-receipt"></i></div>
           </div>
+          <div class="stat-value" id="promissoriasPendentes">R$ 0,00</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem">Em aberto</div>
         </div>
       </div>
     </div>
 
-    <div class="row g-3">
+    <!-- Linha 2: operacional -->
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card gray">
+          <div class="stat-header">
+            <div class="stat-label">Total de Pedidos</div>
+            <div class="stat-icon"><i class="bi bi-bag-check"></i></div>
+          </div>
+          <div class="stat-value" id="totalPedidos">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem">Todos os status</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card orange">
+          <div class="stat-header">
+            <div class="stat-label">Pedidos Pendentes</div>
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+          </div>
+          <div class="stat-value" id="pedidosPendentes">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem">Aguardando entrega</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card teal">
+          <div class="stat-header">
+            <div class="stat-label">Clientes</div>
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
+          </div>
+          <div class="stat-value" id="totalClientes">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem">Cadastrados</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card teal">
+          <div class="stat-header">
+            <div class="stat-label">Custo de Entregas</div>
+            <div class="stat-icon"><i class="bi bi-truck"></i></div>
+          </div>
+          <div class="stat-value" id="custoEntregas">R$ 0,00</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem"><span id="pedidosComTaxa">0</span> pedidos com taxa este mês</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row g-3 mb-4">
       <div class="col-lg-8">
         <div class="card h-100">
           <div class="card-body">
-            <h6 class="card-title mb-3">Vendas nos Últimos 12 Meses</h6>
-            <canvas id="salesChart" height="90"></canvas>
+            <h6 class="card-title mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">Vendas & Lucro — Últimos 12 Meses</h6>
+            <canvas id="salesChart" height="100"></canvas>
           </div>
         </div>
       </div>
       <div class="col-lg-4">
         <div class="card h-100">
-          <div class="card-body">
-            <h6 class="card-title mb-3">Resumo de Promissórias</h6>
-            <canvas id="promissoriaChart" height="180"></canvas>
+          <div class="card-body d-flex flex-column">
+            <h6 class="card-title mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">
+              <i class="bi bi-exclamation-triangle me-1" style="color:#d29922"></i>Alertas de Estoque
+            </h6>
+            <div id="alertasCardBody" style="flex:1;overflow-y:auto;max-height:280px">
+              <div style="text-align:center;padding:2rem 0;color:var(--text-muted);font-size:.82rem">
+                <i class="bi bi-hourglass-split" style="font-size:1.5rem;display:block;margin-bottom:.4rem;opacity:.4"></i>
+                Carregando...
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Promissórias próximas -->
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">
+              <i class="bi bi-receipt me-1" style="color:#d29922"></i>Promissórias a Vencer
+            </h6>
+            <div id="promProximasBody"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Últimos pedidos -->
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">Últimos Pedidos</h6>
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Cliente</th>
+                  <th>Pagamento</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="ultimosPedidosTbody">
+                <tr><td colspan="5" class="text-center text-muted py-3">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
-<footer class="bg-dark text-white text-center py-3 mt-4">
+<footer class="text-center py-3 mt-4">
   <small>&copy; 2025 Sistema de Pedidos</small>
 </footer>
 
@@ -101,62 +309,197 @@
 <script>
   Auth.requireAuth();
   Auth.initSidebar();
-
-  // Sidebar mobile toggle
   document.getElementById('sidebarToggle').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
   });
+
+  const darkTick = '#8b949e';
+  const darkGrid = '#21262d';
 
   function fmt(v) {
     return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
+  // Data atual no título
+  document.getElementById('dash-date').textContent =
+    new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Gráfico de barras + linha (vendas & lucro)
   const salesChart = new Chart(document.getElementById('salesChart').getContext('2d'), {
     type: 'bar',
     data: {
       labels: [],
-      datasets: [{
-        label: 'Vendas (R$)',
-        data: [],
-        backgroundColor: 'rgba(13,110,253,0.75)',
-        borderRadius: 6,
-        borderSkipped: false
-      }]
+      datasets: [
+        {
+          label: 'Vendas',
+          data: [],
+          backgroundColor: 'rgba(88,166,255,0.25)',
+          borderColor: '#388bfd',
+          borderWidth: 1.5,
+          borderRadius: 5,
+          borderSkipped: false,
+          order: 2
+        },
+        {
+          label: 'Lucro',
+          data: [],
+          type: 'line',
+          borderColor: '#3fb950',
+          backgroundColor: 'rgba(63,185,80,0.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#3fb950',
+          pointRadius: 3,
+          tension: 0.3,
+          fill: true,
+          order: 1
+        }
+      ]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { callback: v => 'R$' + v.toLocaleString('pt-BR') } } }
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: darkTick, boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: darkTick, font: { size: 11 } }, grid: { color: darkGrid } },
+        y: { beginAtZero: true, ticks: { color: darkTick, callback: v => 'R$' + v.toLocaleString('pt-BR') }, grid: { color: darkGrid } }
+      }
     }
   });
 
-  const promissoriaChart = new Chart(document.getElementById('promissoriaChart').getContext('2d'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Pagas', 'A Pagar'],
-      datasets: [{ data: [0, 0], backgroundColor: ['#198754', '#ffc107'] }]
-    },
-    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-  });
+  const statusBadge = { 'Entregue': 'bg-success', 'Pendente': 'bg-warning', 'Cancelado': 'bg-danger' };
+
+  function renderAlertas(alertas) {
+    const cardBody = document.getElementById('alertasCardBody');
+
+    if (!alertas || alertas.length === 0) {
+      cardBody.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#3fb950;font-size:.82rem">
+        <i class="bi bi-check-circle-fill" style="font-size:1.6rem;display:block;margin-bottom:.4rem"></i>
+        Estoque OK — nenhum alerta
+      </div>`;
+      return;
+    }
+
+    const cardHtml = alertas.map(a => {
+      const isZero  = a.estoque <= 0;
+      const cls     = isZero ? 'qtd-zero' : 'qtd-baixo';
+      const label   = isZero ? 'Zerado' : `${a.estoque} un`;
+      const icon    = isZero ? 'bi-x-circle-fill' : 'bi-exclamation-circle-fill';
+      const cardCls = isZero ? 'alerta-card-zero' : 'alerta-card-baixo';
+      return `
+        <div class="alerta-card-item ${cardCls}">
+          <div>
+            <div style="font-size:.82rem;font-weight:500">${a.name}</div>
+            <div style="font-size:.7rem;color:var(--text-muted)">${a.franchise}</div>
+          </div>
+          <span style="font-size:.8rem;font-weight:700;white-space:nowrap" class="${cls}">
+            <i class="bi ${icon} me-1"></i>${label}
+          </span>
+        </div>`;
+    }).join('');
+
+    cardBody.innerHTML = cardHtml;
+
+    const zerados = alertas.filter(a => a.estoque <= 0).length;
+    const baixos  = alertas.filter(a => a.estoque > 0).length;
+    const resumo  = [];
+    if (zerados) resumo.push(`<span style="color:#f85149;font-weight:700">${zerados} zerado${zerados>1?'s':''}</span>`);
+    if (baixos)  resumo.push(`<span style="color:#d29922;font-weight:700">${baixos} baixo${baixos>1?'s':''}</span>`);
+    const rodape = document.createElement('div');
+    rodape.style.cssText = 'margin-top:.6rem;padding:.5rem .6rem;border-top:1px solid var(--border-color);font-size:.72rem;color:var(--text-muted);text-align:center';
+    rodape.innerHTML = resumo.join(' · ') + ` · <a href="/estoque.html" style="color:#58a6ff;text-decoration:none;font-weight:600">Gerenciar →</a>`;
+    cardBody.appendChild(rodape);
+  }
 
   async function loadDashboard() {
     try {
       const res = await Auth.apiFetch('/api/dashboard');
       if (!res) return;
-      const data = await res.json();
+      const d = await res.json();
 
-      document.getElementById('totalGanho').textContent = fmt(data.totalGanho);
-      document.getElementById('totalGasto').textContent = fmt(data.totalGasto);
-      document.getElementById('promissoriasPagas').textContent = fmt(data.promissoriasPagas);
-      document.getElementById('promissoriasPendentes').textContent = fmt(data.promissoriasPendentes);
+      // Cards linha 1
+      document.getElementById('totalLucro').textContent           = fmt(d.totalLucro);
+      document.getElementById('totalReceita').textContent         = fmt(d.totalReceita);
+      document.getElementById('margemLucro').textContent = Number(d.margemLucro).toFixed(1) + '%';
+      document.getElementById('lucroMes').textContent    = fmt(d.lucroMes);
+      const medals = ['🥇','🥈','🥉'];
+      document.getElementById('topProdutos').innerHTML = d.topProdutos.length
+        ? d.topProdutos.map((p, i) => `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:.4rem;font-size:.72rem;padding:.2rem .1rem">
+              <span>${medals[i]} <span style="color:var(--text-color);font-weight:500">${p.nome}</span></span>
+              <span style="color:var(--text-muted);white-space:nowrap">${p.total} un.</span>
+            </div>`).join('')
+        : '<div style="font-size:.72rem;color:var(--text-muted)">Nenhuma venda ainda</div>';
+      document.getElementById('promissoriasPendentes').textContent = fmt(d.promissoriasPendentes);
 
-      // Gráfico com dados reais do banco
-      salesChart.data.labels = data.vendasMensais.labels;
-      salesChart.data.datasets[0].data = data.vendasMensais.valores;
+      // Cards linha 2
+      document.getElementById('totalPedidos').textContent     = d.totalPedidos;
+      document.getElementById('pedidosPendentes').textContent  = d.pedidosPendentes;
+      document.getElementById('totalClientes').textContent    = d.totalClientes;
+      document.getElementById('custoEntregas').textContent    = fmt(d.custoEntregas);
+      document.getElementById('pedidosComTaxa').textContent   = d.pedidosComTaxa;
+
+      // Gráfico vendas + lucro
+      salesChart.data.labels = d.vendasMensais.labels;
+      salesChart.data.datasets[0].data = d.vendasMensais.vendas;
+      salesChart.data.datasets[1].data = d.vendasMensais.lucro;
       salesChart.update();
 
-      promissoriaChart.data.datasets[0].data = [data.promissoriasPagas, data.promissoriasPendentes];
-      promissoriaChart.update();
+      // Alertas de estoque
+      renderAlertas(d.alertasEstoque || []);
+
+      // Promissórias próximas
+      const promBody = document.getElementById('promProximasBody');
+      const proms = d.promProximas || [];
+      if (!proms.length) {
+        promBody.innerHTML = `<div style="text-align:center;padding:1.2rem 0;color:var(--text-muted);font-size:.82rem">
+          <i class="bi bi-check-circle" style="font-size:1.4rem;display:block;margin-bottom:.3rem;opacity:.4"></i>
+          Nenhuma promissória nos próximos 60 dias
+        </div>`;
+      } else {
+        const hoje = new Date(); hoje.setHours(0,0,0,0);
+        promBody.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5rem">` +
+          proms.map(p => {
+            const [y, m, d] = p.data_vencimento.split('-').map(Number);
+            const venc = new Date(y, m - 1, d);
+            const dias = Math.round((venc - hoje) / 86400000);
+            let cor, bg, label;
+            if (dias < 0)       { cor = '#f85149'; bg = 'rgba(248,81,73,.08)';  label = `Venceu há ${Math.abs(dias)} dia${Math.abs(dias)!==1?'s':''}`; }
+            else if (dias <= 7) { cor = '#f85149'; bg = 'rgba(248,81,73,.08)';  label = dias === 0 ? 'Vence hoje!' : `Vence em ${dias} dia${dias!==1?'s':''}`; }
+            else if (dias <= 15){ cor = '#d29922'; bg = 'rgba(210,153,34,.08)'; label = `Vence em ${dias} dias`; }
+            else                { cor = '#58a6ff'; bg = 'rgba(88,166,255,.06)'; label = `Vence em ${dias} dias`; }
+            const fornecedor = p.fornecedor || 'Outro';
+            const dtFmt = venc.toLocaleDateString('pt-BR');
+            return `<div style="background:${bg};border:1px solid ${cor}33;border-radius:10px;padding:.65rem .85rem;display:flex;flex-direction:column;gap:.2rem">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:.4rem">
+                <span style="font-size:.78rem;font-weight:700;color:${cor}">${label}</span>
+                <span style="font-size:.82rem;font-weight:700">${fmt(p.valor)}</span>
+              </div>
+              <div style="font-size:.72rem;color:var(--text-muted)">${fornecedor} · ${dtFmt}</div>
+            </div>`;
+          }).join('') + `</div>`;
+      }
+
+      // Tabela últimos pedidos
+      const tbody = document.getElementById('ultimosPedidosTbody');
+      if (!d.ultimosPedidos.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Nenhum pedido encontrado.</td></tr>';
+      } else {
+        tbody.innerHTML = d.ultimosPedidos.map(p => `
+          <tr style="cursor:pointer" onclick="window.location='/list-orders.html'">
+            <td style="color:var(--text-muted);font-size:.82rem">#${p.id}</td>
+            <td class="td-client">${p.client_name}</td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${p.payment_method}</td>
+            <td style="font-size:.85rem;font-weight:600;color:var(--accent)">${fmt(p.total_cost)}</td>
+            <td><span class="badge ${statusBadge[p.status] || 'bg-secondary'}">${p.status}</span></td>
+          </tr>`).join('');
+      }
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err);
     }

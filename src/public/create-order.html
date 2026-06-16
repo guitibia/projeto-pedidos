@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
@@ -6,126 +6,403 @@
   <title>Criar Pedido</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    /* ── Hero ── */
+    .form-page-hero {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+    .form-page-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #2ea043 0%, #3fb950 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff; flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(63,185,80,.35);
+    }
+    .form-page-title { font-size: 1.3rem; font-weight: 700; margin: 0; }
+    .form-page-sub   { font-size: .8rem; color: var(--text-muted); margin: 0; }
+
+    /* ── Field groups ── */
+    .field-group {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem 1.25rem .75rem;
+      margin-bottom: 1rem;
+    }
+    .field-group-title {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--text-muted);
+      margin-bottom: .9rem;
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .field-group-title i { font-size: .85rem; }
+
+    .form-label {
+      font-size: .8rem; font-weight: 600;
+      color: var(--text-muted); margin-bottom: .3rem;
+    }
+    .input-icon-wrap { position: relative; }
+    .input-icon-wrap > i {
+      position: absolute; left: .75rem; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted); font-size: .95rem; pointer-events: none;
+    }
+    .input-icon-wrap .form-control,
+    .input-icon-wrap .form-select { padding-left: 2.3rem; }
+
+    /* ── Product list ── */
+    #productList { list-style: none; padding: 0; margin: 0; }
+    .product-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border-color);
+      border-radius: 9px;
+      padding: .6rem .9rem;
+      margin-bottom: .4rem;
+    }
+    .product-item-name {
+      font-size: .85rem;
+      font-weight: 600;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .product-item-price {
+      font-size: .82rem;
+      color: #3fb950;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .product-item-promo {
+      font-size: .7rem;
+      background: rgba(255,214,0,.15);
+      color: #ffd600;
+      border-radius: 4px;
+      padding: .1rem .4rem;
+      white-space: nowrap;
+    }
+    .btn-remove-product {
+      background: rgba(248,81,73,.12);
+      border: 1px solid rgba(248,81,73,.25);
+      color: #f85149;
+      border-radius: 6px;
+      padding: .2rem .5rem;
+      font-size: .75rem;
+      cursor: pointer;
+      transition: background .15s;
+      flex-shrink: 0;
+    }
+    .btn-remove-product:hover { background: rgba(248,81,73,.25); }
+
+    /* ── Add product button ── */
+    .btn-add-product {
+      width: 100%;
+      padding: .55rem;
+      font-size: .88rem;
+      font-weight: 600;
+      border-radius: 9px;
+      border: 1.5px dashed rgba(63,185,80,.4);
+      background: rgba(63,185,80,.07);
+      color: #3fb950;
+      cursor: pointer;
+      transition: all .15s;
+      display: flex; align-items: center; justify-content: center; gap: .4rem;
+      margin-bottom: .75rem;
+    }
+    .btn-add-product:hover { background: rgba(63,185,80,.14); border-style: solid; }
+
+    /* ── Total chip ── */
+    .total-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(63,185,80,.08);
+      border: 1px solid rgba(63,185,80,.25);
+      border-radius: 10px;
+      padding: .6rem 1rem;
+      margin-top: .25rem;
+    }
+    .total-chip-label { font-size: .78rem; color: var(--text-muted); }
+    .total-chip-value { font-size: 1.05rem; font-weight: 700; color: #3fb950; }
+
+    /* ── Payment method pills ── */
+    .payment-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .45rem;
+      margin-bottom: .75rem;
+    }
+    .pay-option { display: none; }
+    .pay-label {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: .25rem;
+      padding: .55rem .3rem;
+      border-radius: 10px;
+      border: 1.5px solid var(--border-color);
+      cursor: pointer;
+      font-size: .7rem; font-weight: 600;
+      color: var(--text-muted);
+      transition: all .15s;
+      text-align: center;
+    }
+    .pay-label i { font-size: 1.2rem; }
+    .pay-option:checked + .pay-label {
+      border-color: #3fb950;
+      background: rgba(63,185,80,.12);
+      color: #3fb950;
+    }
+    .pay-label:hover { border-color: rgba(63,185,80,.35); color: var(--text-color); }
+
+    /* ── Installment hint ── */
+    .installment-hint {
+      display: flex; align-items: center; gap: .4rem;
+      background: rgba(88,166,255,.08);
+      border: 1px solid rgba(88,166,255,.2);
+      border-radius: 8px;
+      padding: .45rem .75rem;
+      font-size: .8rem;
+      color: #58a6ff;
+      margin-top: .5rem;
+    }
+
+    /* ── Submit ── */
+    .btn-submit-form {
+      width: 100%; padding: .7rem;
+      font-size: .95rem; font-weight: 600;
+      border-radius: 10px; border: none;
+      background: linear-gradient(135deg, #2ea043 0%, #3fb950 100%);
+      color: #fff; cursor: pointer;
+      transition: opacity .15s, box-shadow .15s;
+      box-shadow: 0 4px 14px rgba(63,185,80,.3);
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+    }
+    .btn-submit-form:hover { opacity: .92; box-shadow: 0 6px 18px rgba(63,185,80,.4); }
+
+    /* ── Promo checkbox ── */
+    .promo-check-wrap {
+      display: flex; align-items: center; gap: .5rem;
+      background: rgba(255,214,0,.06);
+      border: 1px solid rgba(255,214,0,.18);
+      border-radius: 8px;
+      padding: .45rem .75rem;
+      cursor: pointer;
+      margin-bottom: .75rem;
+    }
+    .promo-check-wrap input { cursor: pointer; }
+    .promo-check-wrap label { font-size: .82rem; color: #d29922; cursor: pointer; margin: 0; }
+  </style>
 </head>
 <body>
 
 <button class="sidebar-toggle" id="sidebarToggle">☰</button>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="system-name">📦 Sistema de Pedidos</div>
-    <div class="user-name" id="sidebar-user">Carregando...</div>
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
   </div>
   <nav class="sidebar-nav">
-    <a class="nav-link" href="/">Dashboard</a>
-    <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
-    <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
-    <a class="nav-link active" href="/create-order.html">Criar Pedido</a>
-    <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
-    <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
-    <a class="nav-link" href="/promissorias.html">Promissórias</a>
+    <a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-box-seam"></i> Produtos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-sub-link" href="/create-product.html"><i class="bi bi-plus-lg"></i> Cadastrar Produto</a>
+        <a class="nav-sub-link" href="/list-products.html"><i class="bi bi-list-ul"></i> Lista de Produtos</a>
+      </div>
+    </div>
+    <div class="nav-group">
+      <button class="nav-group-toggle has-active open" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-bag-check"></i> Pedidos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items open">
+        <a class="nav-sub-link active" href="/create-order.html"><i class="bi bi-plus-lg"></i> Criar Pedido</a>
+        <a class="nav-sub-link" href="/list-orders.html"><i class="bi bi-list-ul"></i> Listar Pedidos</a>
+      </div>
+    </div>
+    <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
   </nav>
   <div class="sidebar-footer">
-    <button class="btn-logout" id="btn-logout">Sair</button>
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
   </div>
 </div>
 
 <div class="main-content">
-  <div class="container py-2">
-    <div class="row justify-content-center">
-      <div class="col-md-8">
-        <div class="card">
-          <div class="card-header bg-primary text-white text-center">Criar Pedido</div>
-          <div class="card-body p-4">
-            <form id="orderForm">
-              <div class="mb-3">
-                <label class="form-label">Cliente</label>
-                <select id="clientId" class="form-select" required>
-                  <option value="">Selecione um cliente</option>
-                </select>
-              </div>
+  <div class="container py-3" style="max-width:640px">
 
-              <div class="mb-3">
-                <label class="form-label">Franquia</label>
-                <select id="franchiseId" class="form-select" required>
-                  <option value="">Selecione uma franquia</option>
-                </select>
-              </div>
+    <!-- Hero -->
+    <div class="form-page-hero">
+      <div class="form-page-icon"><i class="bi bi-cart-plus-fill"></i></div>
+      <div>
+        <div class="form-page-title">Criar Pedido</div>
+        <div class="form-page-sub">Selecione o cliente, produtos e forma de pagamento</div>
+      </div>
+    </div>
 
-              <div class="mb-3">
-                <label class="form-label">Produto</label>
-                <select id="products" class="form-select">
-                  <option value="">Selecione um produto</option>
-                </select>
-              </div>
+    <form id="orderForm">
 
-              <div class="row mb-3">
-                <div class="col">
-                  <label class="form-label">Quantidade</label>
-                  <input type="number" id="productQuantity" class="form-control" value="1" min="1">
-                </div>
-                <div class="col">
-                  <label class="form-label">Custo</label>
-                  <input type="text" id="productCost" class="form-control" readonly>
-                </div>
-                <div class="col">
-                  <label class="form-label">Valor de Venda</label>
-                  <input type="number" step="0.01" id="salePrice" class="form-control" placeholder="0,00">
-                </div>
-              </div>
+      <!-- Cliente -->
+      <div class="field-group">
+        <div class="field-group-title"><i class="bi bi-person-circle"></i> Cliente</div>
+        <div class="input-icon-wrap">
+          <i class="bi bi-person"></i>
+          <select id="clientId" class="form-select" required>
+            <option value="">Selecione um cliente</option>
+          </select>
+        </div>
+      </div>
 
-              <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="promotionalPrice">
-                <label class="form-check-label" for="promotionalPrice">Produto com valor promocional</label>
-              </div>
+      <!-- Produtos -->
+      <div class="field-group">
+        <div class="field-group-title"><i class="bi bi-box-seam"></i> Produtos</div>
 
-              <button type="button" id="addProductBtn" class="btn btn-info w-100 mb-2">+ Adicionar Produto</button>
-              <ul id="productList" class="list-group mb-3"></ul>
+        <div class="row g-2 mb-3">
+          <div class="col-12 col-sm-6">
+            <label class="form-label">Franquia</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-shop"></i>
+              <select id="franchiseId" class="form-select" required>
+                <option value="">Selecione a franquia</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-12 col-sm-6">
+            <label class="form-label">Produto</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-tag"></i>
+              <select id="products" class="form-select">
+                <option value="">Selecione um produto</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-              <div class="mb-3">
-                <label class="form-label">Valor Total da Compra</label>
-                <input type="text" id="totalValue" class="form-control" readonly>
-              </div>
+        <div class="row g-2 mb-2">
+          <div class="col-4">
+            <label class="form-label">Quantidade</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-123"></i>
+              <input type="number" id="productQuantity" class="form-control" value="1" min="1">
+            </div>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Custo</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-cash-coin"></i>
+              <input type="text" id="productCost" class="form-control" readonly placeholder="—">
+            </div>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Venda (R$)</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-currency-dollar"></i>
+              <input type="number" step="0.01" id="salePrice" class="form-control" placeholder="0,00">
+            </div>
+          </div>
+        </div>
 
-              <div class="mb-3">
-                <label class="form-label">Método de Pagamento</label>
-                <select id="paymentMethod" class="form-select" required>
-                  <option value="">Selecione o método</option>
-                  <option>PIX</option>
-                  <option>DINHEIRO</option>
-                  <option>CARTÃO DE CRÉDITO</option>
-                  <option>PARCELADO</option>
-                  <option>PAGAMENTO COMBINADO</option>
-                </select>
-              </div>
+        <div class="promo-check-wrap">
+          <input class="form-check-input mt-0" type="checkbox" id="promotionalPrice">
+          <label for="promotionalPrice"><i class="bi bi-tag-fill"></i> Produto com valor promocional (editar custo)</label>
+        </div>
 
-              <div id="combinedPaymentDiv" class="mb-3" style="display:none">
-                <label class="form-label">Valor pago via PIX/Dinheiro</label>
-                <input type="number" step="0.01" id="combinedPaymentValue" class="form-control">
-              </div>
+        <button type="button" id="addProductBtn" class="btn-add-product">
+          <i class="bi bi-plus-circle"></i> Adicionar Produto à Lista
+        </button>
 
-              <div id="installmentsDiv" class="mb-3" style="display:none">
-                <label class="form-label">Número de Parcelas</label>
-                <select id="installments" class="form-select">
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5">5</option>
-                </select>
-                <small id="installmentAmount" class="text-muted mt-1 d-none fw-500"></small>
-              </div>
+        <ul id="productList"></ul>
 
-              <button type="submit" class="btn btn-success w-100">Criar Pedido</button>
-            </form>
+        <div id="totalChip" class="total-chip" style="display:none">
+          <span class="total-chip-label"><i class="bi bi-receipt"></i> Total da compra</span>
+          <span class="total-chip-value" id="totalValueDisplay">R$ 0,00</span>
+          <input type="hidden" id="totalValue">
+        </div>
+      </div>
+
+      <!-- Pagamento -->
+      <div class="field-group">
+        <div class="field-group-title"><i class="bi bi-credit-card"></i> Pagamento</div>
+
+        <div class="payment-grid">
+          <div>
+            <input type="radio" class="pay-option" name="payMethod" id="pay-pix" value="PIX">
+            <label class="pay-label" for="pay-pix"><i class="bi bi-qr-code" style="color:#3fb950"></i> PIX</label>
+          </div>
+          <div>
+            <input type="radio" class="pay-option" name="payMethod" id="pay-din" value="DINHEIRO">
+            <label class="pay-label" for="pay-din"><i class="bi bi-cash" style="color:#d29922"></i> Dinheiro</label>
+          </div>
+          <div>
+            <input type="radio" class="pay-option" name="payMethod" id="pay-cred" value="CARTÃO DE CRÉDITO">
+            <label class="pay-label" for="pay-cred"><i class="bi bi-credit-card" style="color:#58a6ff"></i> Cartão</label>
+          </div>
+          <div>
+            <input type="radio" class="pay-option" name="payMethod" id="pay-parc" value="PARCELADO">
+            <label class="pay-label" for="pay-parc"><i class="bi bi-calendar-range" style="color:#bc8cff"></i> Parcelado</label>
+          </div>
+          <div>
+            <input type="radio" class="pay-option" name="payMethod" id="pay-comb" value="PAGAMENTO COMBINADO">
+            <label class="pay-label" for="pay-comb"><i class="bi bi-intersect" style="color:#f78166"></i> Combinado</label>
+          </div>
+        </div>
+        <input type="hidden" id="paymentMethod">
+
+        <div id="combinedPaymentDiv" style="display:none" class="mb-3">
+          <label class="form-label">Valor pago via PIX / Dinheiro</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-cash"></i>
+            <input type="number" step="0.01" id="combinedPaymentValue" class="form-control" placeholder="0,00">
+          </div>
+        </div>
+
+        <div id="installmentsDiv" style="display:none">
+          <label class="form-label">Número de Parcelas</label>
+          <div class="input-icon-wrap mb-1">
+            <i class="bi bi-grid-3x2"></i>
+            <select id="installments" class="form-select">
+              <option value="2">2×</option>
+              <option value="3">3×</option>
+              <option value="4">4×</option>
+              <option value="5">5×</option>
+            </select>
+          </div>
+          <div class="installment-hint" id="installmentHint" style="display:none">
+            <i class="bi bi-info-circle-fill"></i>
+            <span id="installmentAmount"></span>
           </div>
         </div>
       </div>
-    </div>
+
+      <button type="submit" class="btn-submit-form">
+        <i class="bi bi-bag-check-fill"></i> Criar Pedido
+      </button>
+
+    </form>
   </div>
 </div>
 
-<footer class="bg-dark text-white text-center py-3 mt-4">
+<footer class="text-center py-3 mt-4">
   <small>&copy; 2025 Sistema de Pedidos</small>
 </footer>
 
@@ -137,8 +414,19 @@
   Auth.initSidebar();
   document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
 
-  let totalValue = 0;
+  let totalValue  = 0;
   let productsList = [];
+
+  function fmt(v) {
+    return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function refreshTotal() {
+    document.getElementById('totalValue').value  = totalValue.toFixed(2);
+    document.getElementById('totalValueDisplay').textContent = fmt(totalValue);
+    document.getElementById('totalChip').style.display = productsList.length ? 'flex' : 'none';
+    updateInstallmentAmount();
+  }
 
   // Carregar clientes e franquias
   async function init() {
@@ -146,7 +434,7 @@
       Auth.apiFetch('/api/clients'),
       Auth.apiFetch('/api/franchises')
     ]);
-    const clients   = await clientRes.json();
+    const clients    = await clientRes.json();
     const franchises = await franchiseRes.json();
 
     const cs = document.getElementById('clientId');
@@ -158,13 +446,15 @@
   init();
 
   document.getElementById('franchiseId').addEventListener('change', async (e) => {
-    const f = e.target.value;
+    const f  = e.target.value;
     const ps = document.getElementById('products');
     ps.innerHTML = '<option value="">Selecione um produto</option>';
+    document.getElementById('productCost').value = '';
     if (!f) return;
-    const res = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
+    const res  = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
     const data = await res.json();
-    data.forEach(p => ps.insertAdjacentHTML('beforeend', `<option value="${p.id}" data-cost="${p.cost}">${p.name} — COD ${p.code}</option>`));
+    data.forEach(p => ps.insertAdjacentHTML('beforeend',
+      `<option value="${p.id}" data-cost="${p.cost}">${p.name} — COD ${p.code}</option>`));
   });
 
   document.getElementById('products').addEventListener('change', (e) => {
@@ -177,8 +467,8 @@
   });
 
   document.getElementById('addProductBtn').addEventListener('click', () => {
-    const sel      = document.getElementById('products');
-    const opt      = sel.selectedOptions[0];
+    const sel       = document.getElementById('products');
+    const opt       = sel.selectedOptions[0];
     const productId = sel.value;
     const salePrice = parseFloat(document.getElementById('salePrice').value);
     const qty       = parseInt(document.getElementById('productQuantity').value) || 1;
@@ -186,70 +476,102 @@
     const cost      = parseFloat(document.getElementById('productCost').value);
 
     if (!productId || isNaN(salePrice) || salePrice <= 0 || qty < 1) {
-      return Swal.fire('Erro', 'Preencha produto, valor de venda e quantidade corretamente.', 'error');
+      return Swal.fire('Atenção', 'Preencha produto, valor de venda e quantidade corretamente.', 'warning');
     }
 
-    const [productName, codePart] = opt.textContent.split(' — COD ');
+    const productName  = opt.textContent.split(' — COD ')[0];
     const totalProduct = salePrice * qty;
+    const entry        = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null };
 
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-    li.innerHTML = `<span>${productName} × ${qty} — R$ ${totalProduct.toFixed(2)}${isPromo ? ' 🏷️' : ''}</span>
-      <button class="btn btn-danger btn-sm">Remover</button>`;
-    li.querySelector('button').onclick = () => {
-      productList = productList.filter(p => p !== entry);
+    li.className = 'product-item';
+    li.innerHTML = `
+      <span class="product-item-name">${productName}${qty > 1 ? ' ×' + qty : ''}</span>
+      ${isPromo ? '<span class="product-item-promo">🏷️ Promo</span>' : ''}
+      <span class="product-item-price">${fmt(totalProduct)}</span>
+      <button type="button" class="btn-remove-product"><i class="bi bi-trash3"></i></button>`;
+
+    li.querySelector('.btn-remove-product').onclick = () => {
+      productsList = productsList.filter(p => p !== entry);
       li.remove();
       totalValue -= totalProduct;
-      document.getElementById('totalValue').value = totalValue.toFixed(2);
+      refreshTotal();
     };
-    document.getElementById('productList').appendChild(li);
 
-    const entry = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null };
+    document.getElementById('productList').appendChild(li);
     productsList.push(entry);
     totalValue += totalProduct;
-    document.getElementById('totalValue').value = totalValue.toFixed(2);
+    refreshTotal();
+
+    // Reset campos de produto
+    document.getElementById('salePrice').value = '';
+    document.getElementById('productQuantity').value = 1;
+    document.getElementById('promotionalPrice').checked = false;
+    document.getElementById('productCost').readOnly = true;
   });
 
-  document.getElementById('paymentMethod').addEventListener('change', (e) => {
-    const m = e.target.value;
-    document.getElementById('installmentsDiv').style.display   = (m === 'PARCELADO' || m === 'PAGAMENTO COMBINADO') ? 'block' : 'none';
-    document.getElementById('combinedPaymentDiv').style.display = m === 'PAGAMENTO COMBINADO' ? 'block' : 'none';
+  // Payment method pills
+  document.querySelectorAll('.pay-option').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const m = radio.value;
+      document.getElementById('paymentMethod').value = m;
+      document.getElementById('installmentsDiv').style.display   = (m === 'PARCELADO' || m === 'PAGAMENTO COMBINADO') ? 'block' : 'none';
+      document.getElementById('combinedPaymentDiv').style.display = m === 'PAGAMENTO COMBINADO' ? 'block' : 'none';
+      updateInstallmentAmount();
+    });
   });
 
   document.getElementById('installments').addEventListener('change', updateInstallmentAmount);
   document.getElementById('combinedPaymentValue').addEventListener('input', updateInstallmentAmount);
 
   function updateInstallmentAmount() {
-    const combined = parseFloat(document.getElementById('combinedPaymentValue').value) || 0;
-    const n = parseInt(document.getElementById('installments').value) || 1;
-    const remaining = Math.max(totalValue - combined, totalValue);
-    const small = document.getElementById('installmentAmount');
-    small.textContent = `Parcela: R$ ${(remaining / n).toFixed(2)}`;
-    small.classList.remove('d-none');
+    const hint    = document.getElementById('installmentHint');
+    const m       = document.getElementById('paymentMethod').value;
+    if (m !== 'PARCELADO' && m !== 'PAGAMENTO COMBINADO') { hint.style.display = 'none'; return; }
+    const combined  = parseFloat(document.getElementById('combinedPaymentValue').value) || 0;
+    const n         = parseInt(document.getElementById('installments').value) || 2;
+    const remaining = Math.max(totalValue - combined, 0);
+    document.getElementById('installmentAmount').textContent =
+      `${n}× de ${fmt(remaining / n)}${combined > 0 ? ` (restante após ${fmt(combined)} PIX/Dinheiro)` : ''}`;
+    hint.style.display = totalValue > 0 ? 'flex' : 'none';
   }
 
   document.getElementById('orderForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (productsList.length === 0) return Swal.fire('Erro', 'Adicione ao menos um produto.', 'error');
+    if (productsList.length === 0) return Swal.fire('Atenção', 'Adicione ao menos um produto.', 'warning');
+    const method = document.getElementById('paymentMethod').value;
+    if (!method) return Swal.fire('Atenção', 'Selecione um método de pagamento.', 'warning');
 
+    const needsInstallments = method === 'PARCELADO' || method === 'PAGAMENTO COMBINADO';
     const payload = {
       clientId:             document.getElementById('clientId').value,
-      paymentMethod:        document.getElementById('paymentMethod').value,
+      paymentMethod:        method,
       products:             productsList,
       totalValue,
-      installments:         document.getElementById('installments').value || null,
-      combinedPaymentValue: document.getElementById('combinedPaymentValue').value || null
+      installments:         needsInstallments ? (document.getElementById('installments').value || null) : null,
+      combinedPaymentValue: method === 'PAGAMENTO COMBINADO' ? (document.getElementById('combinedPaymentValue').value || null) : null
     };
 
     try {
       const res  = await Auth.apiFetch('/api/orders', { method: 'POST', body: JSON.stringify(payload) });
       const data = await res.json();
       if (!res.ok) return Swal.fire('Erro', data.error, 'error');
-      Swal.fire('Sucesso', `Pedido #${data.orderId} criado!`, 'success');
+      await Swal.fire({
+        icon: 'success',
+        title: `Pedido #${data.orderId} criado!`,
+        text: `Total: ${fmt(data.totalValue)}${data.deliveryFee > 0 ? ` + ${fmt(data.deliveryFee)} taxa de entrega` : ''}`,
+        timer: 3000,
+        showConfirmButton: false
+      });
       document.getElementById('orderForm').reset();
       document.getElementById('productList').innerHTML = '';
+      document.getElementById('paymentMethod').value  = '';
+      document.querySelectorAll('.pay-option').forEach(r => r.checked = false);
+      document.getElementById('installmentsDiv').style.display    = 'none';
+      document.getElementById('combinedPaymentDiv').style.display = 'none';
+      document.getElementById('installmentHint').style.display    = 'none';
       productsList = []; totalValue = 0;
-      document.getElementById('totalValue').value = '';
+      refreshTotal();
     } catch {
       Swal.fire('Erro', 'Erro ao conectar ao servidor.', 'error');
     }

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
@@ -6,40 +6,215 @@
   <title>Promissórias</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .form-page-hero {
+      display: flex; align-items: center; gap: 1rem; margin-bottom: 0;
+    }
+    .form-page-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: linear-gradient(135deg, #b45309 0%, #d29922 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff; flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(210,153,34,.35);
+    }
+    .form-page-title { font-size: 1.3rem; font-weight: 700; margin: 0; }
+    .form-page-sub   { font-size: .8rem; color: var(--text-muted); margin: 0; }
+
+    /* Nova promissória button */
+    .btn-nova {
+      display: flex; align-items: center; gap: .45rem;
+      padding: .5rem 1.1rem; border-radius: 10px; border: none;
+      background: linear-gradient(135deg, #b45309, #d29922);
+      color: #fff; font-size: .88rem; font-weight: 600;
+      cursor: pointer; transition: opacity .15s, box-shadow .15s;
+      box-shadow: 0 3px 10px rgba(210,153,34,.3);
+    }
+    .btn-nova:hover { opacity: .9; box-shadow: 0 5px 14px rgba(210,153,34,.4); }
+
+    /* ── Promissória card ── */
+    .prom-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      margin-bottom: .85rem;
+      overflow: hidden;
+    }
+    .prom-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .85rem 1.1rem;
+      border-bottom: 1px solid var(--border-color);
+      gap: .75rem; flex-wrap: wrap;
+    }
+    .prom-header-left { display: flex; align-items: center; gap: .75rem; }
+    .prom-nf-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: rgba(210,153,34,.12); border: 1px solid rgba(210,153,34,.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: #d29922; flex-shrink: 0;
+    }
+    .prom-nf-num { font-size: .95rem; font-weight: 700; }
+    .prom-nf-sub { font-size: .75rem; color: var(--text-muted); margin-top: 1px; }
+
+    .prom-stats { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+    .prom-stat-chip {
+      font-size: .75rem; border-radius: 8px; padding: .25rem .65rem; font-weight: 600;
+      display: flex; align-items: center; gap: .3rem;
+    }
+    .chip-valor  { background: rgba(88,166,255,.1);  border: 1px solid rgba(88,166,255,.2);  color: #58a6ff; }
+    .chip-pagas  { background: rgba(63,185,80,.1);   border: 1px solid rgba(63,185,80,.2);   color: #3fb950; }
+    .chip-pend   { background: rgba(210,153,34,.1);  border: 1px solid rgba(210,153,34,.2);  color: #d29922; }
+
+    .btn-excluir {
+      padding: .3rem .7rem; border-radius: 7px; font-size: .78rem; font-weight: 600;
+      border: 1px solid rgba(248,81,73,.3); background: rgba(248,81,73,.08);
+      color: #f85149; cursor: pointer; transition: background .15s;
+      display: flex; align-items: center; gap: .3rem;
+    }
+    .btn-excluir:hover { background: rgba(248,81,73,.2); }
+
+    /* ── Parcelas grid ── */
+    .parcelas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: .5rem;
+      padding: .85rem 1.1rem;
+    }
+    .parcela-card {
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      padding: .65rem .8rem;
+      display: flex; flex-direction: column; gap: .45rem;
+      transition: border-color .15s;
+    }
+    .parcela-card.paga {
+      border-color: rgba(63,185,80,.3);
+      background: rgba(63,185,80,.05);
+    }
+    .parcela-card.vencida {
+      border-color: rgba(248,81,73,.3);
+      background: rgba(248,81,73,.04);
+    }
+    .parcela-num  { font-size: .68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+    .parcela-data { font-size: .8rem; font-weight: 600; }
+    .parcela-valor { font-size: .85rem; color: var(--text-muted); }
+    .parcela-footer { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
+
+    .btn-pagar {
+      padding: .25rem .6rem; border-radius: 6px; font-size: .72rem; font-weight: 600;
+      border: 1px solid rgba(63,185,80,.4); background: transparent;
+      color: #3fb950; cursor: pointer; transition: background .15s;
+    }
+    .btn-pagar:hover { background: rgba(63,185,80,.15); }
+    .btn-excluir-parc {
+      padding: .25rem .45rem; border-radius: 6px; font-size: .75rem;
+      border: 1px solid rgba(248,81,73,.3); background: rgba(248,81,73,.06);
+      color: #f85149; cursor: pointer; transition: background .15s; flex-shrink: 0;
+    }
+    .btn-excluir-parc:hover { background: rgba(248,81,73,.2); }
+    .btn-desfazer {
+      padding: .25rem .6rem; border-radius: 6px; font-size: .72rem; font-weight: 600;
+      border: 1px solid rgba(139,148,158,.3); background: transparent;
+      color: var(--text-muted); cursor: pointer; transition: background .15s;
+    }
+    .btn-desfazer:hover { background: rgba(139,148,158,.12); }
+
+    /* Fornecedor pills */
+    .forn-pill {
+      display: flex; align-items: center; justify-content: center; gap: .35rem;
+      padding: .4rem .6rem; border-radius: 8px; font-size: .8rem; font-weight: 600;
+      border: 1px solid var(--border-color); background: transparent;
+      color: var(--text-color); cursor: pointer; transition: all .15s;
+    }
+    .forn-pill:hover  { border-color: #d29922; color: #d29922; }
+    .forn-pill.active { border-color: #d29922; background: rgba(210,153,34,.12); color: #d29922; }
+
+    /* Accordion suave */
+    .mes-body {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height .35s ease, opacity .25s ease;
+    }
+    .mes-body.aberto {
+      max-height: 2000px;
+      opacity: 1;
+      transition: max-height .4s ease, opacity .3s ease .05s;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 3.5rem 1rem; color: var(--text-muted);
+    }
+    .empty-state i { font-size: 3rem; opacity: .3; display: block; margin-bottom: .75rem; }
+  </style>
 </head>
 <body>
 
 <button class="sidebar-toggle" id="sidebarToggle">☰</button>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="system-name">📦 Sistema de Pedidos</div>
-    <div class="user-name" id="sidebar-user">Carregando...</div>
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
   </div>
   <nav class="sidebar-nav">
-    <a class="nav-link" href="/">Dashboard</a>
-    <a class="nav-link" href="/create-client.html">Cadastrar Cliente</a>
-    <a class="nav-link" href="/create-product.html">Cadastrar Produto</a>
-    <a class="nav-link" href="/create-order.html">Criar Pedido</a>
-    <a class="nav-link" href="/list-orders.html">Listar Pedidos</a>
-    <a class="nav-link" href="/list-clients.html">Listar Clientes</a>
-    <a class="nav-link active" href="/promissorias.html">Promissórias</a>
+    <a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-box-seam"></i> Produtos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-sub-link" href="/create-product.html"><i class="bi bi-plus-lg"></i> Cadastrar Produto</a>
+        <a class="nav-sub-link" href="/list-products.html"><i class="bi bi-list-ul"></i> Lista de Produtos</a>
+      </div>
+    </div>
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span><i class="bi bi-bag-check"></i> Pedidos</span><span class="arrow">›</span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-sub-link" href="/create-order.html"><i class="bi bi-plus-lg"></i> Criar Pedido</a>
+        <a class="nav-sub-link" href="/list-orders.html"><i class="bi bi-list-ul"></i> Listar Pedidos</a>
+      </div>
+    </div>
+    <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link active" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
   </nav>
   <div class="sidebar-footer">
-    <button class="btn-logout" id="btn-logout">Sair</button>
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
   </div>
 </div>
 
 <div class="main-content">
-  <div class="container py-2">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-      <h4 class="mb-0">Promissórias</h4>
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cadastrarModal">
-        + Nova Promissória
+  <div class="container-fluid py-3" style="max-width:900px">
+
+    <!-- Hero -->
+    <div class="d-flex align-items-center justify-content-between mb-4 gap-3 flex-wrap">
+      <div class="form-page-hero">
+        <div class="form-page-icon"><i class="bi bi-receipt-cutoff"></i></div>
+        <div>
+          <div class="form-page-title">Promissórias</div>
+          <div class="form-page-sub" id="prom-count">Carregando...</div>
+        </div>
+      </div>
+      <button class="btn-nova" data-bs-toggle="modal" data-bs-target="#cadastrarModal">
+        <i class="bi bi-plus-circle-fill"></i> Nova Promissória
       </button>
     </div>
 
-    <div id="promissorias-container"></div>
+    <div id="promissorias-container">
+      <div class="empty-state">
+        <i class="bi bi-hourglass-split"></i>Carregando...
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -47,44 +222,46 @@
 <div class="modal fade" id="cadastrarModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">Cadastrar Promissória</h5>
+      <div class="modal-header" style="background:linear-gradient(135deg,#b45309,#d29922);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-receipt-cutoff me-2"></i>Nova Promissória</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body p-4">
         <form id="promissoria-form">
+          <!-- Fornecedor -->
           <div class="mb-3">
-            <label class="form-label">Número da Nota Fiscal</label>
-            <input type="text" class="form-control" id="numero_nf" required>
+            <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Fornecedor <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.45rem">
+              <button type="button" class="forn-pill" data-valor="Natura/Avon"><span style="font-size:1rem">🌿</span> Natura/Avon</button>
+              <button type="button" class="forn-pill" data-valor="Boticário"><span style="font-size:1rem">💜</span> Boticário</button>
+              <button type="button" class="forn-pill" data-valor="__outro__"><i class="bi bi-pencil"></i> Outro</button>
+            </div>
+            <div id="fornecedor-outro-wrap" style="display:none;margin-top:.35rem">
+              <input type="text" class="form-control" id="fornecedor_custom" placeholder="Nome do fornecedor..." style="font-size:.85rem">
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Data de Emissão</label>
-            <input type="date" class="form-control" id="data_emissao" required>
+
+          <!-- Linhas de promissórias -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+            <label class="form-label mb-0" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Promissórias</label>
+            <button type="button" id="btn-add-linha" style="display:flex;align-items:center;gap:.3rem;padding:.25rem .65rem;border-radius:7px;border:1px solid rgba(210,153,34,.4);background:rgba(210,153,34,.08);color:#d29922;font-size:.78rem;font-weight:600;cursor:pointer">
+              <i class="bi bi-plus-circle"></i> Adicionar
+            </button>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Valor da Nota Fiscal</label>
-            <input type="number" step="0.01" class="form-control" id="valor_nf" required>
+          <div id="linhas-container" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
+            <!-- linhas geradas pelo JS -->
           </div>
-          <div class="mb-3">
-            <label class="form-label">Número de Parcelas</label>
-            <input type="number" class="form-control" id="parcelas" min="1" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Valor por Parcela</label>
-            <input type="text" class="form-control" id="valor_parcela" readonly>
-          </div>
-          <div class="mb-4">
-            <label class="form-label">Vencimento da 1ª Parcela</label>
-            <input type="date" class="form-control" id="data_vencimento" required>
-          </div>
-          <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+
+          <button type="submit" style="width:100%;padding:.65rem;border-radius:10px;border:none;background:linear-gradient(135deg,#b45309,#d29922);color:#fff;font-size:.92rem;font-weight:600;cursor:pointer">
+            <i class="bi bi-check-circle me-1"></i> Cadastrar Promissória
+          </button>
         </form>
       </div>
     </div>
   </div>
 </div>
 
-<footer class="bg-dark text-white text-center py-3 mt-4">
+<footer class="text-center py-3 mt-4">
   <small>&copy; 2025 Sistema de Pedidos</small>
 </footer>
 
@@ -96,88 +273,240 @@
   Auth.initSidebar();
   document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
 
-  const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmt     = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const fmtDate = d => d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
 
-  // Calcular valor da parcela automaticamente
-  ['valor_nf', 'parcelas'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => {
-      const v = parseFloat(document.getElementById('valor_nf').value) || 0;
-      const p = parseInt(document.getElementById('parcelas').value) || 1;
-      document.getElementById('valor_parcela').value = (v / p).toFixed(2);
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  function isVencida(dataStr) {
+    if (!dataStr) return false;
+    const d = new Date(dataStr + 'T12:00:00Z'); d.setHours(0,0,0,0);
+    return d < today;
+  }
+
+  // ── Fornecedor pills ──
+  let fornecedorSelecionado = '';
+  document.querySelectorAll('.forn-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.forn-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const val = pill.dataset.valor;
+      if (val === '__outro__') {
+        document.getElementById('fornecedor-outro-wrap').style.display = 'block';
+        fornecedorSelecionado = '';
+      } else {
+        document.getElementById('fornecedor-outro-wrap').style.display = 'none';
+        fornecedorSelecionado = val;
+      }
     });
   });
+  document.getElementById('fornecedor_custom').addEventListener('input', function() {
+    fornecedorSelecionado = this.value;
+  });
+
+  // ── Linhas dinâmicas ──
+  function criarLinha(autofocus = false) {
+    const div = document.createElement('div');
+    div.className = 'linha-prom';
+    div.style.cssText = 'display:flex;gap:.4rem;align-items:center';
+    div.innerHTML = `
+      <input type="date" class="form-control form-control-sm prom-data" required style="flex:1">
+      <input type="number" step="0.01" class="form-control form-control-sm prom-valor" placeholder="Valor" required style="flex:1">
+      <button type="button" class="btn-remover-linha" title="Remover" style="padding:.3rem .5rem;border-radius:7px;border:1px solid rgba(248,81,73,.3);background:rgba(248,81,73,.06);color:#f85149;cursor:pointer;font-size:.85rem;flex-shrink:0">
+        <i class="bi bi-x-lg"></i>
+      </button>`;
+    div.querySelector('.btn-remover-linha').addEventListener('click', () => {
+      if (document.querySelectorAll('.linha-prom').length > 1) div.remove();
+    });
+    document.getElementById('linhas-container').appendChild(div);
+    if (autofocus) div.querySelector('.prom-data').focus();
+  }
+
+  // inicia com uma linha
+  criarLinha();
+
+  document.getElementById('btn-add-linha').addEventListener('click', () => criarLinha(true));
 
   document.getElementById('promissoria-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const payload = {
-      numero_nf:      document.getElementById('numero_nf').value,
-      data_emissao:   document.getElementById('data_emissao').value,
-      valor_nf:       parseFloat(document.getElementById('valor_nf').value),
-      parcelas:       parseInt(document.getElementById('parcelas').value),
-      valor_parcela:  parseFloat(document.getElementById('valor_parcela').value),
-      data_vencimento: document.getElementById('data_vencimento').value
-    };
+    const fornecedor = fornecedorSelecionado ||
+      document.getElementById('fornecedor_custom').value.trim() || null;
 
-    const res  = await Auth.apiFetch('/api/promissorias', { method: 'POST', body: JSON.stringify(payload) });
+    const itens = Array.from(document.querySelectorAll('.linha-prom')).map(linha => ({
+      data_vencimento: linha.querySelector('.prom-data').value,
+      valor:           parseFloat(linha.querySelector('.prom-valor').value)
+    }));
+
+    if (itens.some(i => !i.data_vencimento || !i.valor || isNaN(i.valor))) {
+      return Swal.fire('Atenção', 'Preencha data e valor em todos os itens.', 'warning');
+    }
+
+    const res  = await Auth.apiFetch('/api/promissorias', { method: 'POST', body: JSON.stringify({ fornecedor, itens }) });
     const data = await res.json();
     if (!res.ok) return Swal.fire('Erro', data.error, 'error');
 
-    Swal.fire('Sucesso', data.message, 'success');
+    Swal.fire({ icon: 'success', title: data.message, timer: 1800, showConfirmButton: false });
     bootstrap.Modal.getInstance(document.getElementById('cadastrarModal')).hide();
+
+    // reset form
     document.getElementById('promissoria-form').reset();
+    document.querySelectorAll('.forn-pill').forEach(p => p.classList.remove('active'));
+    fornecedorSelecionado = '';
+    document.getElementById('fornecedor-outro-wrap').style.display = 'none';
+    document.getElementById('linhas-container').innerHTML = '';
+    criarLinha();
     loadPromissorias();
   });
 
-  async function loadPromissorias() {
+  // ── Helpers de render ──
+  function mesKey(dataStr) { return dataStr ? dataStr.substring(0, 7) : '9999-99'; }
+  function mesLabel(key) {
+    const [ano, mes] = key.split('-');
+    return new Date(parseInt(ano), parseInt(mes) - 1, 1)
+      .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  }
+  function categoriaFornecedor(f) {
+    if (!f) return 'outros';
+    const l = f.toLowerCase();
+    if (l.includes('boticário') || l.includes('boticario')) return 'boticario';
+    if (l.includes('natura') || l.includes('avon')) return 'natura';
+    return 'outros';
+  }
+
+  function toggleMes(uid) {
+    const body    = document.getElementById(uid);
+    const chevron = document.getElementById(uid + '-chev');
+    if (!body) return;
+    const aberto = body.classList.contains('aberto');
+    body.classList.toggle('aberto', !aberto);
+    chevron.className = aberto ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+  }
+
+  function renderMes(key, parcelas, mesAtualKey, abertos, secaoId) {
+    const totalMes = parcelas.reduce((s, p) => s + p.valor, 0);
+    const pagoMes  = parcelas.filter(p => p.status === 'Pago').reduce((s, p) => s + p.valor, 0);
+    const pendMes  = totalMes - pagoMes;
+    const todoPago = parcelas.every(p => p.status === 'Pago');
+    const uid      = 'mes-' + (secaoId || '') + key.replace('-', '');
+    const aberto   = (abertos ? abertos.has(uid) : key === mesAtualKey);
+    return `
+    <div class="prom-card" style="margin-bottom:.45rem">
+      <div class="prom-header" onclick="toggleMes('${uid}')" style="cursor:pointer;user-select:none">
+        <div class="prom-header-left">
+          <div class="prom-nf-icon" style="${todoPago ? 'background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.25);color:#3fb950' : ''}">
+            <i class="bi bi-calendar-month"></i>
+          </div>
+          <div>
+            <div class="prom-nf-num" style="text-transform:capitalize">${mesLabel(key)}</div>
+            <div class="prom-nf-sub">${parcelas.length} parcela${parcelas.length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        <div class="prom-stats">
+          <span class="prom-stat-chip chip-valor"><i class="bi bi-cash"></i>${fmt(totalMes)}</span>
+          ${pagoMes > 0 ? `<span class="prom-stat-chip chip-pagas"><i class="bi bi-check-circle"></i>${fmt(pagoMes)} pago</span>` : ''}
+          ${pendMes > 0 ? `<span class="prom-stat-chip chip-pend"><i class="bi bi-hourglass-split"></i>${fmt(pendMes)} pendente</span>` : ''}
+          <i class="bi bi-chevron-${aberto ? 'up' : 'down'}" id="${uid}-chev" style="color:var(--text-muted);font-size:.85rem;flex-shrink:0"></i>
+        </div>
+      </div>
+      <div id="${uid}" class="mes-body${aberto ? ' aberto' : ''}">
+        <div class="parcelas-grid">
+          ${parcelas.map(parc => {
+            const paga    = parc.status === 'Pago';
+            const vencida = !paga && isVencida(parc.vencimento);
+            return `
+            <div class="parcela-card ${paga ? 'paga' : vencida ? 'vencida' : ''}">
+              <div class="parcela-data" style="color:${paga ? '#3fb950' : vencida ? '#f85149' : 'var(--text-color)'}">
+                ${fmtDate(parc.vencimento)}
+              </div>
+              <div class="parcela-footer">
+                <span class="parcela-valor">${fmt(parc.valor)}</span>
+                ${paga ? `<span class="badge bg-success" style="font-size:.65rem"><i class="bi bi-check-lg"></i> Pago</span>`
+                  : vencida ? `<span class="badge bg-danger" style="font-size:.65rem"><i class="bi bi-exclamation-circle"></i> Vencida</span>`
+                  : `<span class="badge bg-warning text-dark" style="font-size:.65rem">Pendente</span>`}
+              </div>
+              <div style="display:flex;gap:.3rem;margin-top:.1rem">
+                ${paga
+                  ? `<button class="btn-desfazer" style="flex:1" onclick="alterarStatus(${parc.promId},${parc.numParcela},'Pendente')"><i class="bi bi-arrow-counterclockwise"></i> Desfazer</button>`
+                  : `<button class="btn-pagar" style="flex:1" onclick="alterarStatus(${parc.promId},${parc.numParcela},'Pago')"><i class="bi bi-check-circle"></i> Pagar</button>`}
+                <button class="btn-excluir-parc" onclick="excluirPromissoria(${parc.promId})" title="Excluir"><i class="bi bi-trash3"></i></button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderSecao(titulo, icone, cor, parcelas, mesAtualKey, abertos, secaoId) {
+    if (!parcelas.length) return '';
+    parcelas.sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
+    const porMes = {};
+    parcelas.forEach(p => { const k = mesKey(p.vencimento); if (!porMes[k]) porMes[k] = []; porMes[k].push(p); });
+    const totalPend = parcelas.filter(p => p.status !== 'Pago').reduce((s, p) => s + p.valor, 0);
+    return `
+    <div style="margin-bottom:1.5rem">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.65rem;padding-bottom:.5rem;border-bottom:1px solid var(--border-color)">
+        <span style="font-size:1.1rem">${icone}</span>
+        <span style="font-size:.95rem;font-weight:700;color:${cor}">${titulo}</span>
+        ${totalPend > 0
+          ? `<span style="font-size:.72rem;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#d29922;border-radius:6px;padding:.15rem .5rem;font-weight:600">${fmt(totalPend)} pendente</span>`
+          : `<span style="font-size:.72rem;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2);color:#3fb950;border-radius:6px;padding:.15rem .5rem;font-weight:600">Tudo pago ✓</span>`}
+      </div>
+      ${Object.keys(porMes).sort().map(k => renderMes(k, porMes[k], mesAtualKey, abertos, secaoId)).join('')}
+    </div>`;
+  }
+
+  async function loadPromissorias(abertos) {
     const res  = await Auth.apiFetch('/api/promissorias');
     const data = await res.json();
     const container = document.getElementById('promissorias-container');
 
-    if (!data.length) {
-      container.innerHTML = '<p class="text-muted text-center py-4">Nenhuma promissória cadastrada.</p>';
+    const todasParcelas = [];
+    data.forEach(prom => {
+      prom.parcelas.forEach((parc, i) => {
+        todasParcelas.push({
+          promId:     prom.id,
+          fornecedor: prom.fornecedor,
+          numParcela: i + 1,
+          valor:      prom.valor / prom.parcelas.length,
+          status:     parc.status,
+          vencimento: parc.data_vencimento
+        });
+      });
+    });
+
+    const totalPend = todasParcelas.filter(p => p.status !== 'Pago').length;
+    document.getElementById('prom-count').textContent =
+      `${data.length} lançamento${data.length !== 1 ? 's' : ''} · ${totalPend} parcela${totalPend !== 1 ? 's' : ''} pendente${totalPend !== 1 ? 's' : ''}`;
+
+    if (!todasParcelas.length) {
+      container.innerHTML = `<div class="empty-state"><i class="bi bi-receipt"></i>Nenhuma promissória cadastrada.</div>`;
       return;
     }
 
-    container.innerHTML = data.map(prom => `
-      <div class="card mb-3">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <div>
-              <span class="fw-600">NF nº ${prom.numero_nf}</span>
-              <span class="text-muted ms-2" style="font-size:.85rem">Valor total: ${fmt(prom.valor)}</span>
-            </div>
-            <button class="btn btn-sm btn-danger" onclick="excluirPromissoria(${prom.id})">Excluir</button>
-          </div>
-          <div class="row g-2">
-            ${prom.parcelas.map((parc, i) => `
-              <div class="col-sm-6 col-lg-4">
-                <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background:#f8f9fa;border:1px solid #e9ecef">
-                  <div>
-                    <div style="font-size:.8rem;color:#6c757d">${i + 1}ª parcela</div>
-                    <div style="font-size:.85rem">${fmtDate(parc.data_vencimento)}</div>
-                  </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="badge ${parc.status === 'Pago' ? 'bg-success' : 'bg-warning text-dark'}">${parc.status}</span>
-                    ${parc.status !== 'Pago'
-                      ? `<button class="btn btn-sm btn-outline-success py-0 px-2" style="font-size:.75rem"
-                           onclick="marcarPaga(${prom.id}, ${i + 1})">Pagar</button>`
-                      : ''}
-                  </div>
-                </div>
-              </div>`).join('')}
-          </div>
-        </div>
-      </div>`).join('');
+    const mesAtualKey = new Date().toISOString().substring(0, 7);
+    const boticario   = todasParcelas.filter(p => categoriaFornecedor(p.fornecedor) === 'boticario');
+    const natura      = todasParcelas.filter(p => categoriaFornecedor(p.fornecedor) === 'natura');
+    const outros      = todasParcelas.filter(p => categoriaFornecedor(p.fornecedor) === 'outros');
+
+    container.innerHTML =
+      renderSecao('Boticário',     '💜', '#a855f7', boticario, mesAtualKey, abertos, 'bot') +
+      renderSecao('Natura / Avon', '🌿', '#22c55e', natura,    mesAtualKey, abertos, 'nat') +
+      renderSecao('Outros',        '📋', 'var(--text-muted)', outros, mesAtualKey, abertos, 'out');
   }
 
-  async function marcarPaga(promId, parcelaNum) {
+  async function alterarStatus(promId, parcelaNum, status) {
+    // salva quais meses estão abertos antes de re-renderizar
+    const abertos = new Set(
+      Array.from(document.querySelectorAll('.mes-body.aberto')).map(el => el.id)
+    );
+
     const res = await Auth.apiFetch(`/api/promissorias/${promId}/parcelas/${parcelaNum}`, {
-      method: 'PUT',
-      body: JSON.stringify({ status: 'Pago' })
+      method: 'PUT', body: JSON.stringify({ status })
     });
-    if (res.ok) loadPromissorias();
-    else Swal.fire('Erro', 'Não foi possível atualizar.', 'error');
+    if (!res.ok) return Swal.fire('Erro', 'Não foi possível atualizar.', 'error');
+
+    await loadPromissorias(abertos);
   }
 
   async function excluirPromissoria(id) {
@@ -188,7 +517,7 @@
     });
     if (!isConfirmed) return;
     const res = await Auth.apiFetch(`/api/promissorias/${id}`, { method: 'DELETE' });
-    if (res.ok) { Swal.fire('Excluído!', '', 'success'); loadPromissorias(); }
+    if (res.ok) { Swal.fire({ icon: 'success', title: 'Excluído!', timer: 1200, showConfirmButton: false }); loadPromissorias(); }
     else Swal.fire('Erro', 'Não foi possível excluir.', 'error');
   }
 

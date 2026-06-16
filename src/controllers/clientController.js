@@ -1,4 +1,5 @@
 const db = require('../database/connection');
+const { geocodeClient } = require('../utils/geo');
 
 // POST /api/clients
 async function createClient(req, res) {
@@ -8,10 +9,17 @@ async function createClient(req, res) {
     return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos.' });
   }
 
+  // Geocodifica em background — não bloqueia a criação do cliente
+  let lat = null, lng = null;
+  try {
+    const coords = await geocodeClient(address, houseNumber, neighborhood);
+    if (coords) { lat = coords.lat; lng = coords.lng; }
+  } catch (_) {}
+
   try {
     const [result] = await db.query(
-      'INSERT INTO clients (name, address, house_number, neighborhood, phone) VALUES (?, ?, ?, ?, ?)',
-      [name, address, houseNumber, neighborhood, phone || null]
+      'INSERT INTO clients (name, address, house_number, neighborhood, phone, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, address, houseNumber, neighborhood, phone || null, lat, lng]
     );
     return res.status(201).json({ message: 'Cliente cadastrado com sucesso!', clientId: result.insertId });
   } catch (err) {
