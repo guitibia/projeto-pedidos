@@ -86,7 +86,7 @@
 </head>
 <body>
 
-<button class="sidebar-toggle" id="sidebarToggle">☰</button>
+<button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-brand">
@@ -100,24 +100,8 @@
   <nav class="sidebar-nav">
     <a class="nav-link active" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
     <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
-    <div class="nav-group">
-      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
-        <span><i class="bi bi-box-seam"></i> Produtos</span><span class="arrow">›</span>
-      </button>
-      <div class="nav-group-items">
-        <a class="nav-sub-link" href="/create-product.html"><i class="bi bi-plus-lg"></i> Cadastrar Produto</a>
-        <a class="nav-sub-link" href="/list-products.html"><i class="bi bi-list-ul"></i> Lista de Produtos</a>
-      </div>
-    </div>
-    <div class="nav-group">
-      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
-        <span><i class="bi bi-bag-check"></i> Pedidos</span><span class="arrow">›</span>
-      </button>
-      <div class="nav-group-items">
-        <a class="nav-sub-link" href="/create-order.html"><i class="bi bi-plus-lg"></i> Criar Pedido</a>
-        <a class="nav-sub-link" href="/list-orders.html"><i class="bi bi-list-ul"></i> Listar Pedidos</a>
-      </div>
-    </div>
+    <a class="nav-link" href="/produtos.html"><i class="bi bi-box-seam"></i> Produtos</a>
+    <a class="nav-link" href="/pedidos.html"><i class="bi bi-bag-check"></i> Pedidos</a>
     <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
     <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
   </nav>
@@ -428,11 +412,15 @@
       document.getElementById('totalReceita').textContent         = fmt(d.totalReceita);
       document.getElementById('margemLucro').textContent = Number(d.margemLucro).toFixed(1) + '%';
       document.getElementById('lucroMes').textContent    = fmt(d.lucroMes);
-      const medals = ['🥇','🥈','🥉'];
+      const rankColors = ['#f0883e','#8b949e','#b45309'];
+      const rankLabels = ['1º','2º','3º'];
       document.getElementById('topProdutos').innerHTML = d.topProdutos.length
         ? d.topProdutos.map((p, i) => `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:.4rem;font-size:.72rem;padding:.2rem .1rem">
-              <span>${medals[i]} <span style="color:var(--text-color);font-weight:500">${p.nome}</span></span>
+              <span>
+                <span style="display:inline-block;min-width:20px;text-align:center;font-size:.65rem;font-weight:700;padding:.1rem .3rem;border-radius:4px;background:rgba(255,255,255,.06);color:${rankColors[i]};margin-right:.25rem">${rankLabels[i]}</span>
+                <span style="color:var(--text-color);font-weight:500">${p.nome}</span>
+              </span>
               <span style="color:var(--text-muted);white-space:nowrap">${p.total} un.</span>
             </div>`).join('')
         : '<div style="font-size:.72rem;color:var(--text-muted)">Nenhuma venda ainda</div>';
@@ -492,7 +480,7 @@
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Nenhum pedido encontrado.</td></tr>';
       } else {
         tbody.innerHTML = d.ultimosPedidos.map(p => `
-          <tr style="cursor:pointer" onclick="window.location='/list-orders.html'">
+          <tr style="cursor:pointer" onclick="window.location='/pedidos.html#listar'">
             <td style="color:var(--text-muted);font-size:.82rem">#${p.id}</td>
             <td class="td-client">${p.client_name}</td>
             <td style="font-size:.82rem;color:var(--text-muted)">${p.payment_method}</td>
