@@ -36,6 +36,11 @@ pool.getConnection()
     // Migração: taxa de entrega em orders
     try { await conn.query('ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(6,2) NOT NULL DEFAULT 0.00'); } catch (_) {}
 
+    // Migração: unificação Avon + Natura → Natura/Avon
+    try {
+      await conn.query("UPDATE products SET franchise = 'Natura/Avon' WHERE franchise IN ('Avon', 'Natura')");
+    } catch (_) {}
+
     conn.release();
   })
   .catch(err => {

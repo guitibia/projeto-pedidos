@@ -129,7 +129,7 @@
 </head>
 <body>
 
-<button class="sidebar-toggle" id="sidebarToggle">☰</button>
+<button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-brand">
@@ -143,24 +143,8 @@
   <nav class="sidebar-nav">
     <a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
     <a class="nav-link active" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
-    <div class="nav-group">
-      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
-        <span><i class="bi bi-box-seam"></i> Produtos</span><span class="arrow">›</span>
-      </button>
-      <div class="nav-group-items">
-        <a class="nav-sub-link" href="/create-product.html"><i class="bi bi-plus-lg"></i> Cadastrar Produto</a>
-        <a class="nav-sub-link" href="/list-products.html"><i class="bi bi-list-ul"></i> Lista de Produtos</a>
-      </div>
-    </div>
-    <div class="nav-group">
-      <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
-        <span><i class="bi bi-bag-check"></i> Pedidos</span><span class="arrow">›</span>
-      </button>
-      <div class="nav-group-items">
-        <a class="nav-sub-link" href="/create-order.html"><i class="bi bi-plus-lg"></i> Criar Pedido</a>
-        <a class="nav-sub-link" href="/list-orders.html"><i class="bi bi-list-ul"></i> Listar Pedidos</a>
-      </div>
-    </div>
+    <a class="nav-link" href="/produtos.html"><i class="bi bi-box-seam"></i> Produtos</a>
+    <a class="nav-link" href="/pedidos.html"><i class="bi bi-bag-check"></i> Pedidos</a>
     <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
     <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
   </nav>
@@ -437,9 +421,9 @@
     document.getElementById('orderDetailsContent').innerHTML = `
       <div style="margin-bottom:1rem">
         <div style="font-size:1rem;font-weight:700;color:var(--text-heading)">Pedido #${order.id} &nbsp;·&nbsp; ${order.client_name}</div>
-        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem">📍 ${order.client_address}, ${order.client_house_number} — ${order.client_neighborhood}</div>
-        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.15rem">💳 ${pagamento}</div>
-        ${order.delivery_fee > 0 ? `<div style="font-size:.82rem;color:#f0883e;margin-top:.15rem">🚗 Taxa de entrega: ${fmt(order.delivery_fee)}</div>` : ''}
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem"><i class="bi bi-geo-alt-fill me-1" style="color:#39c5cf"></i>${order.client_address}, ${order.client_house_number} — ${order.client_neighborhood}</div>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.15rem"><i class="bi bi-credit-card-fill me-1" style="color:#58a6ff"></i>${pagamento}</div>
+        ${order.delivery_fee > 0 ? `<div style="font-size:.82rem;color:#f0883e;margin-top:.15rem"><i class="bi bi-truck-front-fill me-1"></i>Taxa de entrega: ${fmt(order.delivery_fee)}</div>` : ''}
       </div>
       <div style="border-top:1px solid var(--border);padding-top:.75rem;margin-bottom:.75rem">${prodHTML}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;border-top:1px solid var(--border);padding-top:.75rem">

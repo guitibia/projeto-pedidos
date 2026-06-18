@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedidos — Sistema de Pedidos</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    /* ── Tabs ── */
+    .page-tabs {
+      display: inline-flex;
+      gap: .3rem;
+      padding: .3rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin: 1.25rem 0 1.5rem;
+    }
+    .page-tab {
+      padding: .48rem 1.1rem;
+      border-radius: 9px;
+      font-size: .85rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+    }
+    .page-tab:hover { color: var(--text-color); }
+    .page-tab.active {
+      background: linear-gradient(135deg, #8957e5, #bc8cff);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(188,140,255,.3);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Hero ── */
+    .form-page-hero { display:flex;align-items:center;gap:1rem;margin-bottom:.5rem; }
+    .form-page-icon {
+      width:52px;height:52px;border-radius:14px;
+      background:linear-gradient(135deg,#8957e5,#bc8cff);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.5rem;color:#fff;flex-shrink:0;
+      box-shadow:0 4px 14px rgba(188,140,255,.35);
+    }
+    .form-page-title { font-size:1.3rem;font-weight:700;margin:0; }
+    .form-page-sub   { font-size:.8rem;color:var(--text-muted);margin:0; }
+
+    /* ── Form fields ── */
+    .field-group {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem 1.25rem .75rem;
+      margin-bottom: 1rem;
+    }
+    .field-group-title {
+      font-size:.7rem;text-transform:uppercase;letter-spacing:.8px;
+      color:var(--text-muted);margin-bottom:.9rem;
+      display:flex;align-items:center;gap:.4rem;
+    }
+    .field-group-title i { font-size:.85rem; }
+    .form-label { font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:.3rem; }
+    .input-icon-wrap { position:relative; }
+    .input-icon-wrap > i {
+      position:absolute;left:.75rem;top:50%;
+      transform:translateY(-50%);
+      color:var(--text-muted);font-size:.95rem;pointer-events:none;
+    }
+    .input-icon-wrap .form-control,
+    .input-icon-wrap .form-select { padding-left:2.3rem; }
+
+    /* ── Product list in form ── */
+    #productList { list-style:none;padding:0;margin:0; }
+    .product-item {
+      display:flex;align-items:center;justify-content:space-between;
+      gap:.75rem;
+      background:rgba(255,255,255,.03);border:1px solid var(--border-color);
+      border-radius:9px;padding:.6rem .9rem;margin-bottom:.4rem;
+    }
+    .product-item-name { font-size:.85rem;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .product-item-price { font-size:.82rem;color:#3fb950;font-weight:600;white-space:nowrap; }
+    .product-item-promo { font-size:.7rem;background:rgba(255,214,0,.15);color:#ffd600;border-radius:4px;padding:.1rem .4rem;white-space:nowrap; }
+    .btn-remove-product {
+      background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.25);
+      color:#f85149;border-radius:6px;padding:.2rem .5rem;font-size:.75rem;
+      cursor:pointer;transition:background .15s;flex-shrink:0;
+    }
+    .btn-remove-product:hover { background:rgba(248,81,73,.25); }
+
+    .btn-add-product {
+      width:100%;padding:.55rem;font-size:.88rem;font-weight:600;
+      border-radius:9px;border:1.5px dashed rgba(137,87,229,.4);
+      background:rgba(137,87,229,.07);color:#bc8cff;cursor:pointer;
+      transition:all .15s;display:flex;align-items:center;justify-content:center;
+      gap:.4rem;margin-bottom:.75rem;
+    }
+    .btn-add-product:hover { background:rgba(137,87,229,.14);border-style:solid; }
+
+    .total-chip {
+      display:flex;align-items:center;justify-content:space-between;
+      background:rgba(137,87,229,.08);border:1px solid rgba(137,87,229,.25);
+      border-radius:10px;padding:.6rem 1rem;margin-top:.25rem;
+    }
+    .total-chip-label { font-size:.78rem;color:var(--text-muted); }
+    .total-chip-value { font-size:1.05rem;font-weight:700;color:#bc8cff; }
+
+    /* ── Payment pills ── */
+    .payment-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem;margin-bottom:.75rem; }
+    .pay-option { display:none; }
+    .pay-label {
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:.25rem;padding:.55rem .3rem;border-radius:10px;
+      border:1.5px solid var(--border-color);cursor:pointer;
+      font-size:.7rem;font-weight:600;color:var(--text-muted);
+      transition:all .15s;text-align:center;
+    }
+    .pay-label i { font-size:1.2rem; }
+    .pay-option:checked + .pay-label {
+      border-color:#8957e5;background:rgba(137,87,229,.12);color:#bc8cff;
+    }
+    .pay-label:hover { border-color:rgba(137,87,229,.35);color:var(--text-color); }
+
+    .installment-hint {
+      display:flex;align-items:center;gap:.4rem;
+      background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);
+      border-radius:8px;padding:.45rem .75rem;font-size:.8rem;color:#58a6ff;margin-top:.5rem;
+    }
+
+    .promo-check-wrap {
+      display:flex;align-items:center;gap:.5rem;
+      background:rgba(255,214,0,.06);border:1px solid rgba(255,214,0,.18);
+      border-radius:8px;padding:.45rem .75rem;cursor:pointer;margin-bottom:.75rem;
+    }
+    .promo-check-wrap input { cursor:pointer; }
+    .promo-check-wrap label { font-size:.82rem;color:#d29922;cursor:pointer;margin:0; }
+
+    .btn-submit-form {
+      width:100%;padding:.7rem;font-size:.95rem;font-weight:600;
+      border-radius:10px;border:none;
+      background:linear-gradient(135deg,#8957e5,#bc8cff);
+      color:#fff;cursor:pointer;transition:opacity .15s,box-shadow .15s;
+      box-shadow:0 4px 14px rgba(137,87,229,.3);
+      display:flex;align-items:center;justify-content:center;gap:.5rem;
+    }
+    .btn-submit-form:hover { opacity:.92;box-shadow:0 6px 18px rgba(137,87,229,.4); }
+
+    /* ── List table ── */
+    .filter-pills { display:flex;gap:.4rem; }
+    .filter-pill {
+      padding:.35rem .9rem;border-radius:20px;font-size:.8rem;font-weight:600;
+      border:1.5px solid var(--border-color);background:transparent;
+      color:var(--text-muted);cursor:pointer;transition:all .15s;
+    }
+    .filter-pill:hover { border-color:#bc8cff;color:var(--text-color); }
+    .filter-pill.active { background:rgba(188,140,255,.15);border-color:#bc8cff;color:#bc8cff; }
+
+    .list-card {
+      background:var(--card-bg);border:1px solid var(--border-color);
+      border-radius:14px;overflow:hidden;
+    }
+    .list-card table { margin:0; }
+    .list-card thead th {
+      font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;
+      color:var(--text-muted);font-weight:600;padding:.75rem 1rem;
+      border-bottom:1px solid var(--border-color);background:transparent;
+    }
+    .list-card tbody tr { transition:background .12s; }
+    .list-card tbody tr:hover { background:rgba(255,255,255,.03); }
+    .list-card tbody td {
+      padding:.65rem 1rem;font-size:.875rem;
+      border-bottom:1px solid var(--border-color);vertical-align:middle;
+    }
+    .list-card tbody tr:last-child td { border-bottom:none; }
+
+    .order-id    { color:var(--text-muted);font-size:.8rem; }
+    .order-value { font-weight:700;color:#3fb950; }
+
+    .btn-action {
+      padding:.3rem .6rem;border-radius:7px;font-size:.8rem;
+      border:1px solid transparent;cursor:pointer;transition:all .15s;
+      display:inline-flex;align-items:center;gap:.25rem;
+    }
+    .btn-view   { background:rgba(88,166,255,.12);border-color:rgba(88,166,255,.25);color:#58a6ff; }
+    .btn-view:hover   { background:rgba(88,166,255,.22); }
+    .btn-delete { background:rgba(248,81,73,.10);border-color:rgba(248,81,73,.22);color:#f85149; }
+    .btn-delete:hover { background:rgba(248,81,73,.22); }
+  </style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
+    <a class="nav-link" href="/produtos.html"><i class="bi bi-box-seam"></i> Produtos</a>
+    <a class="nav-link active" href="/pedidos.html"><i class="bi bi-bag-check"></i> Pedidos</a>
+    <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="container-fluid py-3">
+
+    <!-- Hero -->
+    <div class="form-page-hero">
+      <div class="form-page-icon"><i class="bi bi-bag-check-fill"></i></div>
+      <div>
+        <div class="form-page-title">Pedidos</div>
+        <div class="form-page-sub">Crie e acompanhe os pedidos dos clientes</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="page-tabs">
+      <button class="page-tab active" data-tab="criar" onclick="switchTab(this)">
+        <i class="bi bi-cart-plus"></i> Criar Pedido
+      </button>
+      <button class="page-tab" data-tab="listar" onclick="switchTab(this)">
+        <i class="bi bi-list-ul"></i> Listar Pedidos
+      </button>
+    </div>
+
+    <!-- ── PAINEL: CRIAR PEDIDO ── -->
+    <div class="tab-panel active" id="panel-criar">
+      <div style="max-width:640px">
+        <form id="orderForm">
+
+          <!-- Cliente -->
+          <div class="field-group">
+            <div class="field-group-title"><i class="bi bi-person-circle"></i> Cliente</div>
+            <div class="input-icon-wrap">
+              <i class="bi bi-person"></i>
+              <select id="clientId" class="form-select" required>
+                <option value="">Selecione um cliente</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Produtos -->
+          <div class="field-group">
+            <div class="field-group-title"><i class="bi bi-box-seam"></i> Produtos</div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-12 col-sm-6">
+                <label class="form-label">Franquia</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-shop"></i>
+                  <select id="franchiseId" class="form-select">
+                    <option value="">Selecione a franquia</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6">
+                <label class="form-label">Produto</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-tag"></i>
+                  <select id="products" class="form-select">
+                    <option value="">Selecione um produto</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-2">
+              <div class="col-4">
+                <label class="form-label">Quantidade</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-123"></i>
+                  <input type="number" id="productQuantity" class="form-control" value="1" min="1">
+                </div>
+              </div>
+              <div class="col-4">
+                <label class="form-label">Custo</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-cash-coin"></i>
+                  <input type="text" id="productCost" class="form-control" readonly placeholder="—">
+                </div>
+              </div>
+              <div class="col-4">
+                <label class="form-label">Venda (R$)</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-currency-dollar"></i>
+                  <input type="number" step="0.01" id="salePrice" class="form-control" placeholder="0,00">
+                </div>
+              </div>
+            </div>
+
+            <div class="promo-check-wrap">
+              <input class="form-check-input mt-0" type="checkbox" id="promotionalPrice">
+              <label for="promotionalPrice"><i class="bi bi-tag-fill"></i> Produto com valor promocional (editar custo)</label>
+            </div>
+
+            <button type="button" id="addProductBtn" class="btn-add-product">
+              <i class="bi bi-plus-circle"></i> Adicionar Produto à Lista
+            </button>
+
+            <ul id="productList"></ul>
+
+            <div id="totalChip" class="total-chip" style="display:none">
+              <span class="total-chip-label"><i class="bi bi-receipt"></i> Total da compra</span>
+              <span class="total-chip-value" id="totalValueDisplay">R$ 0,00</span>
+              <input type="hidden" id="totalValue">
+            </div>
+          </div>
+
+          <!-- Pagamento -->
+          <div class="field-group">
+            <div class="field-group-title"><i class="bi bi-credit-card"></i> Pagamento</div>
+
+            <div class="payment-grid">
+              <div>
+                <input type="radio" class="pay-option" name="payMethod" id="pay-pix" value="PIX">
+                <label class="pay-label" for="pay-pix"><i class="bi bi-qr-code" style="color:#3fb950"></i> PIX</label>
+              </div>
+              <div>
+                <input type="radio" class="pay-option" name="payMethod" id="pay-din" value="DINHEIRO">
+                <label class="pay-label" for="pay-din"><i class="bi bi-cash" style="color:#d29922"></i> Dinheiro</label>
+              </div>
+              <div>
+                <input type="radio" class="pay-option" name="payMethod" id="pay-cred" value="CARTÃO DE CRÉDITO">
+                <label class="pay-label" for="pay-cred"><i class="bi bi-credit-card" style="color:#58a6ff"></i> Cartão</label>
+              </div>
+              <div>
+                <input type="radio" class="pay-option" name="payMethod" id="pay-parc" value="PARCELADO">
+                <label class="pay-label" for="pay-parc"><i class="bi bi-calendar-range" style="color:#bc8cff"></i> Parcelado</label>
+              </div>
+              <div>
+                <input type="radio" class="pay-option" name="payMethod" id="pay-comb" value="PAGAMENTO COMBINADO">
+                <label class="pay-label" for="pay-comb"><i class="bi bi-intersect" style="color:#f78166"></i> Combinado</label>
+              </div>
+            </div>
+            <input type="hidden" id="paymentMethod">
+
+            <div id="combinedPaymentDiv" style="display:none" class="mb-3">
+              <label class="form-label">Valor pago via PIX / Dinheiro</label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-cash"></i>
+                <input type="number" step="0.01" id="combinedPaymentValue" class="form-control" placeholder="0,00">
+              </div>
+            </div>
+
+            <div id="installmentsDiv" style="display:none">
+              <label class="form-label">Número de Parcelas</label>
+              <div class="input-icon-wrap mb-1">
+                <i class="bi bi-grid-3x2"></i>
+                <select id="installments" class="form-select">
+                  <option value="2">2×</option>
+                  <option value="3">3×</option>
+                  <option value="4">4×</option>
+                  <option value="5">5×</option>
+                </select>
+              </div>
+              <div class="installment-hint" id="installmentHint" style="display:none">
+                <i class="bi bi-info-circle-fill"></i>
+                <span id="installmentAmount"></span>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit-form">
+            <i class="bi bi-bag-check-fill"></i> Criar Pedido
+          </button>
+
+        </form>
+      </div>
+    </div>
+
+    <!-- ── PAINEL: LISTAR PEDIDOS ── -->
+    <div class="tab-panel" id="panel-listar">
+
+      <div class="d-flex align-items-center justify-content-between mb-4 gap-3 flex-wrap">
+        <div style="font-size:.85rem;color:var(--text-muted)" id="order-count">Carregando...</div>
+        <div class="filter-pills">
+          <button class="filter-pill active" data-status="Todos" onclick="setFilter(this)">Todos</button>
+          <button class="filter-pill" data-status="Pendente" onclick="setFilter(this)"><i class="bi bi-hourglass-split"></i> Pendente</button>
+          <button class="filter-pill" data-status="Entregue" onclick="setFilter(this)"><i class="bi bi-check-circle"></i> Entregue</button>
+        </div>
+      </div>
+
+      <div class="list-card">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Cliente</th>
+              <th>Pagamento</th>
+              <th>Status</th>
+              <th>Total</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="ordersList">
+            <tr><td colspan="6" class="text-center py-4" style="color:var(--text-muted)">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal detalhes do pedido -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#8957e5,#bc8cff);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-bag-check-fill me-2"></i>Detalhes do Pedido</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="orderDetailsContent"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Fechar</button>
+        <button class="btn btn-outline-primary" id="printButton"><i class="bi bi-printer me-1"></i>Imprimir</button>
+        <button class="btn btn-success" id="markAsDeliveredButton"><i class="bi bi-check-circle me-1"></i>Marcar como Entregue</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center py-3 mt-4">
+  <small>&copy; 2025 Sistema de Pedidos</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  Auth.requireAuth();
+  Auth.initSidebar();
+  document.getElementById('sidebarToggle').addEventListener('click', () =>
+    document.getElementById('sidebar').classList.toggle('open'));
+
+  const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  // ── Tab switching ──
+  function switchTab(btn) {
+    document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  }
+
+  if (location.hash === '#listar') {
+    switchTab(document.querySelector('[data-tab="listar"]'));
+  }
+
+  // ── CREATE ORDER ──
+  let totalValue   = 0;
+  let productsList = [];
+
+  function refreshTotal() {
+    document.getElementById('totalValue').value          = totalValue.toFixed(2);
+    document.getElementById('totalValueDisplay').textContent = fmt(totalValue);
+    document.getElementById('totalChip').style.display  = productsList.length ? 'flex' : 'none';
+    updateInstallmentAmount();
+  }
+
+  async function init() {
+    const [clientRes, franchiseRes] = await Promise.all([
+      Auth.apiFetch('/api/clients'),
+      Auth.apiFetch('/api/franchises')
+    ]);
+    const clients    = await clientRes.json();
+    const franchises = await franchiseRes.json();
+
+    const cs = document.getElementById('clientId');
+    clients.forEach(c => cs.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name}</option>`));
+
+    const fs = document.getElementById('franchiseId');
+    franchises.forEach(f => fs.insertAdjacentHTML('beforeend', `<option value="${f}">${f}</option>`));
+  }
+  init();
+
+  document.getElementById('franchiseId').addEventListener('change', async (e) => {
+    const f  = e.target.value;
+    const ps = document.getElementById('products');
+    ps.innerHTML = '<option value="">Selecione um produto</option>';
+    document.getElementById('productCost').value = '';
+    if (!f) return;
+    const res  = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
+    const data = await res.json();
+    data.forEach(p => ps.insertAdjacentHTML('beforeend',
+      `<option value="${p.id}" data-cost="${p.cost}">${p.name} — COD ${p.code}</option>`));
+  });
+
+  document.getElementById('products').addEventListener('change', (e) => {
+    const opt = e.target.selectedOptions[0];
+    document.getElementById('productCost').value = opt?.dataset.cost ? parseFloat(opt.dataset.cost).toFixed(2) : '';
+  });
+
+  document.getElementById('promotionalPrice').addEventListener('change', (e) => {
+    document.getElementById('productCost').readOnly = !e.target.checked;
+  });
+
+  document.getElementById('addProductBtn').addEventListener('click', () => {
+    const sel       = document.getElementById('products');
+    const opt       = sel.selectedOptions[0];
+    const productId = sel.value;
+    const salePrice = parseFloat(document.getElementById('salePrice').value);
+    const qty       = parseInt(document.getElementById('productQuantity').value) || 1;
+    const isPromo   = document.getElementById('promotionalPrice').checked;
+    const cost      = parseFloat(document.getElementById('productCost').value);
+
+    if (!productId || isNaN(salePrice) || salePrice <= 0 || qty < 1) {
+      return Swal.fire('Atenção', 'Preencha produto, valor de venda e quantidade corretamente.', 'warning');
+    }
+
+    const productName  = opt.textContent.split(' — COD ')[0];
+    const totalProduct = salePrice * qty;
+    const entry        = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null };
+
+    const li = document.createElement('li');
+    li.className = 'product-item';
+    li.innerHTML = `
+      <span class="product-item-name">${productName}${qty > 1 ? ' ×' + qty : ''}</span>
+      ${isPromo ? '<span class="product-item-promo"><i class="bi bi-tag-fill me-1"></i>Promo</span>' : ''}
+      <span class="product-item-price">${fmt(totalProduct)}</span>
+      <button type="button" class="btn-remove-product"><i class="bi bi-trash3"></i></button>`;
+
+    li.querySelector('.btn-remove-product').onclick = () => {
+      productsList = productsList.filter(p => p !== entry);
+      li.remove();
+      totalValue -= totalProduct;
+      refreshTotal();
+    };
+
+    document.getElementById('productList').appendChild(li);
+    productsList.push(entry);
+    totalValue += totalProduct;
+    refreshTotal();
+
+    document.getElementById('salePrice').value = '';
+    document.getElementById('productQuantity').value = 1;
+    document.getElementById('promotionalPrice').checked = false;
+    document.getElementById('productCost').readOnly = true;
+  });
+
+  document.querySelectorAll('.pay-option').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const m = radio.value;
+      document.getElementById('paymentMethod').value = m;
+      document.getElementById('installmentsDiv').style.display   = (m === 'PARCELADO' || m === 'PAGAMENTO COMBINADO') ? 'block' : 'none';
+      document.getElementById('combinedPaymentDiv').style.display = m === 'PAGAMENTO COMBINADO' ? 'block' : 'none';
+      updateInstallmentAmount();
+    });
+  });
+
+  document.getElementById('installments').addEventListener('change', updateInstallmentAmount);
+  document.getElementById('combinedPaymentValue').addEventListener('input', updateInstallmentAmount);
+
+  function updateInstallmentAmount() {
+    const hint = document.getElementById('installmentHint');
+    const m    = document.getElementById('paymentMethod').value;
+    if (m !== 'PARCELADO' && m !== 'PAGAMENTO COMBINADO') { hint.style.display = 'none'; return; }
+    const combined  = parseFloat(document.getElementById('combinedPaymentValue').value) || 0;
+    const n         = parseInt(document.getElementById('installments').value) || 2;
+    const remaining = Math.max(totalValue - combined, 0);
+    document.getElementById('installmentAmount').textContent =
+      `${n}× de ${fmt(remaining / n)}${combined > 0 ? ` (restante após ${fmt(combined)} PIX/Dinheiro)` : ''}`;
+    hint.style.display = totalValue > 0 ? 'flex' : 'none';
+  }
+
+  function resetOrderForm() {
+    document.getElementById('orderForm').reset();
+    document.getElementById('productList').innerHTML = '';
+    document.getElementById('paymentMethod').value   = '';
+    document.querySelectorAll('.pay-option').forEach(r => r.checked = false);
+    document.getElementById('installmentsDiv').style.display    = 'none';
+    document.getElementById('combinedPaymentDiv').style.display = 'none';
+    document.getElementById('installmentHint').style.display    = 'none';
+    productsList = []; totalValue = 0;
+    refreshTotal();
+  }
+
+  document.getElementById('orderForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (productsList.length === 0) return Swal.fire('Atenção', 'Adicione ao menos um produto.', 'warning');
+    const method = document.getElementById('paymentMethod').value;
+    if (!method) return Swal.fire('Atenção', 'Selecione um método de pagamento.', 'warning');
+
+    const needsInstallments = method === 'PARCELADO' || method === 'PAGAMENTO COMBINADO';
+    const payload = {
+      clientId:             document.getElementById('clientId').value,
+      paymentMethod:        method,
+      products:             productsList,
+      totalValue,
+      installments:         needsInstallments ? (document.getElementById('installments').value || null) : null,
+      combinedPaymentValue: method === 'PAGAMENTO COMBINADO' ? (document.getElementById('combinedPaymentValue').value || null) : null
+    };
+
+    try {
+      const res  = await Auth.apiFetch('/api/orders', { method: 'POST', body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) return Swal.fire('Erro', data.error, 'error');
+      await Swal.fire({
+        icon: 'success',
+        title: `Pedido #${data.orderId} criado!`,
+        text: `Total: ${fmt(data.totalValue)}${data.deliveryFee > 0 ? ` + ${fmt(data.deliveryFee)} taxa de entrega` : ''}`,
+        timer: 3000,
+        showConfirmButton: false
+      });
+      resetOrderForm();
+      switchTab(document.querySelector('[data-tab="listar"]'));
+      loadOrders();
+    } catch {
+      Swal.fire('Erro', 'Erro ao conectar ao servidor.', 'error');
+    }
+  });
+
+  // ── LIST ORDERS ──
+  let currentStatus = 'Todos';
+
+  function setFilter(btn) {
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.status;
+    loadOrders();
+  }
+
+  async function loadOrders() {
+    const url = currentStatus === 'Todos' ? '/api/orders' : `/api/orders?status=${currentStatus}`;
+    const res    = await Auth.apiFetch(url);
+    const orders = await res.json();
+    const tbody  = document.getElementById('ordersList');
+    document.getElementById('order-count').textContent =
+      `${orders.length} pedido${orders.length !== 1 ? 's' : ''} encontrado${orders.length !== 1 ? 's' : ''}`;
+
+    tbody.innerHTML = '';
+    if (!orders.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5" style="color:var(--text-muted)">
+        <i class="bi bi-inbox" style="font-size:2rem;opacity:.35;display:block;margin-bottom:.5rem"></i>
+        Nenhum pedido encontrado.</td></tr>`;
+      return;
+    }
+    orders.forEach(o => {
+      const badge = o.status === 'Entregue'
+        ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Entregue</span>'
+        : '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Pendente</span>';
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td class="order-id">#${o.id}</td>
+          <td style="font-weight:500">${o.client_name}</td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${o.payment_method}</td>
+          <td>${badge}</td>
+          <td class="order-value">${fmt(o.total_cost)}</td>
+          <td>
+            <button class="btn-action btn-view me-1" onclick="viewOrder(${o.id})"><i class="bi bi-eye"></i> Ver</button>
+            <button class="btn-action btn-delete" onclick="deleteOrder(${o.id})"><i class="bi bi-trash3"></i></button>
+          </td>
+        </tr>`);
+    });
+  }
+
+  async function deleteOrder(id) {
+    const { isConfirmed } = await Swal.fire({
+      title: 'Excluir pedido?', text: 'Esta ação é irreversível!',
+      icon: 'warning', showCancelButton: true,
+      confirmButtonColor: '#dc3545', confirmButtonText: 'Excluir',
+      cancelButtonText: 'Cancelar'
+    });
+    if (!isConfirmed) return;
+    const res = await Auth.apiFetch(`/api/orders/${id}`, { method: 'DELETE' });
+    if (res.ok) { Swal.fire({ icon: 'success', title: 'Excluído!', timer: 1200, showConfirmButton: false }); loadOrders(); }
+    else Swal.fire('Erro', 'Não foi possível excluir.', 'error');
+  }
+
+  async function viewOrder(id) {
+    const [res, resParc] = await Promise.all([
+      Auth.apiFetch(`/api/orders/${id}`),
+      Auth.apiFetch(`/api/orders/${id}/parcelas`)
+    ]);
+    const order    = await res.json();
+    const parcelas = await resParc.json();
+
+    const totalVenda = order.products.reduce((s, p) => s + p.sale_price * (p.quantity || 1), 0);
+    const totalCusto = order.products.reduce((s, p) => s + p.cost_price * (p.quantity || 1), 0);
+
+    const grouped = order.products.reduce((acc, p) => {
+      (acc[p.franchise] = acc[p.franchise] || []).push(p); return acc;
+    }, {});
+
+    const prodHTML = Object.entries(grouped).map(([fr, prods]) => `
+      <div class="mb-3">
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem">${fr}</div>
+        ${prods.map(p => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.5rem .65rem;border-radius:7px;background:var(--bg-hover);border:1px solid var(--border);margin-bottom:.3rem">
+            <div>
+              <div style="color:var(--text-heading);font-size:.875rem;font-weight:500">${p.product_name} ${p.not_came ? '<span class="badge bg-danger" style="font-size:.7rem">Não veio</span>' : ''}</div>
+              <div style="color:var(--text-muted);font-size:.75rem">COD ${p.code} &nbsp;·&nbsp; Qtd: ${p.quantity}</div>
+            </div>
+            <div style="display:flex;gap:.4rem;flex-shrink:0">
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.25rem .55rem;text-align:center;min-width:70px">
+                <div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Custo</div>
+                <div style="font-size:.8rem;color:var(--text-primary);font-weight:500;margin-top:1px">${fmt(p.cost_price * p.quantity)}</div>
+              </div>
+              <div style="background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.25);border-radius:6px;padding:.25rem .55rem;text-align:center;min-width:70px">
+                <div style="font-size:.62rem;color:var(--success);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Venda</div>
+                <div style="font-size:.8rem;color:var(--success);font-weight:700;margin-top:1px">${fmt(p.sale_price * p.quantity)}</div>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>`).join('');
+
+    const pagamento = `${order.payment_method}${order.installments > 1 ? ` &nbsp;·&nbsp; ${order.installments}x de ${fmt(totalVenda / order.installments)}` : ''}${order.combined_payment_value ? ` &nbsp;·&nbsp; PIX/Dinheiro: ${fmt(order.combined_payment_value)}` : ''}`;
+
+    const pagas = parcelas.filter(p => p.status === 'Pago').length;
+    const parcelasHTML = parcelas.length > 0 ? `
+      <div id="controle-parcelas-${id}" style="border-top:1px solid var(--border);padding-top:.75rem;margin-bottom:.75rem">
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem">
+          Controle de Parcelas &nbsp;<span class="parcelas-count" style="font-weight:400;opacity:.7">${pagas}/${parcelas.length} pagas</span>
+        </div>
+        <div class="parcelas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.4rem">
+          ${parcelas.map(p => {
+            const paga = p.status === 'Pago';
+            return `<div style="padding:.6rem .75rem;border-radius:8px;border:1px solid ${paga ? 'rgba(63,185,80,.3)' : 'var(--border)'};background:${paga ? 'rgba(63,185,80,.08)' : 'var(--bg-hover)'};display:flex;flex-direction:column;gap:.45rem">
+              <div>
+                <div style="font-size:.7rem;color:var(--text-muted)">${p.numero}ª parcela</div>
+                <div style="font-size:.85rem;font-weight:600;color:${paga ? 'var(--success)' : 'var(--text-primary)'}">${fmt(p.valor)}</div>
+              </div>
+              <button onclick="toggleParcela(${id},${p.numero},'${paga ? 'Pendente' : 'Pago'}')"
+                style="border:1px solid ${paga ? 'rgba(248,81,73,.4)' : 'rgba(63,185,80,.4)'};border-radius:6px;padding:.3rem 0;font-size:.75rem;font-weight:600;cursor:pointer;background:transparent;color:${paga ? 'var(--danger)' : 'var(--success)'};width:100%;transition:all .15s">
+                ${paga ? 'Desfazer' : 'Pagar'}
+              </button>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : '';
+
+    document.getElementById('orderDetailsContent').innerHTML = `
+      <div style="margin-bottom:1rem">
+        <div style="font-size:1rem;font-weight:700;color:var(--text-heading)">Pedido #${order.id} &nbsp;·&nbsp; ${order.client_name}</div>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem"><i class="bi bi-geo-alt-fill me-1" style="color:#39c5cf"></i>${order.client_address}, ${order.client_house_number} — ${order.client_neighborhood}</div>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.15rem"><i class="bi bi-credit-card-fill me-1" style="color:#58a6ff"></i>${pagamento}</div>
+        ${order.delivery_fee > 0 ? `<div style="font-size:.82rem;color:#f0883e;margin-top:.15rem"><i class="bi bi-truck-front-fill me-1"></i>Taxa de entrega: ${fmt(order.delivery_fee)}</div>` : ''}
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:.75rem;margin-bottom:.75rem">${prodHTML}</div>
+      ${parcelasHTML}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;border-top:1px solid var(--border);padding-top:.75rem">
+        <div style="text-align:center;padding:.5rem;border-radius:8px;background:var(--bg-hover)">
+          <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Custo</div>
+          <div style="font-size:.95rem;font-weight:600;color:var(--text-primary)">${fmt(totalCusto)}</div>
+        </div>
+        <div style="text-align:center;padding:.5rem;border-radius:8px;background:var(--bg-hover)">
+          <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Venda</div>
+          <div style="font-size:.95rem;font-weight:600;color:var(--accent)">${fmt(totalVenda)}</div>
+        </div>
+        <div style="text-align:center;padding:.5rem;border-radius:8px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2)">
+          <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Lucro</div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--success)">${fmt(totalVenda - totalCusto)}</div>
+        </div>
+      </div>`;
+
+    document.getElementById('markAsDeliveredButton').onclick = () => markDelivered(id);
+    document.getElementById('printButton').onclick = () => printOrder(order);
+
+    const modalEl = document.getElementById('orderDetailsModal');
+    const existing = bootstrap.Modal.getInstance(modalEl);
+    if (existing) existing.show(); else new bootstrap.Modal(modalEl).show();
+  }
+
+  async function toggleParcela(orderId, numero, novoStatus) {
+    const res = await Auth.apiFetch(`/api/orders/${orderId}/parcelas/${numero}`, {
+      method: 'PUT', body: JSON.stringify({ status: novoStatus })
+    });
+    if (!res.ok) { Swal.fire('Erro', 'Não foi possível atualizar a parcela.', 'error'); return; }
+
+    const parcRes  = await Auth.apiFetch(`/api/orders/${orderId}/parcelas`);
+    const parcelas = await parcRes.json();
+    const pagas    = parcelas.filter(p => p.status === 'Pago').length;
+
+    const controle = document.getElementById(`controle-parcelas-${orderId}`);
+    if (controle) {
+      controle.querySelector('.parcelas-count').textContent = `${pagas}/${parcelas.length} pagas`;
+      controle.querySelector('.parcelas-grid').innerHTML = parcelas.map(p => {
+        const paga = p.status === 'Pago';
+        return `<div style="padding:.6rem .75rem;border-radius:8px;border:1px solid ${paga ? 'rgba(63,185,80,.3)' : 'var(--border)'};background:${paga ? 'rgba(63,185,80,.08)' : 'var(--bg-hover)'};display:flex;flex-direction:column;gap:.45rem">
+          <div>
+            <div style="font-size:.7rem;color:var(--text-muted)">${p.numero}ª parcela</div>
+            <div style="font-size:.85rem;font-weight:600;color:${paga ? 'var(--success)' : 'var(--text-primary)'}">${fmt(p.valor)}</div>
+          </div>
+          <button onclick="toggleParcela(${orderId},${p.numero},'${paga ? 'Pendente' : 'Pago'}')"
+            style="border:1px solid ${paga ? 'rgba(248,81,73,.4)' : 'rgba(63,185,80,.4)'};border-radius:6px;padding:.3rem 0;font-size:.75rem;font-weight:600;cursor:pointer;background:transparent;color:${paga ? 'var(--danger)' : 'var(--success)'};width:100%;transition:all .15s">
+            ${paga ? 'Desfazer' : 'Pagar'}
+          </button>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  async function markDelivered(id) {
+    const res = await Auth.apiFetch(`/api/orders/${id}/status`, {
+      method: 'PUT', body: JSON.stringify({ status: 'Entregue' })
+    });
+    if (res.ok) { Swal.fire({ icon: 'success', title: 'Pedido entregue!', timer: 1500, showConfirmButton: false }); loadOrders(); }
+    else Swal.fire('Erro', 'Não foi possível atualizar.', 'error');
+  }
+
+  function printOrder(order) {
+    const w = window.open('', '', 'width=800,height=600');
+    const totalVenda = order.products.reduce((s,p) => s + p.sale_price * (p.quantity||1), 0).toFixed(2);
+    const totalCusto = order.products.reduce((s,p) => s + p.cost_price * (p.quantity||1), 0).toFixed(2);
+    w.document.write(`<html><head><title>Pedido #${order.id}</title>
+      <style>body{font-family:Arial,sans-serif;padding:20px;color:#333}h3{text-align:center}hr{border-color:#ccc}.row{display:flex;gap:8px;margin-bottom:4px}</style>
+    </head><body>
+      <h3>Pedido #${order.id}</h3>
+      <p><strong>Cliente:</strong> ${order.client_name}</p>
+      <p><strong>Endereço:</strong> ${order.client_address}, ${order.client_house_number} — ${order.client_neighborhood}</p>
+      <p><strong>Pagamento:</strong> ${order.payment_method}</p><hr>
+      ${order.products.map(p=>`<div class="row">${p.product_name} — COD ${p.code} — Qtd ${p.quantity} — R$ ${(p.sale_price*p.quantity).toFixed(2)}</div>`).join('')}
+      <hr><p><strong>Total Venda: R$ ${totalVenda}</strong> &nbsp; Total Custo: R$ ${totalCusto} &nbsp; Lucro: R$ ${(totalVenda-totalCusto).toFixed(2)}</p>
+    </body></html>`);
+    w.document.close(); w.print();
+  }
+
+  loadOrders();
+</script>
+</body>
+</html>
