@@ -491,8 +491,8 @@
         todasParcelas.push({
           promId:     prom.id,
           fornecedor: prom.fornecedor,
-          numParcela: i + 1,
-          valor:      prom.valor / prom.parcelas.length,
+          numParcela: parc.numero,
+          valor:      parc.valor,
           status:     parc.status,
           vencimento: parc.data_vencimento
         });
@@ -540,9 +540,17 @@
       confirmButtonText: 'Excluir', cancelButtonText: 'Cancelar'
     });
     if (!isConfirmed) return;
+
+    // Preserva quais meses estão abertos
+    const abertos = new Set(
+      Array.from(document.querySelectorAll('.mes-body.aberto')).map(el => el.id)
+    );
+
     const res = await Auth.apiFetch(`/api/promissorias/${id}`, { method: 'DELETE' });
-    if (res.ok) { Swal.fire({ icon: 'success', title: 'Excluído!', timer: 1200, showConfirmButton: false }); loadPromissorias(); }
-    else Swal.fire('Erro', 'Não foi possível excluir.', 'error');
+    if (res.ok) {
+      Swal.fire({ icon: 'success', title: 'Excluído!', timer: 1200, showConfirmButton: false });
+      loadPromissorias(abertos);
+    } else Swal.fire('Erro', 'Não foi possível excluir.', 'error');
   }
 
   loadPromissorias();

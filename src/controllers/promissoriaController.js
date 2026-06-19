@@ -47,7 +47,10 @@ async function createPromissoria(req, res) {
 async function listPromissorias(req, res) {
   try {
     const [rows] = await db.query(`
-      SELECT p.*, nf.numero AS numero_nf, nf.fornecedor, nf.data_emissao, parc.numero_parcela, parc.status AS parcela_status, parc.data_vencimento AS parcela_vencimento
+      SELECT p.*, nf.numero AS numero_nf, nf.fornecedor, nf.data_emissao,
+             parc.numero_parcela, parc.status AS parcela_status,
+             parc.data_vencimento AS parcela_vencimento,
+             parc.valor AS parcela_valor
       FROM promissorias p
       JOIN notas_fiscais nf ON nf.id = p.nota_fiscal_id
       LEFT JOIN parcelas parc ON parc.promissoria_id = p.id
@@ -62,9 +65,10 @@ async function listPromissorias(req, res) {
       }
       if (row.numero_parcela) {
         prom.parcelas.push({
-          numero: row.numero_parcela,
-          status: row.parcela_status,
-          data_vencimento: row.parcela_vencimento
+          numero:          row.numero_parcela,
+          status:          row.parcela_status,
+          data_vencimento: row.parcela_vencimento,
+          valor:           parseFloat(row.parcela_valor || 0)
         });
       }
       return acc;
