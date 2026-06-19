@@ -218,17 +218,6 @@
     .btn-cadastrar-todos:hover:not(:disabled) { opacity: .92; box-shadow: 0 6px 18px rgba(63,185,80,.4); }
     .btn-cadastrar-todos:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
 
-    /* ── List summary chips ── */
-    .list-stats-bar { display:flex;flex-wrap:wrap;gap:.45rem;align-items:center; }
-    .list-stat-chip {
-      display:inline-flex;align-items:center;gap:.4rem;
-      padding:.32rem .8rem;
-      background:var(--card-bg);border:1px solid var(--border-color);
-      border-radius:20px;font-size:.78rem;color:var(--text-muted);
-      white-space:nowrap;
-    }
-    .list-stat-chip strong { color:var(--text-color);font-weight:600; }
-
     /* ── List search ── */
     .search-wrap { position:relative; }
     .search-wrap i {
@@ -266,12 +255,6 @@
       font-size:.72rem;color:var(--text-muted);
       background:rgba(255,255,255,.06);border:1px solid var(--border-color);
       border-radius:20px;padding:.1rem .55rem;margin-left:.25rem;
-    }
-    .franchise-total {
-      font-size:.75rem;font-weight:600;
-      background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.25);
-      color:#3fb950;border-radius:20px;padding:.1rem .65rem;
-      margin-left:.1rem;
     }
     .franchise-chevron { color:var(--text-muted);font-size:.85rem;transition:transform .2s; }
     .franchise-header.open .franchise-chevron { transform:rotate(90deg); }
@@ -482,20 +465,7 @@
     <div class="tab-panel" id="panel-listar">
 
       <div class="d-flex align-items-center justify-content-between mb-3 gap-3 flex-wrap">
-        <div class="list-stats-bar" id="list-stats-bar">
-          <div class="list-stat-chip">
-            <i class="bi bi-box-seam" style="color:#ff9a00"></i>
-            <span id="stat-produtos">Carregando...</span>
-          </div>
-          <div class="list-stat-chip" id="chip-valor" style="display:none">
-            <i class="bi bi-cash-stack" style="color:#3fb950"></i>
-            <span>Valor total: <strong id="stat-valor">—</strong></span>
-          </div>
-          <div class="list-stat-chip" id="chip-franquias" style="display:none">
-            <i class="bi bi-shop" style="color:#58a6ff"></i>
-            <span id="stat-franquias">—</span>
-          </div>
-        </div>
+        <div style="font-size:.85rem;color:var(--text-muted)" id="product-count">Carregando...</div>
         <div class="search-wrap">
           <i class="bi bi-search"></i>
           <input id="search" placeholder="Buscar por nome ou código...">
@@ -721,16 +691,8 @@
   function renderProducts(list) {
     const container = document.getElementById('products-container');
 
-    const totalCusto  = list.reduce((s, p) => s + parseFloat(p.cost || 0), 0);
-    const totalFranqs = new Set(list.map(p => p.franchise)).size;
-
-    document.getElementById('stat-produtos').textContent =
-      `${list.length} produto${list.length !== 1 ? 's' : ''}`;
-    document.getElementById('chip-valor').style.display     = list.length ? 'inline-flex' : 'none';
-    document.getElementById('chip-franquias').style.display = list.length ? 'inline-flex' : 'none';
-    document.getElementById('stat-valor').textContent       = fmt(totalCusto);
-    document.getElementById('stat-franquias').textContent   =
-      `${totalFranqs} franquia${totalFranqs !== 1 ? 's' : ''}`;
+    document.getElementById('product-count').textContent =
+      `${list.length} produto${list.length !== 1 ? 's' : ''} cadastrado${list.length !== 1 ? 's' : ''}`;
 
     if (!list.length) {
       container.innerHTML = `<div class="text-center py-5" style="color:var(--text-muted)">
@@ -755,7 +717,6 @@
             </div>
             <span class="franchise-name">${esc(fr)}</span>
             <span class="franchise-count">${grouped[fr].length}</span>
-            <span class="franchise-total">${fmt(grouped[fr].reduce((s,p)=>s+parseFloat(p.cost||0),0))}</span>
           </div>
           <i class="bi bi-chevron-right franchise-chevron"></i>
         </div>

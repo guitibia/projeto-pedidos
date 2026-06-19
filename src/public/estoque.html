@@ -40,6 +40,11 @@
     .badge-ok    { background: rgba(63,185,80,.1);   border: 1px solid rgba(63,185,80,.2);   color: #3fb950; }
     .badge-low   { background: rgba(210,153,34,.1);  border: 1px solid rgba(210,153,34,.25); color: #d29922; }
     .badge-zero  { background: rgba(248,81,73,.1);   border: 1px solid rgba(248,81,73,.25);  color: #f85149; }
+    .fr-valor {
+      font-size: .75rem; font-weight: 600;
+      background: rgba(63,185,80,.1); border: 1px solid rgba(63,185,80,.25);
+      color: #3fb950; border-radius: 20px; padding: .1rem .7rem;
+    }
 
     /* Accordion suave */
     .fr-body { overflow: hidden; max-height: 0; opacity: 0; transition: max-height .35s ease, opacity .25s ease; }
@@ -264,10 +269,11 @@
     }
 
     // Resumo geral
-    const total   = items.length;
-    const zerados = items.filter(p => p.estoque <= 0).length;
-    const baixos  = items.filter(p => p.estoque > 0 && p.estoque <= LOW_STOCK).length;
-    const ok      = total - zerados - baixos;
+    const total      = items.length;
+    const zerados    = items.filter(p => p.estoque <= 0).length;
+    const baixos     = items.filter(p => p.estoque > 0 && p.estoque <= LOW_STOCK).length;
+    const ok         = total - zerados - baixos;
+    const valorTotal = items.reduce((s, p) => s + parseFloat(p.cost || 0) * Math.max(p.estoque, 0), 0);
     document.getElementById('estoque-sub').textContent = `${total} produto${total!==1?'s':''} · ${zerados} zerado${zerados!==1?'s':''}`;
     document.getElementById('resumo-grid').innerHTML = `
       <div class="resumo-card">
@@ -285,6 +291,10 @@
       <div class="resumo-card">
         <div class="resumo-label">Zerados</div>
         <div class="resumo-val" style="color:#f85149">${zerados}</div>
+      </div>
+      <div class="resumo-card" style="grid-column: 1 / -1">
+        <div class="resumo-label"><i class="bi bi-cash-stack" style="color:#3fb950"></i> Valor total em estoque</div>
+        <div class="resumo-val" style="color:#3fb950;font-size:1.6rem">${fmt(valorTotal)}</div>
       </div>`;
 
     // Agrupa por franquia
@@ -298,6 +308,7 @@
       const prods   = grupos[fr];
       const fr0     = prods.filter(p => p.estoque <= 0).length;
       const frLow   = prods.filter(p => p.estoque > 0 && p.estoque <= LOW_STOCK).length;
+      const frValor = prods.reduce((s, p) => s + parseFloat(p.cost || 0) * Math.max(p.estoque, 0), 0);
       const info    = frInfo(fr);
       const isOpen  = openFr.has(fr);
       const frId    = 'fr-' + fr.replace(/\s/g,'');
@@ -315,6 +326,7 @@
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:.5rem">
+            <span class="fr-valor">${fmt(frValor)}</span>
             <span class="fr-badge ${nivelBadgeClass(fr0, frLow)}">${nivelBadgeLabel(fr0, frLow, prods.length)}</span>
             <i class="bi bi-chevron-${isOpen?'up':'down'}" id="${frId}-chev" style="color:var(--text-muted);font-size:.85rem"></i>
           </div>
