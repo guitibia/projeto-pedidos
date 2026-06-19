@@ -143,6 +143,27 @@
       transition: max-height .4s ease, opacity .3s ease .05s;
     }
 
+    /* ── Seção collapsível ── */
+    .secao-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .65rem 1rem;
+      background: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 12px; cursor: pointer; user-select: none;
+      margin-bottom: .65rem;
+      transition: border-color .15s, background .15s;
+    }
+    .secao-header:hover { border-color: rgba(210,153,34,.35); background: rgba(210,153,34,.03); }
+    .secao-header-left { display: flex; align-items: center; gap: .6rem; }
+    .secao-body {
+      overflow: hidden;
+      max-height: 0; opacity: 0;
+      transition: max-height .4s ease, opacity .3s ease;
+    }
+    .secao-body.aberto {
+      max-height: 8000px; opacity: 1;
+      transition: max-height .5s ease, opacity .35s ease .05s;
+    }
+
     /* Empty state */
     .empty-state {
       text-align: center; padding: 3.5rem 1rem; color: var(--text-muted);
@@ -421,22 +442,41 @@
     </div>`;
   }
 
+  const secaoAberta = new Set(['secao-bot', 'secao-nat', 'secao-out']);
+
+  function toggleSecao(uid) {
+    const body = document.getElementById(uid);
+    const chev = document.getElementById(uid + '-chev');
+    if (!body) return;
+    const aberto = body.classList.contains('aberto');
+    body.classList.toggle('aberto', !aberto);
+    chev.className = 'bi bi-chevron-' + (aberto ? 'down' : 'up');
+    aberto ? secaoAberta.delete(uid) : secaoAberta.add(uid);
+  }
+
   function renderSecao(titulo, icone, cor, parcelas, mesAtualKey, abertos, secaoId) {
     if (!parcelas.length) return '';
     parcelas.sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
-    const porMes = {};
+    const porMes    = {};
     parcelas.forEach(p => { const k = mesKey(p.vencimento); if (!porMes[k]) porMes[k] = []; porMes[k].push(p); });
     const totalPend = parcelas.filter(p => p.status !== 'Pago').reduce((s, p) => s + p.valor, 0);
+    const uid       = 'secao-' + secaoId;
+    const aberto    = secaoAberta.has(uid);
     return `
-    <div style="margin-bottom:1.5rem">
-      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.65rem;padding-bottom:.5rem;border-bottom:1px solid var(--border-color)">
-        <span style="font-size:1.1rem">${icone}</span>
-        <span style="font-size:.95rem;font-weight:700;color:${cor}">${titulo}</span>
-        ${totalPend > 0
-          ? `<span style="font-size:.72rem;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#d29922;border-radius:6px;padding:.15rem .5rem;font-weight:600">${fmt(totalPend)} pendente</span>`
-          : `<span style="font-size:.72rem;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2);color:#3fb950;border-radius:6px;padding:.15rem .5rem;font-weight:600">Tudo pago ✓</span>`}
+    <div style="margin-bottom:1.25rem">
+      <div class="secao-header" onclick="toggleSecao('${uid}')">
+        <div class="secao-header-left">
+          <span style="font-size:1.1rem">${icone}</span>
+          <span style="font-size:.95rem;font-weight:700;color:${cor}">${titulo}</span>
+          <span style="font-size:.72rem;border-radius:20px;padding:.15rem .6rem;font-weight:600;${totalPend > 0
+            ? 'background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#d29922'
+            : 'background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2);color:#3fb950'}">${totalPend > 0 ? fmt(totalPend) + ' pendente' : 'Tudo pago ✓'}</span>
+        </div>
+        <i class="bi bi-chevron-${aberto ? 'up' : 'down'}" id="${uid}-chev" style="color:var(--text-muted);font-size:.85rem"></i>
       </div>
-      ${Object.keys(porMes).sort().map(k => renderMes(k, porMes[k], mesAtualKey, abertos, secaoId)).join('')}
+      <div id="${uid}" class="secao-body${aberto ? ' aberto' : ''}">
+        ${Object.keys(porMes).sort().map(k => renderMes(k, porMes[k], mesAtualKey, abertos, secaoId)).join('')}
+      </div>
     </div>`;
   }
 
