@@ -175,6 +175,9 @@
       <button class="sort-pill" id="est-sort-cost" onclick="setEstSort('cost')">
         Valor <i class="bi bi-arrow-down-up" id="est-sort-cost-icon"></i>
       </button>
+      <button class="sort-pill" id="est-sort-id" onclick="setEstSort('id')">
+        ID <i class="bi bi-arrow-down-up" id="est-sort-id-icon"></i>
+      </button>
     </div>
 
     <!-- Lista -->
@@ -294,7 +297,7 @@
       sortEstField = field;
       sortEstDir   = 'asc';
     }
-    ['name', 'cost'].forEach(f => {
+    ['name', 'cost', 'id'].forEach(f => {
       const pill = document.getElementById('est-sort-' + f);
       const icon = document.getElementById('est-sort-' + f + '-icon');
       pill.classList.toggle('active', sortEstField === f);
