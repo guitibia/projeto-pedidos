@@ -310,7 +310,7 @@
 
             <div class="promo-check-wrap">
               <input class="form-check-input mt-0" type="checkbox" id="promotionalPrice">
-              <label for="promotionalPrice"><i class="bi bi-tag-fill"></i> Produto com valor promocional (editar custo)</label>
+              <label for="promotionalPrice"><i class="bi bi-tag-fill"></i> Produto com valor promocional — digite o preço em Venda</label>
             </div>
 
             <button type="button" id="addProductBtn" class="btn-add-product">
@@ -525,17 +525,21 @@
   });
 
   document.getElementById('promotionalPrice').addEventListener('change', (e) => {
-    document.getElementById('productCost').readOnly = !e.target.checked;
     const opt        = document.getElementById('products').selectedOptions[0];
     const promoPrice = opt?.dataset?.promoPrice;
-    if (e.target.checked && promoPrice) {
-      // Produto tem preço promocional cadastrado: preenche automaticamente
-      document.getElementById('salePrice').value = promoPrice;
-    } else if (!e.target.checked) {
-      // Desmarcou: limpa para o usuário digitar o preço normal
-      document.getElementById('salePrice').value = '';
+    const salePriceEl = document.getElementById('salePrice');
+    if (e.target.checked) {
+      if (promoPrice) {
+        // Produto tem preço promocional cadastrado: preenche automaticamente
+        salePriceEl.value = promoPrice;
+      }
+      // Foco no campo Venda para o usuário confirmar ou digitar o preço promocional
+      salePriceEl.focus();
+      salePriceEl.select();
+    } else {
+      // Desmarcou: limpa Venda para o usuário digitar o preço normal
+      salePriceEl.value = '';
     }
-    // Se marcou SEM preço promocional no cadastro: mantém o que o usuário digitou
   });
 
   document.getElementById('addProductBtn').addEventListener('click', () => {
@@ -578,7 +582,6 @@
     document.getElementById('salePrice').value = '';
     document.getElementById('productQuantity').value = 1;
     document.getElementById('promotionalPrice').checked = false;
-    document.getElementById('productCost').readOnly = true;
   });
 
   document.querySelectorAll('.pay-option').forEach(radio => {
