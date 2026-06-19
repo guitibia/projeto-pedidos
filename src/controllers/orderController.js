@@ -76,9 +76,10 @@ async function createOrder(req, res) {
       orderId,
       p.id,
       parseFloat(p.salePrice),
-      p.quantity || 1
+      p.quantity || 1,
+      p.productCost != null ? parseFloat(p.productCost) : null
     ]);
-    await conn.query('INSERT INTO order_products (order_id, product_id, sale_price, quantity) VALUES ?', [productsValues]);
+    await conn.query('INSERT INTO order_products (order_id, product_id, sale_price, quantity, cost_price) VALUES ?', [productsValues]);
 
     for (const product of productArray) {
       const qtd = product.quantity || 1;
@@ -143,8 +144,8 @@ async function getOrderById(req, res) {
 
     // Buscar produtos do pedido separadamente (sem GROUP_CONCAT frágil)
     const [productRows] = await db.query(
-      `SELECT p.name AS product_name, p.cost AS cost_price, p.franchise, p.code,
-              op.sale_price, op.quantity, op.not_came
+      `SELECT p.name AS product_name, COALESCE(op.cost_price, p.cost) AS cost_price,
+              p.franchise, p.code, op.sale_price, op.quantity, op.not_came
        FROM order_products op
        JOIN products p ON p.id = op.product_id
        WHERE op.order_id = ?`,

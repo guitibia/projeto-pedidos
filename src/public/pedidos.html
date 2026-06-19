@@ -310,7 +310,7 @@
 
             <div class="promo-check-wrap">
               <input class="form-check-input mt-0" type="checkbox" id="promotionalPrice">
-              <label for="promotionalPrice"><i class="bi bi-tag-fill"></i> Produto com valor promocional — digite o preço em Venda</label>
+              <label for="promotionalPrice"><i class="bi bi-tag-fill"></i> Produto com valor promocional (editar custo)</label>
             </div>
 
             <button type="button" id="addProductBtn" class="btn-add-product">
@@ -525,20 +525,19 @@
   });
 
   document.getElementById('promotionalPrice').addEventListener('change', (e) => {
+    const costEl     = document.getElementById('productCost');
     const opt        = document.getElementById('products').selectedOptions[0];
     const promoPrice = opt?.dataset?.promoPrice;
-    const salePriceEl = document.getElementById('salePrice');
+    costEl.readOnly  = !e.target.checked;
     if (e.target.checked) {
       if (promoPrice) {
-        // Produto tem preço promocional cadastrado: preenche automaticamente
-        salePriceEl.value = promoPrice;
+        document.getElementById('salePrice').value = promoPrice;
       }
-      // Foco no campo Venda para o usuário confirmar ou digitar o preço promocional
-      salePriceEl.focus();
-      salePriceEl.select();
+      // Foco no Custo para o usuário editar o valor de custo promocional
+      costEl.focus();
+      costEl.select();
     } else {
-      // Desmarcou: limpa Venda para o usuário digitar o preço normal
-      salePriceEl.value = '';
+      document.getElementById('salePrice').value = '';
     }
   });
 
@@ -582,6 +581,7 @@
     document.getElementById('salePrice').value = '';
     document.getElementById('productQuantity').value = 1;
     document.getElementById('promotionalPrice').checked = false;
+    document.getElementById('productCost').readOnly = true;
   });
 
   document.querySelectorAll('.pay-option').forEach(radio => {
