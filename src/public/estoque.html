@@ -53,7 +53,7 @@
     /* Produto row */
     .produto-row {
       display: grid;
-      grid-template-columns: 1fr auto auto auto;
+      grid-template-columns: 1fr auto auto auto auto;
       align-items: center; gap: .75rem;
       padding: .6rem 1rem;
       border-radius: 9px; border: 1px solid var(--border-color);
@@ -63,6 +63,9 @@
     .produto-row:hover { border-color: rgba(13,110,253,.25); }
     .produto-nome  { font-size: .88rem; font-weight: 500; }
     .produto-code  { font-size: .72rem; color: var(--text-muted); }
+    .produto-valor { text-align: right; }
+    .valor-unit    { font-size: .82rem; font-weight: 600; color: var(--text-color); white-space: nowrap; }
+    .valor-total   { font-size: .7rem; color: #3fb950; font-weight: 600; white-space: nowrap; margin-top: 1px; }
     .estoque-badge {
       font-size: .8rem; font-weight: 700; min-width: 52px; text-align: center;
       padding: .2rem .55rem; border-radius: 7px;
@@ -340,6 +343,10 @@
                 <div class="produto-code">${p.code}</div>
               </div>
               <div class="estoque-badge ${nivelClass(p.estoque)}">${p.estoque} un</div>
+              <div class="produto-valor">
+                <div class="valor-unit">${fmt(p.cost)}</div>
+                ${p.estoque > 1 ? `<div class="valor-total">${fmt(parseFloat(p.cost) * p.estoque)} total</div>` : ''}
+              </div>
               <button class="btn-mov" onclick="abrirMov(${p.id},'${p.name.replace(/'/g,"\\'")}')">
                 <i class="bi bi-arrow-left-right"></i> Movimentar
               </button>
