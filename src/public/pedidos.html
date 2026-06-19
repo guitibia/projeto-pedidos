@@ -529,10 +529,13 @@
     const opt        = document.getElementById('products').selectedOptions[0];
     const promoPrice = opt?.dataset?.promoPrice;
     if (e.target.checked && promoPrice) {
+      // Produto tem preço promocional cadastrado: preenche automaticamente
       document.getElementById('salePrice').value = promoPrice;
-    } else {
+    } else if (!e.target.checked) {
+      // Desmarcou: limpa para o usuário digitar o preço normal
       document.getElementById('salePrice').value = '';
     }
+    // Se marcou SEM preço promocional no cadastro: mantém o que o usuário digitou
   });
 
   document.getElementById('addProductBtn').addEventListener('click', () => {
