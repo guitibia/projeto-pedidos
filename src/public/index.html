@@ -283,6 +283,20 @@
   </div>
 </div>
 
+<div class="modal fade" id="dashOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#1f6feb,#388bfd);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-bag-check me-2"></i>Detalhes do Pedido</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4" id="dash-order-body">
+        <div class="text-center py-3" style="color:var(--text-muted)">Carregando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <footer class="text-center py-3 mt-4">
   <small>&copy; 2025 Sistema de Pedidos</small>
 </footer>
@@ -480,7 +494,7 @@
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Nenhum pedido encontrado.</td></tr>';
       } else {
         tbody.innerHTML = d.ultimosPedidos.map(p => `
-          <tr style="cursor:pointer" onclick="window.location='/pedidos.html#listar'">
+          <tr style="cursor:pointer" onclick="viewDashOrder(${p.id})">
             <td style="color:var(--text-muted);font-size:.82rem">#${p.id}</td>
             <td class="td-client">${p.client_name}</td>
             <td style="font-size:.82rem;color:var(--text-muted)">${p.payment_method}</td>
@@ -490,6 +504,40 @@
       }
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err);
+    }
+  }
+
+  const dashOrderModal = new bootstrap.Modal(document.getElementById('dashOrderModal'));
+
+  async function viewDashOrder(id) {
+    document.getElementById('dash-order-body').innerHTML =
+      '<div class="text-center py-3" style="color:var(--text-muted)">Carregando...</div>';
+    dashOrderModal.show();
+    try {
+      const res   = await Auth.apiFetch(`/api/orders/${id}`);
+      const order = await res.json();
+      const rows  = order.products.map(p =>
+        `<tr><td>${p.product_name}</td><td>${p.quantity}</td><td>${fmt(p.sale_price * p.quantity)}</td></tr>`
+      ).join('');
+      const taxaHtml = order.delivery_fee > 0
+        ? `<div style="color:var(--text-muted)">Taxa de entrega: ${fmt(order.delivery_fee)}</div>`
+        : '';
+      document.getElementById('dash-order-body').innerHTML =
+        `<div style="margin-bottom:1rem">
+          <strong>${order.client_name}</strong>
+          <span style="margin-left:.75rem;font-size:.8rem;color:var(--text-muted)">${order.payment_method}</span>
+        </div>
+        <table class="table table-sm" style="font-size:.85rem">
+          <thead><tr><th>Produto</th><th>Qtd</th><th>Valor</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div style="text-align:right;font-size:.9rem">
+          ${taxaHtml}
+          <strong>Total: ${fmt(order.total_cost)}</strong>
+        </div>`;
+    } catch {
+      document.getElementById('dash-order-body').innerHTML =
+        '<div class="text-center py-3" style="color:#f85149">Erro ao carregar pedido.</div>';
     }
   }
 
