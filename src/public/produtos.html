@@ -300,6 +300,9 @@
     .btn-edit-icon, .btn-delete-icon { color:var(--text-muted);font-size:.85rem;transition:color .15s;cursor:pointer; }
     .product-row:hover .btn-edit-icon   { color:#ff9a00; }
     .product-row:hover .btn-delete-icon { color:#f85149; }
+    .prod-valor { text-align:right; }
+    .prod-valor-unit  { font-size:.875rem;font-weight:600;color:#3fb950;white-space:nowrap; }
+    .prod-valor-total { font-size:.7rem;color:#3fb950;opacity:.75;white-space:nowrap; }
 
     @media (max-width:600px) {
       .product-row { grid-template-columns:1fr auto auto; }
@@ -793,7 +796,10 @@
             <div class="product-row">
               <div class="product-field" style="font-weight:500">${esc(p.name)}</div>
               <div class="product-code col-code">${esc(p.code)}</div>
-              <div class="product-field" style="color:#3fb950;font-weight:600;white-space:nowrap">${fmt(p.cost)}</div>
+              <div class="prod-valor">
+                <div class="prod-valor-unit">${fmt(p.cost)}</div>
+                ${p.estoque > 1 ? `<div class="prod-valor-total">${fmt(parseFloat(p.cost) * p.estoque)} total</div>` : ''}
+              </div>
               <div style="display:flex;align-items:center;gap:.35rem">
                 <span class="btn-edit-icon" onclick="openEdit(${p.id})" title="Editar"><i class="bi bi-pencil"></i></span>
                 <span class="btn-delete-icon" onclick="excluirProduto(${p.id},'${esc(p.name)}')" title="Excluir"><i class="bi bi-trash3"></i></span>
