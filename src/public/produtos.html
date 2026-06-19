@@ -500,8 +500,8 @@
         <button class="sort-pill" id="sort-cost" onclick="setSort('cost')">
           Valor <i class="bi bi-arrow-down-up" id="sort-cost-icon"></i>
         </button>
-        <button class="sort-pill" id="sort-id" onclick="setSort('id')">
-          ID <i class="bi bi-arrow-down-up" id="sort-id-icon"></i>
+        <button class="sort-pill" id="sort-code" onclick="setSort('code')">
+          Código <i class="bi bi-arrow-down-up" id="sort-code-icon"></i>
         </button>
       </div>
 
@@ -728,7 +728,7 @@
   }
 
   function updateSortPills() {
-    ['name', 'cost', 'id'].forEach(f => {
+    ['name', 'cost', 'code'].forEach(f => {
       const pill = document.getElementById('sort-' + f);
       const icon = document.getElementById('sort-' + f + '-icon');
       pill.classList.toggle('active', sortField === f);
@@ -789,9 +789,16 @@
         </div>
         <div class="franchise-body ${isOpen ? 'open' : ''}">
           ${[...grouped[fr]].sort((a, b) => {
-            const av = sortField === 'name' ? a.name.toLowerCase() : Number(a[sortField] ?? 0);
-            const bv = sortField === 'name' ? b.name.toLowerCase() : Number(b[sortField] ?? 0);
-            return sortDir === 'asc' ? (av < bv ? -1 : av > bv ? 1 : 0) : (av > bv ? -1 : av < bv ? 1 : 0);
+            let cmp;
+            if (sortField === 'name') {
+              cmp = a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' });
+            } else if (sortField === 'code') {
+              cmp = a.code.localeCompare(b.code, 'pt-BR', { numeric: true });
+            } else {
+              const av = Number(a[sortField] ?? 0), bv = Number(b[sortField] ?? 0);
+              cmp = av < bv ? -1 : av > bv ? 1 : 0;
+            }
+            return sortDir === 'asc' ? cmp : -cmp;
           }).map(p => `
             <div class="product-row">
               <div class="product-field" style="font-weight:500">${esc(p.name)}</div>
