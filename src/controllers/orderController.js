@@ -145,6 +145,7 @@ async function getOrderById(req, res) {
     // Buscar produtos do pedido separadamente (sem GROUP_CONCAT frágil)
     const [productRows] = await db.query(
       `SELECT p.name AS product_name, COALESCE(op.cost_price, p.cost) AS cost_price,
+              (op.cost_price IS NOT NULL) AS is_promotional,
               p.franchise, p.code, op.sale_price, op.quantity, op.not_came
        FROM order_products op
        JOIN products p ON p.id = op.product_id

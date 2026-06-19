@@ -732,7 +732,11 @@
         ${prods.map(p => `
           <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.5rem .65rem;border-radius:7px;background:var(--bg-hover);border:1px solid var(--border);margin-bottom:.3rem">
             <div>
-              <div style="color:var(--text-heading);font-size:.875rem;font-weight:500">${esc(p.product_name)} ${p.not_came ? '<span class="badge bg-danger" style="font-size:.7rem">Não veio</span>' : ''}</div>
+              <div style="color:var(--text-heading);font-size:.875rem;font-weight:500">
+                ${esc(p.product_name)}
+                ${p.not_came ? '<span class="badge bg-danger" style="font-size:.7rem">Não veio</span>' : ''}
+                ${p.is_promotional ? '<span style="font-size:.68rem;background:rgba(255,154,0,.15);border:1px solid rgba(255,154,0,.35);color:#ff9a00;border-radius:5px;padding:.05rem .4rem;font-weight:600;vertical-align:middle"><i class="bi bi-tag-fill me-1"></i>Promo</span>' : ''}
+              </div>
               <div style="color:var(--text-muted);font-size:.75rem">COD ${esc(p.code)} &nbsp;·&nbsp; Qtd: ${p.quantity}</div>
             </div>
             <div style="display:flex;gap:.4rem;flex-shrink:0">
