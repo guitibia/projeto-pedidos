@@ -63,7 +63,7 @@ async function searchProductByCode(req, res) {
     const [rows] = await db.query('SELECT * FROM products WHERE code = ?', [code]);
     if (rows.length === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
     const p = rows[0];
-    return res.json({ id: p.id, name: p.name, cost: p.cost, code: p.code });
+    return res.json({ id: p.id, name: p.name, cost: p.cost, code: p.code, promotion_price: p.promotion_price ?? null });
   } catch (err) {
     console.error('Erro ao buscar produto por código:', err);
     return res.status(500).json({ error: 'Erro ao buscar produto.' });
@@ -80,7 +80,7 @@ async function getProductById(req, res) {
     const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
     const p = rows[0];
-    return res.json({ id: p.id, name: p.name, cost: p.cost, franchise: p.franchise, code: p.code });
+    return res.json({ id: p.id, name: p.name, cost: p.cost, franchise: p.franchise, code: p.code, promotion_price: p.promotion_price ?? null });
   } catch (err) {
     console.error('Erro ao buscar produto:', err);
     return res.status(500).json({ error: 'Erro ao buscar produto.' });
@@ -114,15 +114,19 @@ async function updateProduct(req, res) {
   const id = parseInt(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
 
-  const { name, cost, franchise, code } = req.body;
+  const { name, cost, franchise, code, promotion_price } = req.body;
   if (!name || cost == null || !franchise || !code) {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
   }
 
+  const promoVal = promotion_price != null && promotion_price !== ''
+    ? parseFloat(promotion_price)
+    : null;
+
   try {
     const [result] = await db.query(
-      'UPDATE products SET name=?, cost=?, franchise=?, code=? WHERE id=?',
-      [name, parseFloat(cost), franchise, code, id]
+      'UPDATE products SET name=?, cost=?, franchise=?, code=?, promotion_price=? WHERE id=?',
+      [name, parseFloat(cost), franchise, code, promoVal, id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
     return res.json({ message: 'Produto atualizado com sucesso.' });

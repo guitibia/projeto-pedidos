@@ -540,6 +540,10 @@
             <label class="form-label">Valor de Custo (R$)</label>
             <input type="number" step="0.01" min="0" class="form-control" id="edit-cost" required>
           </div>
+          <div class="mb-3">
+            <label class="form-label">Preço Promocional (R$) <span style="opacity:.5;font-weight:400">(opcional)</span></label>
+            <input type="number" step="0.01" min="0" class="form-control" id="edit-promotion-price" placeholder="Deixe vazio para remover">
+          </div>
           <div class="mb-4">
             <label class="form-label">Franquia</label>
             <select class="form-select" id="edit-franchise" required>
@@ -806,6 +810,7 @@
               <div class="prod-valor">
                 <div class="prod-valor-unit">${fmt(p.cost)}</div>
                 ${p.estoque > 1 ? `<div class="prod-valor-total">${fmt(parseFloat(p.cost) * p.estoque)} total</div>` : ''}
+                ${p.promotion_price ? `<span style="font-size:.7rem;background:rgba(255,154,0,.12);border:1px solid rgba(255,154,0,.3);color:#ff9a00;border-radius:6px;padding:.1rem .45rem;font-weight:600;white-space:nowrap"><i class="bi bi-tag-fill"></i> ${fmt(p.promotion_price)}</span>` : ''}
               </div>
               <div style="display:flex;align-items:center;gap:.35rem">
                 <span class="btn-edit-icon" onclick="openEdit(${p.id})" title="Editar"><i class="bi bi-pencil"></i></span>
@@ -830,19 +835,22 @@
     document.getElementById('edit-id').value        = p.id;
     document.getElementById('edit-name').value      = p.name;
     document.getElementById('edit-code').value      = p.code;
-    document.getElementById('edit-cost').value      = p.cost;
-    document.getElementById('edit-franchise').value = p.franchise;
+    document.getElementById('edit-cost').value            = p.cost;
+    document.getElementById('edit-promotion-price').value = p.promotion_price ?? '';
+    document.getElementById('edit-franchise').value       = p.franchise;
     editModal.show();
   }
 
   document.getElementById('edit-form').addEventListener('submit', async e => {
     e.preventDefault();
-    const id      = document.getElementById('edit-id').value;
-    const payload = {
-      name:      document.getElementById('edit-name').value.trim(),
-      code:      document.getElementById('edit-code').value.trim(),
-      cost:      parseFloat(document.getElementById('edit-cost').value),
-      franchise: document.getElementById('edit-franchise').value
+    const id       = document.getElementById('edit-id').value;
+    const promoRaw = document.getElementById('edit-promotion-price').value;
+    const payload  = {
+      name:            document.getElementById('edit-name').value.trim(),
+      code:            document.getElementById('edit-code').value.trim(),
+      cost:            parseFloat(document.getElementById('edit-cost').value),
+      franchise:       document.getElementById('edit-franchise').value,
+      promotion_price: promoRaw !== '' ? parseFloat(promoRaw) : null
     };
     const res  = await Auth.apiFetch(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
     const data = await res.json();

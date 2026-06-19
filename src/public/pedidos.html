@@ -511,7 +511,7 @@
     const res  = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
     const data = await res.json();
     data.forEach(p => ps.insertAdjacentHTML('beforeend',
-      `<option value="${p.id}" data-cost="${p.cost}">${p.name} — COD ${p.code}</option>`));
+      `<option value="${p.id}" data-cost="${p.cost}" data-promo-price="${p.promotion_price || ''}">${p.name} — COD ${p.code}</option>`));
   });
 
   document.getElementById('products').addEventListener('change', (e) => {
@@ -521,6 +521,13 @@
 
   document.getElementById('promotionalPrice').addEventListener('change', (e) => {
     document.getElementById('productCost').readOnly = !e.target.checked;
+    const opt        = document.getElementById('products').selectedOptions[0];
+    const promoPrice = opt?.dataset?.promoPrice;
+    if (e.target.checked && promoPrice) {
+      document.getElementById('salePrice').value = promoPrice;
+    } else {
+      document.getElementById('salePrice').value = '';
+    }
   });
 
   document.getElementById('addProductBtn').addEventListener('click', () => {
