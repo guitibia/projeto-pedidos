@@ -103,6 +103,121 @@
     }
     .btn-submit-form:hover { opacity:.92;box-shadow:0 6px 18px rgba(255,154,0,.4); }
 
+    /* ── Queue panel ── */
+    .queue-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.1rem 1.1rem 1rem;
+      position: sticky;
+      top: 1rem;
+    }
+    .queue-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .9rem;
+    }
+    .queue-panel-title {
+      font-size: .88rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .queue-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg,#f78166,#ff9a00);
+      color: #fff;
+      border-radius: 20px;
+      font-size: .68rem;
+      font-weight: 700;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 .45rem;
+    }
+    .btn-limpar-fila {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 7px;
+      padding: .22rem .65rem;
+      font-size: .72rem;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-limpar-fila:hover { color: #f85149; border-color: rgba(248,81,73,.4); }
+    .queue-list {
+      min-height: 100px;
+      max-height: 380px;
+      overflow-y: auto;
+      margin-bottom: .85rem;
+    }
+    .queue-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 110px;
+      gap: .5rem;
+      color: var(--text-muted);
+      font-size: .8rem;
+      text-align: center;
+      border: 1.5px dashed var(--border-color);
+      border-radius: 10px;
+    }
+    .queue-empty i { font-size: 1.6rem; opacity: .35; }
+    .queue-item {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .5rem .7rem;
+      border-radius: 9px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border-color);
+      margin-bottom: .3rem;
+      transition: border-color .12s;
+    }
+    .queue-item:hover { border-color: rgba(255,154,0,.3); }
+    .queue-item-icon {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; flex-shrink: 0;
+    }
+    .queue-item-body { flex: 1; min-width: 0; }
+    .queue-item-name { font-size: .83rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .queue-item-meta { font-size: .71rem; color: var(--text-muted); margin-top: 1px; }
+    .queue-item-cost { font-size: .8rem; font-weight: 700; color: #3fb950; white-space: nowrap; }
+    .btn-queue-remove {
+      background: transparent; border: none;
+      color: var(--text-muted); cursor: pointer;
+      padding: .2rem .3rem; border-radius: 5px;
+      transition: color .15s, background .15s; flex-shrink: 0;
+    }
+    .btn-queue-remove:hover { color: #f85149; background: rgba(248,81,73,.1); }
+    .btn-cadastrar-todos {
+      width: 100%;
+      padding: .65rem;
+      font-size: .9rem;
+      font-weight: 600;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg,#2ea043,#3fb950);
+      color: #fff;
+      cursor: pointer;
+      transition: opacity .15s, box-shadow .15s;
+      box-shadow: 0 4px 14px rgba(63,185,80,.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+    }
+    .btn-cadastrar-todos:hover:not(:disabled) { opacity: .92; box-shadow: 0 6px 18px rgba(63,185,80,.4); }
+    .btn-cadastrar-todos:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+
     /* ── List search ── */
     .search-wrap { position:relative; }
     .search-wrap i {
@@ -225,94 +340,124 @@
 
     <!-- ── PAINEL: CADASTRAR ── -->
     <div class="tab-panel active" id="panel-cadastrar">
-      <div style="max-width:560px">
-        <form id="productForm">
+      <div class="row g-4 align-items-start">
 
-          <div class="field-group">
-            <div class="field-group-title"><i class="bi bi-info-circle"></i> Informações do Produto</div>
+        <!-- Formulário -->
+        <div class="col-12 col-xl-6">
+          <form id="productForm">
 
-            <div class="mb-3">
-              <label class="form-label">Nome do Produto</label>
-              <div class="input-icon-wrap">
-                <i class="bi bi-tag"></i>
-                <input type="text" class="form-control" id="name" placeholder="Nome do produto" required>
+            <div class="field-group">
+              <div class="field-group-title"><i class="bi bi-info-circle"></i> Informações do Produto</div>
+
+              <div class="mb-3">
+                <label class="form-label">Nome do Produto</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-tag"></i>
+                  <input type="text" class="form-control" id="name" placeholder="Nome do produto" required>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Código do Produto</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-upc-scan"></i>
+                  <input type="text" class="form-control" id="code" placeholder="Código de referência" required>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Valor de Custo</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-cash-coin"></i>
+                  <input type="number" step="0.01" min="0" class="form-control" id="cost" placeholder="0,00" required>
+                </div>
+              </div>
+
+              <div class="mb-0">
+                <label class="form-label">Estoque Inicial <span style="opacity:.5;font-weight:400">(opcional)</span></label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-archive"></i>
+                  <input type="number" min="0" class="form-control" id="estoqueInicial" placeholder="0">
+                </div>
               </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Código do Produto</label>
-              <div class="input-icon-wrap">
-                <i class="bi bi-upc-scan"></i>
-                <input type="text" class="form-control" id="code" placeholder="Código de referência" required>
+            <div class="field-group">
+              <div class="field-group-title"><i class="bi bi-shop"></i> Franquia</div>
+
+              <div class="franchise-grid">
+                <div>
+                  <input type="radio" class="franchise-option" name="franchise" id="fr-boticario" value="Boticário" required>
+                  <label class="franchise-label" for="fr-boticario">
+                    <i class="bi bi-flower1" style="color:#9b59b6"></i> Boticário
+                  </label>
+                </div>
+                <div>
+                  <input type="radio" class="franchise-option" name="franchise" id="fr-natura" value="Natura" required>
+                  <label class="franchise-label" for="fr-natura">
+                    <i class="bi bi-tree" style="color:#27ae60"></i> Natura
+                  </label>
+                </div>
+                <div>
+                  <input type="radio" class="franchise-option" name="franchise" id="fr-abelha" value="Abelha Rainha" required>
+                  <label class="franchise-label" for="fr-abelha">
+                    <i class="bi bi-emoji-smile" style="color:#f39c12"></i> Abelha Rainha
+                  </label>
+                </div>
+                <div>
+                  <input type="radio" class="franchise-option" name="franchise" id="fr-avon" value="Avon" required>
+                  <label class="franchise-label" for="fr-avon">
+                    <i class="bi bi-heart-fill" style="color:#f43f5e"></i> Avon
+                  </label>
+                </div>
+                <div>
+                  <input type="radio" class="franchise-option" name="franchise" id="fr-eudora" value="Eudora" required>
+                  <label class="franchise-label" for="fr-eudora">
+                    <i class="bi bi-stars" style="color:#e74c3c"></i> Eudora
+                  </label>
+                </div>
+                <div>
+                  <input type="radio" class="franchise-option" name="franchise" id="fr-outros" value="Outros" required>
+                  <label class="franchise-label" for="fr-outros">
+                    <i class="bi bi-three-dots" style="color:#8b949e"></i> Outros
+                  </label>
+                </div>
+              </div>
+              <input type="hidden" id="franchise" name="franchise_val">
+            </div>
+
+            <button type="submit" class="btn-submit-form">
+              <i class="bi bi-plus-circle"></i> Adicionar à Fila
+            </button>
+
+          </form>
+        </div>
+
+        <!-- Fila de cadastro -->
+        <div class="col-12 col-xl-6">
+          <div class="queue-panel">
+            <div class="queue-panel-header">
+              <div class="queue-panel-title">
+                <i class="bi bi-stack" style="color:#ff9a00"></i>
+                Fila de Cadastro
+                <span class="queue-badge" id="queue-count">0</span>
+              </div>
+              <button class="btn-limpar-fila" id="btn-limpar-fila" type="button">Limpar</button>
+            </div>
+
+            <div class="queue-list" id="queue-list">
+              <div class="queue-empty" id="queue-empty">
+                <i class="bi bi-inbox"></i>
+                Preencha o formulário e adicione<br>produtos à fila para cadastrar em lote.
               </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Valor de Custo</label>
-              <div class="input-icon-wrap">
-                <i class="bi bi-cash-coin"></i>
-                <input type="number" step="0.01" min="0" class="form-control" id="cost" placeholder="0,00" required>
-              </div>
-            </div>
-
-            <div class="mb-0">
-              <label class="form-label">Estoque Inicial <span style="opacity:.5;font-weight:400">(opcional)</span></label>
-              <div class="input-icon-wrap">
-                <i class="bi bi-archive"></i>
-                <input type="number" min="0" class="form-control" id="estoqueInicial" placeholder="0">
-              </div>
-            </div>
+            <button class="btn-cadastrar-todos" id="btn-cadastrar-todos" type="button" disabled>
+              <i class="bi bi-check2-all"></i> Cadastrar Todos
+            </button>
           </div>
+        </div>
 
-          <div class="field-group">
-            <div class="field-group-title"><i class="bi bi-shop"></i> Franquia</div>
-
-            <div class="franchise-grid">
-              <div>
-                <input type="radio" class="franchise-option" name="franchise" id="fr-boticario" value="Boticário" required>
-                <label class="franchise-label" for="fr-boticario">
-                  <i class="bi bi-flower1" style="color:#9b59b6"></i> Boticário
-                </label>
-              </div>
-              <div>
-                <input type="radio" class="franchise-option" name="franchise" id="fr-natura" value="Natura" required>
-                <label class="franchise-label" for="fr-natura">
-                  <i class="bi bi-tree" style="color:#27ae60"></i> Natura
-                </label>
-              </div>
-              <div>
-                <input type="radio" class="franchise-option" name="franchise" id="fr-abelha" value="Abelha Rainha" required>
-                <label class="franchise-label" for="fr-abelha">
-                  <i class="bi bi-emoji-smile" style="color:#f39c12"></i> Abelha Rainha
-                </label>
-              </div>
-              <div>
-                <input type="radio" class="franchise-option" name="franchise" id="fr-avon" value="Avon" required>
-                <label class="franchise-label" for="fr-avon">
-                  <i class="bi bi-heart-fill" style="color:#f43f5e"></i> Avon
-                </label>
-              </div>
-              <div>
-                <input type="radio" class="franchise-option" name="franchise" id="fr-eudora" value="Eudora" required>
-                <label class="franchise-label" for="fr-eudora">
-                  <i class="bi bi-stars" style="color:#e74c3c"></i> Eudora
-                </label>
-              </div>
-              <div>
-                <input type="radio" class="franchise-option" name="franchise" id="fr-outros" value="Outros" required>
-                <label class="franchise-label" for="fr-outros">
-                  <i class="bi bi-three-dots" style="color:#8b949e"></i> Outros
-                </label>
-              </div>
-            </div>
-            <input type="hidden" id="franchise" name="franchise_val">
-          </div>
-
-          <button type="submit" class="btn-submit-form">
-            <i class="bi bi-box-arrow-in-down"></i> Cadastrar Produto
-          </button>
-
-        </form>
       </div>
     </div>
 
@@ -437,31 +582,101 @@
     });
   });
 
-  // ── Cadastrar produto ──
-  document.getElementById('productForm').addEventListener('submit', async e => {
+  // ── Fila de cadastro ──
+  let productQueue = [];
+
+  function renderQueue() {
+    const countEl = document.getElementById('queue-count');
+    const listEl  = document.getElementById('queue-list');
+    const btnEl   = document.getElementById('btn-cadastrar-todos');
+
+    countEl.textContent  = productQueue.length;
+    btnEl.disabled       = productQueue.length === 0;
+
+    if (!productQueue.length) {
+      listEl.innerHTML = `<div class="queue-empty" id="queue-empty">
+        <i class="bi bi-inbox"></i>
+        Preencha o formulário e adicione<br>produtos à fila para cadastrar em lote.
+      </div>`;
+      return;
+    }
+
+    listEl.innerHTML = productQueue.map((p, i) => {
+      const f = getFranchise(p.franchise);
+      return `<div class="queue-item">
+        <div class="queue-item-icon" style="background:${f.bg};color:${f.color}">
+          <i class="bi ${f.icon}"></i>
+        </div>
+        <div class="queue-item-body">
+          <div class="queue-item-name">${esc(p.name)}</div>
+          <div class="queue-item-meta">${esc(p.franchise)} · COD ${esc(p.code)}${p.estoqueInicial ? ' · Estoque: ' + p.estoqueInicial : ''}</div>
+        </div>
+        <div class="queue-item-cost">${fmt(p.cost)}</div>
+        <button type="button" class="btn-queue-remove" onclick="removeFromQueue(${i})" title="Remover">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  function removeFromQueue(i) {
+    productQueue.splice(i, 1);
+    renderQueue();
+  }
+
+  document.getElementById('btn-limpar-fila').addEventListener('click', () => {
+    if (!productQueue.length) return;
+    productQueue = [];
+    renderQueue();
+  });
+
+  document.getElementById('btn-cadastrar-todos').addEventListener('click', async () => {
+    if (!productQueue.length) return;
+    const btn = document.getElementById('btn-cadastrar-todos');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Cadastrando...';
+
+    let ok = 0;
+    const erros = [];
+    for (const p of productQueue) {
+      try {
+        const res  = await Auth.apiFetch('/api/products', { method: 'POST', body: JSON.stringify(p) });
+        const data = await res.json();
+        if (res.ok) ok++; else erros.push(`${p.name}: ${data.error}`);
+      } catch {
+        erros.push(`${p.name}: erro de conexão`);
+      }
+    }
+
+    productQueue = [];
+    renderQueue();
+    loadProducts();
+
+    if (!erros.length) {
+      Swal.fire({ icon: 'success', title: `${ok} produto${ok !== 1 ? 's' : ''} cadastrado${ok !== 1 ? 's' : ''}!`, timer: 2000, showConfirmButton: false });
+    } else {
+      Swal.fire({ icon: 'warning', title: `${ok} cadastrado${ok !== 1 ? 's' : ''}, ${erros.length} erro${erros.length !== 1 ? 's' : ''}`, html: erros.join('<br>') });
+    }
+  });
+
+  // ── Adicionar produto à fila ──
+  document.getElementById('productForm').addEventListener('submit', e => {
     e.preventDefault();
     const franchiseSelected = document.querySelector('.franchise-option:checked');
     if (!franchiseSelected) return Swal.fire('Atenção', 'Selecione uma franquia.', 'warning');
 
-    const payload = {
+    productQueue.push({
       name:           document.getElementById('name').value.trim(),
       cost:           parseFloat(document.getElementById('cost').value),
       franchise:      franchiseSelected.value,
       code:           document.getElementById('code').value.trim(),
       estoqueInicial: parseInt(document.getElementById('estoqueInicial').value) || 0
-    };
+    });
 
-    try {
-      const res  = await Auth.apiFetch('/api/products', { method: 'POST', body: JSON.stringify(payload) });
-      const data = await res.json();
-      if (!res.ok) return Swal.fire('Erro', data.error, 'error');
-      Swal.fire({ icon: 'success', title: 'Produto cadastrado!', timer: 1800, showConfirmButton: false });
-      document.getElementById('productForm').reset();
-      switchTab(document.querySelector('[data-tab="listar"]'));
-      loadProducts();
-    } catch {
-      Swal.fire('Erro', 'Erro ao conectar ao servidor.', 'error');
-    }
+    renderQueue();
+    document.getElementById('productForm').reset();
+    document.querySelectorAll('.franchise-option').forEach(r => r.checked = false);
+    document.getElementById('name').focus();
   });
 
   // ── Carregar produtos ──
