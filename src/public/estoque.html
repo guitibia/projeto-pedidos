@@ -99,6 +99,22 @@
     .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
     .empty-state i { font-size: 2.8rem; opacity: .3; display: block; margin-bottom: .6rem; }
 
+    /* Sort bar */
+    .sort-bar  { display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.85rem; }
+    .sort-label { font-size:.75rem;color:var(--text-muted);font-weight:600;margin-right:.15rem; }
+    .sort-pill {
+      display:inline-flex;align-items:center;gap:.3rem;
+      padding:.28rem .7rem;
+      background:var(--card-bg);border:1px solid var(--border-color);
+      border-radius:20px;font-size:.78rem;font-weight:500;
+      color:var(--text-muted);cursor:pointer;transition:all .15s;
+    }
+    .sort-pill:hover { border-color:rgba(13,110,253,.4);color:var(--text-color); }
+    .sort-pill.active {
+      background:rgba(13,110,253,.12);border-color:rgba(13,110,253,.4);
+      color:#58a6ff;font-weight:600;
+    }
+
     /* Modal histórico */
     .hist-row {
       display: flex; align-items: center; justify-content: space-between;
@@ -149,6 +165,17 @@
 
     <!-- Resumo -->
     <div class="resumo-grid" id="resumo-grid"></div>
+
+    <!-- Sort -->
+    <div class="sort-bar">
+      <span class="sort-label">Ordenar:</span>
+      <button class="sort-pill active" id="est-sort-name" onclick="setEstSort('name')">
+        Nome <i class="bi bi-arrow-up" id="est-sort-name-icon"></i>
+      </button>
+      <button class="sort-pill" id="est-sort-cost" onclick="setEstSort('cost')">
+        Valor <i class="bi bi-arrow-down-up" id="est-sort-cost-icon"></i>
+      </button>
+    </div>
 
     <!-- Lista -->
     <div id="estoque-container">
@@ -257,6 +284,26 @@
 
   let allEstoque = [];
   let openFr = new Set();
+  let sortEstField = 'name';
+  let sortEstDir   = 'asc';
+
+  function setEstSort(field) {
+    if (sortEstField === field) {
+      sortEstDir = sortEstDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortEstField = field;
+      sortEstDir   = 'asc';
+    }
+    ['name', 'cost'].forEach(f => {
+      const pill = document.getElementById('est-sort-' + f);
+      const icon = document.getElementById('est-sort-' + f + '-icon');
+      pill.classList.toggle('active', sortEstField === f);
+      icon.className = sortEstField === f
+        ? 'bi bi-arrow-' + (sortEstDir === 'asc' ? 'up' : 'down')
+        : 'bi bi-arrow-down-up';
+    });
+    render(allEstoque);
+  }
 
   async function loadEstoque() {
     const res  = await Auth.apiFetch('/api/estoque');
@@ -336,7 +383,11 @@
         </div>
         <div class="fr-body ${isOpen?'open':''}" id="${frId}">
           <div style="padding:.2rem 0 .5rem">
-            ${prods.map(p => `
+            ${[...prods].sort((a, b) => {
+              const av = sortEstField === 'name' ? a.name.toLowerCase() : Number(a.cost ?? 0);
+              const bv = sortEstField === 'name' ? b.name.toLowerCase() : Number(b.cost ?? 0);
+              return sortEstDir === 'asc' ? (av < bv ? -1 : av > bv ? 1 : 0) : (av > bv ? -1 : av < bv ? 1 : 0);
+            }).map(p => `
             <div class="produto-row">
               <div>
                 <div class="produto-nome">${p.name}</div>
