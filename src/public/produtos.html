@@ -267,6 +267,12 @@
       background:rgba(255,255,255,.06);border:1px solid var(--border-color);
       border-radius:20px;padding:.1rem .55rem;margin-left:.25rem;
     }
+    .franchise-total {
+      font-size:.75rem;font-weight:600;
+      background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.25);
+      color:#3fb950;border-radius:20px;padding:.1rem .65rem;
+      margin-left:.1rem;
+    }
     .franchise-chevron { color:var(--text-muted);font-size:.85rem;transition:transform .2s; }
     .franchise-header.open .franchise-chevron { transform:rotate(90deg); }
     .franchise-body {
@@ -749,6 +755,7 @@
             </div>
             <span class="franchise-name">${esc(fr)}</span>
             <span class="franchise-count">${grouped[fr].length}</span>
+            <span class="franchise-total">${fmt(grouped[fr].reduce((s,p)=>s+parseFloat(p.cost||0),0))}</span>
           </div>
           <i class="bi bi-chevron-right franchise-chevron"></i>
         </div>
