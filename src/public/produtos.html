@@ -218,6 +218,23 @@
     .btn-cadastrar-todos:hover:not(:disabled) { opacity: .92; box-shadow: 0 6px 18px rgba(63,185,80,.4); }
     .btn-cadastrar-todos:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
 
+    /* ── Sort bar ── */
+    .sort-bar { display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.85rem; }
+    .sort-label { font-size:.75rem;color:var(--text-muted);font-weight:600;margin-right:.15rem; }
+    .sort-pill {
+      display:inline-flex;align-items:center;gap:.3rem;
+      padding:.28rem .7rem;
+      background:var(--card-bg);border:1px solid var(--border-color);
+      border-radius:20px;font-size:.78rem;font-weight:500;
+      color:var(--text-muted);cursor:pointer;
+      transition:all .15s;
+    }
+    .sort-pill:hover { border-color:#ff9a00;color:var(--text-color); }
+    .sort-pill.active {
+      background:rgba(255,154,0,.12);border-color:rgba(255,154,0,.4);
+      color:#ff9a00;font-weight:600;
+    }
+
     /* ── List search ── */
     .search-wrap { position:relative; }
     .search-wrap i {
@@ -472,6 +489,19 @@
         </div>
       </div>
 
+      <div class="sort-bar">
+        <span class="sort-label">Ordenar:</span>
+        <button class="sort-pill active" id="sort-name" onclick="setSort('name')">
+          Nome <i class="bi bi-arrow-up" id="sort-name-icon"></i>
+        </button>
+        <button class="sort-pill" id="sort-cost" onclick="setSort('cost')">
+          Valor <i class="bi bi-arrow-down-up" id="sort-cost-icon"></i>
+        </button>
+        <button class="sort-pill" id="sort-id" onclick="setSort('id')">
+          ID <i class="bi bi-arrow-down-up" id="sort-id-icon"></i>
+        </button>
+      </div>
+
       <div id="products-container">
         <div class="text-center py-5" style="color:var(--text-muted)">
           <i class="bi bi-hourglass-split" style="font-size:2rem;opacity:.4"></i>
@@ -679,11 +709,45 @@
     document.getElementById('name').focus();
   });
 
+  // ── Ordenação ──
+  let sortField = 'name';
+  let sortDir   = 'asc';
+
+  function setSort(field) {
+    if (sortField === field) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortField = field;
+      sortDir   = 'asc';
+    }
+    updateSortPills();
+    applyFiltersAndSort();
+  }
+
+  function updateSortPills() {
+    ['name', 'cost', 'id'].forEach(f => {
+      const pill = document.getElementById('sort-' + f);
+      const icon = document.getElementById('sort-' + f + '-icon');
+      pill.classList.toggle('active', sortField === f);
+      icon.className = sortField === f
+        ? 'bi bi-arrow-' + (sortDir === 'asc' ? 'up' : 'down')
+        : 'bi bi-arrow-down-up';
+    });
+  }
+
+  function applyFiltersAndSort() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const filtered = q
+      ? allProducts.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q))
+      : allProducts;
+    renderProducts(filtered);
+  }
+
   // ── Carregar produtos ──
   async function loadProducts() {
     const res   = await Auth.apiFetch('/api/products/all');
     allProducts = await res.json();
-    renderProducts(allProducts);
+    applyFiltersAndSort();
   }
 
   const openFranchises = new Set();
@@ -721,7 +785,11 @@
           <i class="bi bi-chevron-right franchise-chevron"></i>
         </div>
         <div class="franchise-body ${isOpen ? 'open' : ''}">
-          ${grouped[fr].map(p => `
+          ${[...grouped[fr]].sort((a, b) => {
+            const av = sortField === 'name' ? a.name.toLowerCase() : Number(a[sortField] ?? 0);
+            const bv = sortField === 'name' ? b.name.toLowerCase() : Number(b[sortField] ?? 0);
+            return sortDir === 'asc' ? (av < bv ? -1 : av > bv ? 1 : 0) : (av > bv ? -1 : av < bv ? 1 : 0);
+          }).map(p => `
             <div class="product-row">
               <div class="product-field" style="font-weight:500">${esc(p.name)}</div>
               <div class="product-code col-code">${esc(p.code)}</div>
@@ -801,13 +869,7 @@
     loadProducts();
   }
 
-  document.getElementById('search').addEventListener('input', e => {
-    const q = e.target.value.toLowerCase();
-    renderProducts(q
-      ? allProducts.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q))
-      : allProducts
-    );
-  });
+  document.getElementById('search').addEventListener('input', applyFiltersAndSort);
 
   loadProducts();
 </script>
