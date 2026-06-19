@@ -185,8 +185,9 @@ async function deleteOrder(req, res) {
   const id = parseInt(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
 
-  const conn = await db.getConnection();
+  let conn;
   try {
+    conn = await db.getConnection();
     await conn.beginTransaction();
 
     // Busca produtos do pedido para restaurar estoque
@@ -214,11 +215,11 @@ async function deleteOrder(req, res) {
     await conn.commit();
     return res.json({ message: 'Pedido excluído e estoque restaurado com sucesso!' });
   } catch (err) {
-    await conn.rollback();
+    if (conn) await conn.rollback();
     console.error('Erro ao excluir pedido:', err);
     return res.status(500).json({ error: 'Erro ao excluir pedido.' });
   } finally {
-    conn.release();
+    if (conn) conn.release();
   }
 }
 
