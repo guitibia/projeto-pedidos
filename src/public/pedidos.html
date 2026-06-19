@@ -677,7 +677,7 @@
 
   async function deleteOrder(id) {
     const { isConfirmed } = await Swal.fire({
-      title: 'Excluir pedido?', text: 'Esta ação é irreversível!',
+      title: 'Excluir pedido?', text: 'O estoque dos produtos será restaurado automaticamente.',
       icon: 'warning', showCancelButton: true,
       confirmButtonColor: '#dc3545', confirmButtonText: 'Excluir',
       cancelButtonText: 'Cancelar'

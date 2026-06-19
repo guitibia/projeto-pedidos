@@ -182,13 +182,40 @@ async function deleteOrder(req, res) {
   const id = parseInt(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
 
+  const conn = await db.getConnection();
   try {
-    const [result] = await db.query('DELETE FROM orders WHERE id = ?', [id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Pedido não encontrado.' });
-    return res.json({ message: 'Pedido excluído com sucesso!' });
+    await conn.beginTransaction();
+
+    // Busca produtos do pedido para restaurar estoque
+    const [produtos] = await conn.query(
+      'SELECT product_id, quantity, not_came FROM order_products WHERE order_id = ?',
+      [id]
+    );
+
+    // Restaura estoque apenas dos produtos que efetivamente vieram
+    for (const p of produtos) {
+      if (!p.not_came) {
+        await conn.query(
+          'UPDATE products SET estoque = estoque + ? WHERE id = ?',
+          [p.quantity, p.product_id]
+        );
+      }
+    }
+
+    const [result] = await conn.query('DELETE FROM orders WHERE id = ?', [id]);
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Pedido não encontrado.' });
+    }
+
+    await conn.commit();
+    return res.json({ message: 'Pedido excluído e estoque restaurado com sucesso!' });
   } catch (err) {
+    await conn.rollback();
     console.error('Erro ao excluir pedido:', err);
     return res.status(500).json({ error: 'Erro ao excluir pedido.' });
+  } finally {
+    conn.release();
   }
 }
 
