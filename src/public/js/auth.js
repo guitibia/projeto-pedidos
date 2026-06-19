@@ -48,7 +48,9 @@ const Auth = (() => {
     if (res.status === 401 || res.status === 403) {
       clearSession();
       window.location.href = '/login.html';
-      return;
+      const err = new Error('Sessão expirada');
+      err.name = 'SessionExpiredError';
+      throw err;
     }
 
     return res;
