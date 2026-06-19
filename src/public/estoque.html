@@ -387,8 +387,8 @@
         <div class="fr-body ${isOpen?'open':''}" id="${frId}">
           <div style="padding:.2rem 0 .5rem">
             ${[...prods].sort((a, b) => {
-              const av = sortEstField === 'name' ? a.name.toLowerCase() : Number(a.cost ?? 0);
-              const bv = sortEstField === 'name' ? b.name.toLowerCase() : Number(b.cost ?? 0);
+              const av = sortEstField === 'name' ? a.name.toLowerCase() : Number(a[sortEstField] ?? 0);
+              const bv = sortEstField === 'name' ? b.name.toLowerCase() : Number(b[sortEstField] ?? 0);
               return sortEstDir === 'asc' ? (av < bv ? -1 : av > bv ? 1 : 0) : (av > bv ? -1 : av < bv ? 1 : 0);
             }).map(p => `
             <div class="produto-row">
