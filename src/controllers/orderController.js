@@ -270,8 +270,16 @@ async function getOrderParcelas(req, res) {
       ? order.total_cost - parseFloat(order.combined_payment_value)
       : order.total_cost;
 
-    const valor = parseFloat((baseParcelado / order.installments).toFixed(2));
-    const rows = Array.from({ length: order.installments }, (_, i) => [id, i + 1, valor]);
+    const valorBase = parseFloat((baseParcelado / order.installments).toFixed(2));
+    const totalBase  = parseFloat((valorBase * order.installments).toFixed(2));
+    const diferenca  = parseFloat((baseParcelado - totalBase).toFixed(2));
+    const rows = Array.from({ length: order.installments }, (_, i) => {
+      // Última parcela absorve a diferença de centavos
+      const v = i === order.installments - 1
+        ? parseFloat((valorBase + diferenca).toFixed(2))
+        : valorBase;
+      return [id, i + 1, v];
+    });
     await db.query('INSERT INTO order_parcelas (order_id, numero, valor) VALUES ?', [rows]);
 
     const [created] = await db.query('SELECT * FROM order_parcelas WHERE order_id = ? ORDER BY numero', [id]);
