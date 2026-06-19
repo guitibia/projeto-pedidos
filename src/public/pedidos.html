@@ -397,6 +397,7 @@
           <button class="filter-pill active" data-status="Todos" onclick="setFilter(this)">Todos</button>
           <button class="filter-pill" data-status="Pendente" onclick="setFilter(this)"><i class="bi bi-hourglass-split"></i> Pendente</button>
           <button class="filter-pill" data-status="Entregue" onclick="setFilter(this)"><i class="bi bi-check-circle"></i> Entregue</button>
+          <button class="filter-pill" data-status="Cancelado" onclick="setFilter(this)"><i class="bi bi-x-circle"></i> Cancelado</button>
         </div>
       </div>
 
@@ -455,6 +456,12 @@
     document.getElementById('sidebar').classList.toggle('open'));
 
   const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  function badgeStatus(status) {
+    if (status === 'Entregue')  return `<span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3);font-size:.72rem"><i class="bi bi-check-circle me-1"></i>${status}</span>`;
+    if (status === 'Cancelado') return `<span class="badge" style="background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3);font-size:.72rem"><i class="bi bi-x-circle me-1"></i>${status}</span>`;
+    return `<span class="badge" style="background:rgba(210,153,34,.12);color:#d29922;border:1px solid rgba(210,153,34,.3);font-size:.72rem"><i class="bi bi-hourglass-split me-1"></i>${status}</span>`;
+  }
 
   // ── Tab switching ──
   function switchTab(btn) {
@@ -657,9 +664,7 @@
       return;
     }
     orders.forEach(o => {
-      const badge = o.status === 'Entregue'
-        ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Entregue</span>'
-        : '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Pendente</span>';
+      const badge = badgeStatus(o.status);
       tbody.insertAdjacentHTML('beforeend', `
         <tr>
           <td class="order-id">#${o.id}</td>
@@ -774,7 +779,9 @@
         </div>
       </div>`;
 
-    document.getElementById('markAsDeliveredButton').onclick = () => markDelivered(id);
+    const btnDeliver = document.getElementById('markAsDeliveredButton');
+    btnDeliver.onclick = () => markDelivered(id);
+    btnDeliver.style.display = (order.status !== 'Entregue' && order.status !== 'Cancelado') ? '' : 'none';
     document.getElementById('printButton').onclick = () => printOrder(order);
 
     const modalEl = document.getElementById('orderDetailsModal');
@@ -815,8 +822,10 @@
     const res = await Auth.apiFetch(`/api/orders/${id}/status`, {
       method: 'PUT', body: JSON.stringify({ status: 'Entregue' })
     });
-    if (res.ok) { Swal.fire({ icon: 'success', title: 'Pedido entregue!', timer: 1500, showConfirmButton: false }); loadOrders(); }
-    else Swal.fire('Erro', 'Não foi possível atualizar.', 'error');
+    if (!res.ok) return Swal.fire('Erro', 'Não foi possível atualizar.', 'error');
+    bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'))?.hide();
+    Swal.fire({ icon: 'success', title: 'Pedido entregue!', timer: 1500, showConfirmButton: false });
+    loadOrders();
   }
 
   function printOrder(order) {

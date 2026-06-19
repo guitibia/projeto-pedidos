@@ -165,7 +165,10 @@ async function updateOrderStatus(req, res) {
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
 
   const { status } = req.body;
-  if (!status) return res.status(400).json({ error: 'Status é obrigatório.' });
+  const statusValidos = ['Pendente', 'Entregue', 'Cancelado'];
+  if (!status || !statusValidos.includes(status)) {
+    return res.status(400).json({ error: `Status inválido. Use: ${statusValidos.join(', ')}.` });
+  }
 
   try {
     const [result] = await db.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
