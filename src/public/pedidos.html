@@ -457,6 +457,10 @@
 
   const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+  function esc(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
   function badgeStatus(status) {
     if (status === 'Entregue')  return `<span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3);font-size:.72rem"><i class="bi bi-check-circle me-1"></i>${status}</span>`;
     if (status === 'Cancelado') return `<span class="badge" style="background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3);font-size:.72rem"><i class="bi bi-x-circle me-1"></i>${status}</span>`;
@@ -511,7 +515,7 @@
     const res  = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
     const data = await res.json();
     data.forEach(p => ps.insertAdjacentHTML('beforeend',
-      `<option value="${p.id}" data-cost="${p.cost}" data-promo-price="${p.promotion_price || ''}">${p.name} — COD ${p.code}</option>`));
+      `<option value="${p.id}" data-cost="${p.cost}" data-promo-price="${p.promotion_price || ''}">${esc(p.name)} — COD ${esc(p.code)}</option>`));
   });
 
   document.getElementById('products').addEventListener('change', (e) => {
@@ -550,7 +554,7 @@
     const li = document.createElement('li');
     li.className = 'product-item';
     li.innerHTML = `
-      <span class="product-item-name">${productName}${qty > 1 ? ' ×' + qty : ''}</span>
+      <span class="product-item-name">${esc(productName)}${qty > 1 ? ' ×' + qty : ''}</span>
       ${isPromo ? '<span class="product-item-promo"><i class="bi bi-tag-fill me-1"></i>Promo</span>' : ''}
       <span class="product-item-price">${fmt(totalProduct)}</span>
       <button type="button" class="btn-remove-product"><i class="bi bi-trash3"></i></button>`;
@@ -675,8 +679,8 @@
       tbody.insertAdjacentHTML('beforeend', `
         <tr>
           <td class="order-id">#${o.id}</td>
-          <td style="font-weight:500">${o.client_name}</td>
-          <td style="font-size:.82rem;color:var(--text-muted)">${o.payment_method}</td>
+          <td style="font-weight:500">${esc(o.client_name)}</td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${esc(o.payment_method)}</td>
           <td>${badge}</td>
           <td class="order-value">${fmt(o.total_cost)}</td>
           <td>
@@ -717,12 +721,12 @@
 
     const prodHTML = Object.entries(grouped).map(([fr, prods]) => `
       <div class="mb-3">
-        <div style="font-size:.72rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem">${fr}</div>
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem">${esc(fr)}</div>
         ${prods.map(p => `
           <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.5rem .65rem;border-radius:7px;background:var(--bg-hover);border:1px solid var(--border);margin-bottom:.3rem">
             <div>
-              <div style="color:var(--text-heading);font-size:.875rem;font-weight:500">${p.product_name} ${p.not_came ? '<span class="badge bg-danger" style="font-size:.7rem">Não veio</span>' : ''}</div>
-              <div style="color:var(--text-muted);font-size:.75rem">COD ${p.code} &nbsp;·&nbsp; Qtd: ${p.quantity}</div>
+              <div style="color:var(--text-heading);font-size:.875rem;font-weight:500">${esc(p.product_name)} ${p.not_came ? '<span class="badge bg-danger" style="font-size:.7rem">Não veio</span>' : ''}</div>
+              <div style="color:var(--text-muted);font-size:.75rem">COD ${esc(p.code)} &nbsp;·&nbsp; Qtd: ${p.quantity}</div>
             </div>
             <div style="display:flex;gap:.4rem;flex-shrink:0">
               <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.25rem .55rem;text-align:center;min-width:70px">
@@ -737,7 +741,7 @@
           </div>`).join('')}
       </div>`).join('');
 
-    const pagamento = `${order.payment_method}${order.installments > 1 ? ` &nbsp;·&nbsp; ${order.installments}x de ${fmt(totalVenda / order.installments)}` : ''}${order.combined_payment_value ? ` &nbsp;·&nbsp; PIX/Dinheiro: ${fmt(order.combined_payment_value)}` : ''}`;
+    const pagamento = `${esc(order.payment_method)}${order.installments > 1 ? ` &nbsp;·&nbsp; ${order.installments}x de ${fmt(totalVenda / order.installments)}` : ''}${order.combined_payment_value ? ` &nbsp;·&nbsp; PIX/Dinheiro: ${fmt(order.combined_payment_value)}` : ''}`;
 
     const pagas = parcelas.filter(p => p.status === 'Pago').length;
     const parcelasHTML = parcelas.length > 0 ? `
@@ -764,8 +768,8 @@
 
     document.getElementById('orderDetailsContent').innerHTML = `
       <div style="margin-bottom:1rem">
-        <div style="font-size:1rem;font-weight:700;color:var(--text-heading)">Pedido #${order.id} &nbsp;·&nbsp; ${order.client_name}</div>
-        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem"><i class="bi bi-geo-alt-fill me-1" style="color:#39c5cf"></i>${order.client_address}, ${order.client_house_number} — ${order.client_neighborhood}</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--text-heading)">Pedido #${order.id} &nbsp;·&nbsp; ${esc(order.client_name)}</div>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem"><i class="bi bi-geo-alt-fill me-1" style="color:#39c5cf"></i>${esc(order.client_address)}, ${esc(order.client_house_number)} — ${esc(order.client_neighborhood)}</div>
         <div style="font-size:.82rem;color:var(--text-muted);margin-top:.15rem"><i class="bi bi-credit-card-fill me-1" style="color:#58a6ff"></i>${pagamento}</div>
         ${order.delivery_fee > 0 ? `<div style="font-size:.82rem;color:#f0883e;margin-top:.15rem"><i class="bi bi-truck-front-fill me-1"></i>Taxa de entrega: ${fmt(order.delivery_fee)}</div>` : ''}
       </div>
@@ -843,10 +847,10 @@
       <style>body{font-family:Arial,sans-serif;padding:20px;color:#333}h3{text-align:center}hr{border-color:#ccc}.row{display:flex;gap:8px;margin-bottom:4px}</style>
     </head><body>
       <h3>Pedido #${order.id}</h3>
-      <p><strong>Cliente:</strong> ${order.client_name}</p>
-      <p><strong>Endereço:</strong> ${order.client_address}, ${order.client_house_number} — ${order.client_neighborhood}</p>
-      <p><strong>Pagamento:</strong> ${order.payment_method}</p><hr>
-      ${order.products.map(p=>`<div class="row">${p.product_name} — COD ${p.code} — Qtd ${p.quantity} — R$ ${(p.sale_price*p.quantity).toFixed(2)}</div>`).join('')}
+      <p><strong>Cliente:</strong> ${esc(order.client_name)}</p>
+      <p><strong>Endereço:</strong> ${esc(order.client_address)}, ${esc(order.client_house_number)} — ${esc(order.client_neighborhood)}</p>
+      <p><strong>Pagamento:</strong> ${esc(order.payment_method)}</p><hr>
+      ${order.products.map(p=>`<div class="row">${esc(p.product_name)} — COD ${esc(p.code)} — Qtd ${p.quantity} — R$ ${(p.sale_price*p.quantity).toFixed(2)}</div>`).join('')}
       <hr><p><strong>Total Venda: R$ ${totalVenda}</strong> &nbsp; Total Custo: R$ ${totalCusto} &nbsp; Lucro: R$ ${(totalVenda-totalCusto).toFixed(2)}</p>
     </body></html>`);
     w.document.close(); w.print();

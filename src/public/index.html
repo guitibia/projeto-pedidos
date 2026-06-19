@@ -318,6 +318,10 @@
     return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
+  function esc(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
   // Data atual no título
   document.getElementById('dash-date').textContent =
     new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -393,8 +397,8 @@
       return `
         <div class="alerta-card-item ${cardCls}">
           <div>
-            <div style="font-size:.82rem;font-weight:500">${a.name}</div>
-            <div style="font-size:.7rem;color:var(--text-muted)">${a.franchise}</div>
+            <div style="font-size:.82rem;font-weight:500">${esc(a.name)}</div>
+            <div style="font-size:.7rem;color:var(--text-muted)">${esc(a.franchise)}</div>
           </div>
           <span style="font-size:.8rem;font-weight:700;white-space:nowrap" class="${cls}">
             <i class="bi ${icon} me-1"></i>${label}
@@ -433,7 +437,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;gap:.4rem;font-size:.72rem;padding:.2rem .1rem">
               <span>
                 <span style="display:inline-block;min-width:20px;text-align:center;font-size:.65rem;font-weight:700;padding:.1rem .3rem;border-radius:4px;background:rgba(255,255,255,.06);color:${rankColors[i]};margin-right:.25rem">${rankLabels[i]}</span>
-                <span style="color:var(--text-color);font-weight:500">${p.nome}</span>
+                <span style="color:var(--text-color);font-weight:500">${esc(p.nome)}</span>
               </span>
               <span style="color:var(--text-muted);white-space:nowrap">${p.total} un.</span>
             </div>`).join('')
@@ -483,7 +487,7 @@
                 <span style="font-size:.78rem;font-weight:700;color:${cor}">${label}</span>
                 <span style="font-size:.82rem;font-weight:700">${fmt(p.valor)}</span>
               </div>
-              <div style="font-size:.72rem;color:var(--text-muted)">${fornecedor} · ${dtFmt}</div>
+              <div style="font-size:.72rem;color:var(--text-muted)">${esc(fornecedor)} · ${dtFmt}</div>
             </div>`;
           }).join('') + `</div>`;
       }
@@ -496,10 +500,10 @@
         tbody.innerHTML = d.ultimosPedidos.map(p => `
           <tr style="cursor:pointer" onclick="viewDashOrder(${p.id})">
             <td style="color:var(--text-muted);font-size:.82rem">#${p.id}</td>
-            <td class="td-client">${p.client_name}</td>
-            <td style="font-size:.82rem;color:var(--text-muted)">${p.payment_method}</td>
+            <td class="td-client">${esc(p.client_name)}</td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${esc(p.payment_method)}</td>
             <td style="font-size:.85rem;font-weight:600;color:var(--accent)">${fmt(p.total_cost)}</td>
-            <td><span class="badge ${statusBadge[p.status] || 'bg-secondary'}">${p.status}</span></td>
+            <td><span class="badge ${statusBadge[p.status] || 'bg-secondary'}">${esc(p.status)}</span></td>
           </tr>`).join('');
       }
     } catch (err) {
@@ -517,15 +521,15 @@
       const res   = await Auth.apiFetch(`/api/orders/${id}`);
       const order = await res.json();
       const rows  = order.products.map(p =>
-        `<tr><td>${p.product_name}</td><td>${p.quantity}</td><td>${fmt(p.sale_price * p.quantity)}</td></tr>`
+        `<tr><td>${esc(p.product_name)}</td><td>${p.quantity}</td><td>${fmt(p.sale_price * p.quantity)}</td></tr>`
       ).join('');
       const taxaHtml = order.delivery_fee > 0
         ? `<div style="color:var(--text-muted)">Taxa de entrega: ${fmt(order.delivery_fee)}</div>`
         : '';
       document.getElementById('dash-order-body').innerHTML =
         `<div style="margin-bottom:1rem">
-          <strong>${order.client_name}</strong>
-          <span style="margin-left:.75rem;font-size:.8rem;color:var(--text-muted)">${order.payment_method}</span>
+          <strong>${esc(order.client_name)}</strong>
+          <span style="margin-left:.75rem;font-size:.8rem;color:var(--text-muted)">${esc(order.payment_method)}</span>
         </div>
         <table class="table table-sm" style="font-size:.85rem">
           <thead><tr><th>Produto</th><th>Qtd</th><th>Valor</th></tr></thead>

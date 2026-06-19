@@ -328,6 +328,10 @@
 
   const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+  function esc(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
   function badgeStatus(status) {
     if (status === 'Entregue')  return `<span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3);font-size:.72rem"><i class="bi bi-check-circle me-1"></i>${status}</span>`;
     if (status === 'Cancelado') return `<span class="badge" style="background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3);font-size:.72rem"><i class="bi bi-x-circle me-1"></i>${status}</span>`;
@@ -377,7 +381,7 @@
       tbody.insertAdjacentHTML('beforeend', `
         <tr>
           <td class="order-id">#${o.id}</td>
-          <td style="font-size:.82rem;color:var(--text-muted)">${o.payment_method}</td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${esc(o.payment_method)}</td>
           <td class="order-value">${fmt(o.total_cost)}</td>
           <td>${badge}</td>
           <td><button class="btn-action btn-view" onclick="viewOrderDetails(${o.id})"><i class="bi bi-eye"></i> Ver</button></td>
@@ -401,12 +405,12 @@
 
     const prodHTML = Object.entries(byFranchise).map(([franchise, prods]) => `
       <div style="margin-bottom:.75rem">
-        <div style="font-size:.7rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)">${franchise}</div>
+        <div style="font-size:.7rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)">${esc(franchise)}</div>
         ${prods.map(p => `
           <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.5rem .65rem;border-radius:7px;background:var(--bg-hover);border:1px solid var(--border);margin-bottom:.3rem">
             <div>
-              <div style="font-size:.875rem;font-weight:500;color:var(--text-heading)">${p.product_name}</div>
-              <div style="font-size:.75rem;color:var(--text-muted)">COD ${p.code} &nbsp;·&nbsp; Qtd: ${p.quantity}</div>
+              <div style="font-size:.875rem;font-weight:500;color:var(--text-heading)">${esc(p.product_name)}</div>
+              <div style="font-size:.75rem;color:var(--text-muted)">COD ${esc(p.code)} &nbsp;·&nbsp; Qtd: ${p.quantity}</div>
             </div>
             <div style="display:flex;gap:.4rem;flex-shrink:0">
               <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.25rem .55rem;text-align:center;min-width:70px">
@@ -421,12 +425,12 @@
           </div>`).join('')}
       </div>`).join('');
 
-    const pagamento = `${order.payment_method}${order.installments > 1 ? ` &nbsp;·&nbsp; ${order.installments}x de ${fmt(totalVenda / order.installments)}` : ''}${order.combined_payment_value ? ` &nbsp;·&nbsp; PIX/Dinheiro: ${fmt(order.combined_payment_value)}` : ''}`;
+    const pagamento = `${esc(order.payment_method)}${order.installments > 1 ? ` &nbsp;·&nbsp; ${order.installments}x de ${fmt(totalVenda / order.installments)}` : ''}${order.combined_payment_value ? ` &nbsp;·&nbsp; PIX/Dinheiro: ${fmt(order.combined_payment_value)}` : ''}`;
 
     document.getElementById('orderDetailsContent').innerHTML = `
       <div style="margin-bottom:1rem">
-        <div style="font-size:1rem;font-weight:700;color:var(--text-heading)">Pedido #${order.id} &nbsp;·&nbsp; ${order.client_name}</div>
-        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem"><i class="bi bi-geo-alt-fill me-1" style="color:#39c5cf"></i>${order.client_address}, ${order.client_house_number} — ${order.client_neighborhood}</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--text-heading)">Pedido #${order.id} &nbsp;·&nbsp; ${esc(order.client_name)}</div>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem"><i class="bi bi-geo-alt-fill me-1" style="color:#39c5cf"></i>${esc(order.client_address)}, ${esc(order.client_house_number)} — ${esc(order.client_neighborhood)}</div>
         <div style="font-size:.82rem;color:var(--text-muted);margin-top:.15rem"><i class="bi bi-credit-card-fill me-1" style="color:#58a6ff"></i>${pagamento}</div>
         ${order.delivery_fee > 0 ? `<div style="font-size:.82rem;color:#f0883e;margin-top:.15rem"><i class="bi bi-truck-front-fill me-1"></i>Taxa de entrega: ${fmt(order.delivery_fee)}</div>` : ''}
       </div>
