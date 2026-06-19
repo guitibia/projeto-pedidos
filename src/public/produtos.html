@@ -275,15 +275,21 @@
                 </label>
               </div>
               <div>
-                <input type="radio" class="franchise-option" name="franchise" id="fr-natura" value="Natura/Avon" required>
+                <input type="radio" class="franchise-option" name="franchise" id="fr-natura" value="Natura" required>
                 <label class="franchise-label" for="fr-natura">
-                  <i class="bi bi-tree" style="color:#27ae60"></i> Natura/Avon
+                  <i class="bi bi-tree" style="color:#27ae60"></i> Natura
                 </label>
               </div>
               <div>
                 <input type="radio" class="franchise-option" name="franchise" id="fr-abelha" value="Abelha Rainha" required>
                 <label class="franchise-label" for="fr-abelha">
                   <i class="bi bi-emoji-smile" style="color:#f39c12"></i> Abelha Rainha
+                </label>
+              </div>
+              <div>
+                <input type="radio" class="franchise-option" name="franchise" id="fr-avon" value="Avon" required>
+                <label class="franchise-label" for="fr-avon">
+                  <i class="bi bi-heart-fill" style="color:#f43f5e"></i> Avon
                 </label>
               </div>
               <div>
@@ -360,7 +366,8 @@
             <label class="form-label">Franquia</label>
             <select class="form-select" id="edit-franchise" required>
               <option>Boticário</option>
-              <option>Natura/Avon</option>
+              <option>Natura</option>
+              <option>Avon</option>
               <option>Abelha Rainha</option>
               <option>Eudora</option>
               <option>Outros</option>
@@ -408,6 +415,8 @@
   // ── Franchise map ──
   const franchiseMap = {
     'Boticário':     { icon: 'bi-flower1',    color: '#9b59b6', bg: 'rgba(155,89,182,.12)' },
+    'Natura':        { icon: 'bi-tree',        color: '#27ae60', bg: 'rgba(39,174,96,.12)'  },
+    'Avon':          { icon: 'bi-heart-fill',  color: '#f43f5e', bg: 'rgba(244,63,94,.12)'  },
     'Natura/Avon':   { icon: 'bi-tree',        color: '#27ae60', bg: 'rgba(39,174,96,.12)'  },
     'Abelha Rainha': { icon: 'bi-emoji-smile', color: '#f39c12', bg: 'rgba(243,156,18,.12)' },
     'Eudora':        { icon: 'bi-stars',       color: '#e74c3c', bg: 'rgba(231,76,60,.12)'  },
