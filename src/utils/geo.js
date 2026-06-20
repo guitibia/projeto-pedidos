@@ -4,7 +4,7 @@ const DELIVERY_FEE_BRL  = 10.00;
 const DELIVERY_RADIUS_KM = 2.5;
 
 // Endereço base — geocodificado uma vez na inicialização
-const HOME = { address: 'Rua David Carvalho, 233, São João da Boa Vista, SP', lat: null, lng: null };
+const HOME = { address: process.env.HOME_ADDRESS || '', lat: null, lng: null };
 
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -21,7 +21,7 @@ function nominatim(address) {
     const q = encodeURIComponent(address);
     const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=br`;
     const req = https.get(url, {
-      headers: { 'User-Agent': 'SistemaPedidos/1.0 (gui.14.2006@gmail.com)', 'Accept-Language': 'pt-BR' }
+      headers: { 'User-Agent': `SistemaPedidos/1.0 (${process.env.HOME_EMAIL || 'admin'})`, 'Accept-Language': 'pt-BR' }
     }, res => {
       let raw = '';
       res.on('data', c => raw += c);

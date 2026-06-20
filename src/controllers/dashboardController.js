@@ -14,11 +14,13 @@ async function getDashboard(req, res) {
         AND (op.not_came IS NULL OR op.not_came = 0)
     `);
 
-    // Top 3 produtos mais vendidos (por quantidade total)
+    // Top 3 produtos mais vendidos (por quantidade total, apenas pedidos Entregue)
     const [topProductRows] = await db.query(`
       SELECT p.name AS nome, SUM(op.quantity) AS total
       FROM order_products op
       JOIN products p ON op.product_id = p.id
+      JOIN orders o ON o.id = op.order_id
+      WHERE o.status = 'Entregue'
       GROUP BY op.product_id
       ORDER BY total DESC
       LIMIT 3

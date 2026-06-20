@@ -76,9 +76,10 @@ async function createOrder(req, res) {
       orderId,
       p.id,
       parseFloat(p.salePrice),
-      p.quantity || 1
+      p.quantity || 1,
+      p.productCost != null ? parseFloat(p.productCost) : null
     ]);
-    await conn.query('INSERT INTO order_products (order_id, product_id, sale_price, quantity) VALUES ?', [productsValues]);
+    await conn.query('INSERT INTO order_products (order_id, product_id, sale_price, quantity, cost_price) VALUES ?', [productsValues]);
 
     for (const product of productArray) {
       const qtd = product.quantity || 1;
@@ -143,8 +144,9 @@ async function getOrderById(req, res) {
 
     // Buscar produtos do pedido separadamente (sem GROUP_CONCAT frágil)
     const [productRows] = await db.query(
-      `SELECT p.name AS product_name, p.cost AS cost_price, p.franchise, p.code,
-              op.sale_price, op.quantity, op.not_came
+      `SELECT p.name AS product_name, COALESCE(op.cost_price, p.cost) AS cost_price,
+              (op.cost_price IS NOT NULL) AS is_promotional,
+              p.franchise, p.code, op.sale_price, op.quantity, op.not_came
        FROM order_products op
        JOIN products p ON p.id = op.product_id
        WHERE op.order_id = ?`,
@@ -165,7 +167,10 @@ async function updateOrderStatus(req, res) {
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
 
   const { status } = req.body;
-  if (!status) return res.status(400).json({ error: 'Status é obrigatório.' });
+  const statusValidos = ['Pendente', 'Entregue', 'Cancelado'];
+  if (!status || !statusValidos.includes(status)) {
+    return res.status(400).json({ error: `Status inválido. Use: ${statusValidos.join(', ')}.` });
+  }
 
   try {
     const [result] = await db.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
@@ -182,13 +187,41 @@ async function deleteOrder(req, res) {
   const id = parseInt(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
 
+  let conn;
   try {
-    const [result] = await db.query('DELETE FROM orders WHERE id = ?', [id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Pedido não encontrado.' });
-    return res.json({ message: 'Pedido excluído com sucesso!' });
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+
+    // Busca produtos do pedido para restaurar estoque
+    const [produtos] = await conn.query(
+      'SELECT product_id, quantity, not_came FROM order_products WHERE order_id = ?',
+      [id]
+    );
+
+    // Restaura estoque apenas dos produtos que efetivamente vieram
+    for (const p of produtos) {
+      if (!p.not_came) {
+        await conn.query(
+          'UPDATE products SET estoque = estoque + ? WHERE id = ?',
+          [p.quantity, p.product_id]
+        );
+      }
+    }
+
+    const [result] = await conn.query('DELETE FROM orders WHERE id = ?', [id]);
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Pedido não encontrado.' });
+    }
+
+    await conn.commit();
+    return res.json({ message: 'Pedido excluído e estoque restaurado com sucesso!' });
   } catch (err) {
+    if (conn) await conn.rollback();
     console.error('Erro ao excluir pedido:', err);
     return res.status(500).json({ error: 'Erro ao excluir pedido.' });
+  } finally {
+    if (conn) conn.release();
   }
 }
 
@@ -240,8 +273,16 @@ async function getOrderParcelas(req, res) {
       ? order.total_cost - parseFloat(order.combined_payment_value)
       : order.total_cost;
 
-    const valor = parseFloat((baseParcelado / order.installments).toFixed(2));
-    const rows = Array.from({ length: order.installments }, (_, i) => [id, i + 1, valor]);
+    const valorBase = parseFloat((baseParcelado / order.installments).toFixed(2));
+    const totalBase  = parseFloat((valorBase * order.installments).toFixed(2));
+    const diferenca  = parseFloat((baseParcelado - totalBase).toFixed(2));
+    const rows = Array.from({ length: order.installments }, (_, i) => {
+      // Última parcela absorve a diferença de centavos
+      const v = i === order.installments - 1
+        ? parseFloat((valorBase + diferenca).toFixed(2))
+        : valorBase;
+      return [id, i + 1, v];
+    });
     await db.query('INSERT INTO order_parcelas (order_id, numero, valor) VALUES ?', [rows]);
 
     const [created] = await db.query('SELECT * FROM order_parcelas WHERE order_id = ? ORDER BY numero', [id]);

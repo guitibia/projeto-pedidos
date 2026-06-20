@@ -240,7 +240,7 @@
 </div>
 
 <footer class="text-center py-3 mt-4">
-  <small>&copy; 2025 Sistema de Pedidos</small>
+  <small>&copy; <span id="footer-year"></span> Sistema de Pedidos</small>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -248,11 +248,16 @@
 <script src="/js/auth.js"></script>
 <script>
   Auth.requireAuth();
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
   Auth.initSidebar();
   document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
 
   const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const fmtDt = d => new Date(d).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+
+  function esc(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
 
   const LOW_STOCK = 5; // abaixo disso = baixo estoque
 
@@ -374,7 +379,7 @@
               <i class="bi ${info.icon}"></i>
             </div>
             <div>
-              <div class="fr-name">${fr}</div>
+              <div class="fr-name">${esc(fr)}</div>
               <div class="fr-count">${prods.length} produto${prods.length!==1?'s':''}</div>
             </div>
           </div>
@@ -400,18 +405,18 @@
             }).map(p => `
             <div class="produto-row">
               <div>
-                <div class="produto-nome">${p.name}</div>
-                <div class="produto-code">${p.code}</div>
+                <div class="produto-nome">${esc(p.name)}</div>
+                <div class="produto-code">${esc(p.code)}</div>
               </div>
               <div class="estoque-badge ${nivelClass(p.estoque)}">${p.estoque} un</div>
               <div class="produto-valor">
                 <div class="valor-unit">${fmt(p.cost)}</div>
                 ${p.estoque > 1 ? `<div class="valor-total">${fmt(parseFloat(p.cost) * p.estoque)} total</div>` : ''}
               </div>
-              <button class="btn-mov" onclick="abrirMov(${p.id},'${p.name.replace(/'/g,"\\'")}')">
+              <button class="btn-mov" data-id="${p.id}" data-nome="${esc(p.name)}" onclick="abrirMovBtn(this)">
                 <i class="bi bi-arrow-left-right"></i> Movimentar
               </button>
-              <button class="btn-hist" onclick="abrirHist(${p.id},'${p.name.replace(/'/g,"\\'")}')">
+              <button class="btn-hist" data-id="${p.id}" data-nome="${esc(p.name)}" onclick="abrirHistBtn(this)">
                 <i class="bi bi-clock-history"></i>
               </button>
             </div>`).join('')}
@@ -454,6 +459,14 @@
       }
     });
   });
+
+  function abrirMovBtn(btn) {
+    abrirMov(parseInt(btn.dataset.id), btn.dataset.nome);
+  }
+
+  function abrirHistBtn(btn) {
+    abrirHist(parseInt(btn.dataset.id), btn.dataset.nome);
+  }
 
   function abrirMov(id, nome) {
     movProdId = id;

@@ -36,6 +36,9 @@ pool.getConnection()
     // Migração: taxa de entrega em orders
     try { await conn.query('ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(6,2) NOT NULL DEFAULT 0.00'); } catch (_) {}
 
+    // Migração: custo por item do pedido (preço de custo promocional)
+    try { await conn.query('ALTER TABLE order_products ADD COLUMN cost_price DECIMAL(10,2) DEFAULT NULL'); } catch (_) {}
+
     conn.release();
   })
   .catch(err => {

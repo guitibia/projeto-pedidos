@@ -324,17 +324,21 @@
     document.getElementById('edit-code').value      = p.code;
     document.getElementById('edit-cost').value      = p.cost;
     document.getElementById('edit-franchise').value = p.franchise;
+    document.getElementById('edit-form').dataset.promotionPrice = p.promotion_price ?? '';
     editModal.show();
   }
 
   document.getElementById('edit-form').addEventListener('submit', async e => {
     e.preventDefault();
     const id = document.getElementById('edit-id').value;
+    const form = document.getElementById('edit-form');
+    const rawPromo = form.dataset.promotionPrice;
     const payload = {
-      name:      document.getElementById('edit-name').value.trim(),
-      code:      document.getElementById('edit-code').value.trim(),
-      cost:      parseFloat(document.getElementById('edit-cost').value),
-      franchise: document.getElementById('edit-franchise').value
+      name:            document.getElementById('edit-name').value.trim(),
+      code:            document.getElementById('edit-code').value.trim(),
+      cost:            parseFloat(document.getElementById('edit-cost').value),
+      franchise:       document.getElementById('edit-franchise').value,
+      promotion_price: rawPromo !== '' ? parseFloat(rawPromo) : null
     };
     const res  = await Auth.apiFetch(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
     const data = await res.json();

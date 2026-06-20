@@ -283,8 +283,22 @@
   </div>
 </div>
 
+<div class="modal fade" id="dashOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#1f6feb,#388bfd);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-bag-check me-2"></i>Detalhes do Pedido</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4" id="dash-order-body">
+        <div class="text-center py-3" style="color:var(--text-muted)">Carregando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <footer class="text-center py-3 mt-4">
-  <small>&copy; 2025 Sistema de Pedidos</small>
+  <small>&copy; <span id="footer-year"></span> Sistema de Pedidos</small>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -292,6 +306,7 @@
 <script src="/js/auth.js"></script>
 <script>
   Auth.requireAuth();
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
   Auth.initSidebar();
   document.getElementById('sidebarToggle').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
@@ -302,6 +317,10 @@
 
   function fmt(v) {
     return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function esc(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
   // Data atual no título
@@ -379,8 +398,8 @@
       return `
         <div class="alerta-card-item ${cardCls}">
           <div>
-            <div style="font-size:.82rem;font-weight:500">${a.name}</div>
-            <div style="font-size:.7rem;color:var(--text-muted)">${a.franchise}</div>
+            <div style="font-size:.82rem;font-weight:500">${esc(a.name)}</div>
+            <div style="font-size:.7rem;color:var(--text-muted)">${esc(a.franchise)}</div>
           </div>
           <span style="font-size:.8rem;font-weight:700;white-space:nowrap" class="${cls}">
             <i class="bi ${icon} me-1"></i>${label}
@@ -419,7 +438,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;gap:.4rem;font-size:.72rem;padding:.2rem .1rem">
               <span>
                 <span style="display:inline-block;min-width:20px;text-align:center;font-size:.65rem;font-weight:700;padding:.1rem .3rem;border-radius:4px;background:rgba(255,255,255,.06);color:${rankColors[i]};margin-right:.25rem">${rankLabels[i]}</span>
-                <span style="color:var(--text-color);font-weight:500">${p.nome}</span>
+                <span style="color:var(--text-color);font-weight:500">${esc(p.nome)}</span>
               </span>
               <span style="color:var(--text-muted);white-space:nowrap">${p.total} un.</span>
             </div>`).join('')
@@ -469,7 +488,7 @@
                 <span style="font-size:.78rem;font-weight:700;color:${cor}">${label}</span>
                 <span style="font-size:.82rem;font-weight:700">${fmt(p.valor)}</span>
               </div>
-              <div style="font-size:.72rem;color:var(--text-muted)">${fornecedor} · ${dtFmt}</div>
+              <div style="font-size:.72rem;color:var(--text-muted)">${esc(fornecedor)} · ${dtFmt}</div>
             </div>`;
           }).join('') + `</div>`;
       }
@@ -480,16 +499,50 @@
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Nenhum pedido encontrado.</td></tr>';
       } else {
         tbody.innerHTML = d.ultimosPedidos.map(p => `
-          <tr style="cursor:pointer" onclick="window.location='/pedidos.html#listar'">
+          <tr style="cursor:pointer" onclick="viewDashOrder(${p.id})">
             <td style="color:var(--text-muted);font-size:.82rem">#${p.id}</td>
-            <td class="td-client">${p.client_name}</td>
-            <td style="font-size:.82rem;color:var(--text-muted)">${p.payment_method}</td>
+            <td class="td-client">${esc(p.client_name)}</td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${esc(p.payment_method)}</td>
             <td style="font-size:.85rem;font-weight:600;color:var(--accent)">${fmt(p.total_cost)}</td>
-            <td><span class="badge ${statusBadge[p.status] || 'bg-secondary'}">${p.status}</span></td>
+            <td><span class="badge ${statusBadge[p.status] || 'bg-secondary'}">${esc(p.status)}</span></td>
           </tr>`).join('');
       }
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err);
+    }
+  }
+
+  const dashOrderModal = new bootstrap.Modal(document.getElementById('dashOrderModal'));
+
+  async function viewDashOrder(id) {
+    document.getElementById('dash-order-body').innerHTML =
+      '<div class="text-center py-3" style="color:var(--text-muted)">Carregando...</div>';
+    dashOrderModal.show();
+    try {
+      const res   = await Auth.apiFetch(`/api/orders/${id}`);
+      const order = await res.json();
+      const rows  = order.products.map(p =>
+        `<tr><td>${esc(p.product_name)}</td><td>${p.quantity}</td><td>${fmt(p.sale_price * p.quantity)}</td></tr>`
+      ).join('');
+      const taxaHtml = order.delivery_fee > 0
+        ? `<div style="color:var(--text-muted)">Taxa de entrega: ${fmt(order.delivery_fee)}</div>`
+        : '';
+      document.getElementById('dash-order-body').innerHTML =
+        `<div style="margin-bottom:1rem">
+          <strong>${esc(order.client_name)}</strong>
+          <span style="margin-left:.75rem;font-size:.8rem;color:var(--text-muted)">${esc(order.payment_method)}</span>
+        </div>
+        <table class="table table-sm" style="font-size:.85rem">
+          <thead><tr><th>Produto</th><th>Qtd</th><th>Valor</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div style="text-align:right;font-size:.9rem">
+          ${taxaHtml}
+          <strong>Total: ${fmt(order.total_cost)}</strong>
+        </div>`;
+    } catch {
+      document.getElementById('dash-order-body').innerHTML =
+        '<div class="text-center py-3" style="color:#f85149">Erro ao carregar pedido.</div>';
     }
   }
 
