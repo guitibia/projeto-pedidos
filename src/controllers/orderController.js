@@ -190,10 +190,16 @@ async function updateOrderStatus(req, res) {
     conn = await db.getConnection();
     await conn.beginTransaction();
 
-    const [result] = await conn.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+    const [result] = await conn.query(
+      "UPDATE orders SET status = ? WHERE id = ? AND status != 'Cancelado'",
+      [status, id]
+    );
     if (result.affectedRows === 0) {
       await conn.rollback();
-      return res.status(404).json({ error: 'Pedido não encontrado.' });
+      // Distinguish: does the order exist at all?
+      const [[exists]] = await conn.query('SELECT id FROM orders WHERE id = ?', [id]);
+      if (!exists) return res.status(404).json({ error: 'Pedido não encontrado.' });
+      return res.status(409).json({ error: 'Pedido já está cancelado.' });
     }
 
     const [produtos] = await conn.query(
