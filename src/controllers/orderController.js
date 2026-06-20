@@ -172,13 +172,56 @@ async function updateOrderStatus(req, res) {
     return res.status(400).json({ error: `Status inválido. Use: ${statusValidos.join(', ')}.` });
   }
 
+  // Pendente/Entregue: atualização simples sem transação
+  if (status !== 'Cancelado') {
+    try {
+      const [result] = await db.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+      if (result.affectedRows === 0) return res.status(404).json({ error: 'Pedido não encontrado.' });
+      return res.json({ message: 'Status atualizado com sucesso!' });
+    } catch (err) {
+      console.error('Erro ao atualizar status:', err);
+      return res.status(500).json({ error: 'Erro ao atualizar status.' });
+    }
+  }
+
+  // Cancelado: transação — atualiza status + restaura estoque + registra motivo
+  let conn;
   try {
-    const [result] = await db.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Pedido não encontrado.' });
-    return res.json({ message: 'Status atualizado com sucesso!' });
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+
+    const [result] = await conn.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Pedido não encontrado.' });
+    }
+
+    const [produtos] = await conn.query(
+      'SELECT product_id, quantity, not_came FROM order_products WHERE order_id = ?',
+      [id]
+    );
+
+    for (const p of produtos) {
+      if (!p.not_came) {
+        await conn.query(
+          'UPDATE products SET estoque = estoque + ? WHERE id = ?',
+          [p.quantity, p.product_id]
+        );
+        await conn.query(
+          'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)',
+          [p.product_id, 'Entrada', p.quantity, `Pedido #${id} cancelado`]
+        );
+      }
+    }
+
+    await conn.commit();
+    return res.json({ message: 'Pedido cancelado e estoque restaurado.' });
   } catch (err) {
-    console.error('Erro ao atualizar status:', err);
-    return res.status(500).json({ error: 'Erro ao atualizar status.' });
+    if (conn) await conn.rollback();
+    console.error('Erro ao cancelar pedido:', err);
+    return res.status(500).json({ error: 'Erro ao cancelar pedido.' });
+  } finally {
+    if (conn) conn.release();
   }
 }
 
@@ -204,6 +247,10 @@ async function deleteOrder(req, res) {
         await conn.query(
           'UPDATE products SET estoque = estoque + ? WHERE id = ?',
           [p.quantity, p.product_id]
+        );
+        await conn.query(
+          'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)',
+          [p.product_id, 'Entrada', p.quantity, `Pedido #${id} excluído`]
         );
       }
     }
