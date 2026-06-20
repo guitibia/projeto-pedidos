@@ -161,6 +161,25 @@
           <div class="page-hero-sub" id="estoque-sub">Carregando...</div>
         </div>
       </div>
+      <button id="btnLogGeral" onclick="toggleLog()"
+        style="border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);border-radius:8px;padding:.45rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s">
+        <i class="bi bi-journal-text me-1"></i> Log Geral
+      </button>
+    </div>
+
+    <!-- Painel Log Geral -->
+    <div id="logPanel" style="display:none;margin-bottom:1.5rem">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.25rem">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 style="margin:0;font-weight:600;color:var(--text-primary)">
+            <i class="bi bi-journal-text me-2" style="color:var(--accent)"></i>Log de Movimentações
+          </h6>
+          <span style="font-size:.8rem;color:var(--text-muted)" id="log-count"></span>
+        </div>
+        <div id="log-container">
+          <div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>
+        </div>
+      </div>
     </div>
 
     <!-- Resumo -->
@@ -527,6 +546,66 @@
           <div style="font-size:.7rem;color:var(--text-muted)">${fmtDt(r.created_at)}</div>
         </div>
       </div>`).join('');
+  }
+
+  // ── Log Geral ──
+  let logVisible = false;
+
+  async function toggleLog() {
+    logVisible = !logVisible;
+    const panel  = document.getElementById('logPanel');
+    const btnLog = document.getElementById('btnLogGeral');
+    panel.style.display = logVisible ? '' : 'none';
+    btnLog.innerHTML = logVisible
+      ? '<i class="bi bi-x-circle me-1"></i> Fechar Log'
+      : '<i class="bi bi-journal-text me-1"></i> Log Geral';
+    if (logVisible) await loadLog();
+  }
+
+  async function loadLog() {
+    const container = document.getElementById('log-container');
+    container.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>';
+    try {
+      const res  = await Auth.apiFetch('/api/estoque/log?limit=100');
+      const rows = await res.json();
+      document.getElementById('log-count').textContent = `${rows.length} registros`;
+      if (!rows.length) {
+        container.innerHTML = '<div class="empty-state"><i class="bi bi-journal-x"></i>Nenhuma movimentação registrada.</div>';
+        return;
+      }
+      container.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.83rem">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border)">
+            <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Data/Hora</th>
+            <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Produto</th>
+            <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Franquia</th>
+            <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600">Tipo</th>
+            <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600">Qtd</th>
+            <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.5rem .75rem;color:var(--text-muted);white-space:nowrap;font-size:.78rem">
+              ${new Date(r.created_at).toLocaleString('pt-BR')}
+            </td>
+            <td style="padding:.5rem .75rem;color:var(--text-primary)">
+              ${esc(r.product_name)}
+              <span style="font-size:.72rem;color:var(--text-muted)">#${esc(r.code)}</span>
+            </td>
+            <td style="padding:.5rem .75rem;color:var(--text-muted)">${esc(r.franchise)}</td>
+            <td style="padding:.5rem .75rem;text-align:center">
+              <span style="${r.tipo==='Entrada'?'background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3)':'background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3)'};font-size:.75rem;padding:.18rem .5rem;border-radius:5px;font-weight:700;white-space:nowrap"><i class="bi bi-${r.tipo==='Entrada'?'plus':'dash'}-circle" style="font-size:.7rem"></i> ${esc(r.tipo)}</span>
+            </td>
+            <td style="padding:.5rem .75rem;text-align:center;font-weight:700;color:var(--text-primary)">${r.quantidade}</td>
+            <td style="padding:.5rem .75rem;color:var(--text-muted);font-size:.8rem">${esc(r.observacao || '—')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>`;
+    } catch (e) {
+      document.getElementById('log-container').innerHTML =
+        '<div class="empty-state"><i class="bi bi-exclamation-circle"></i>Erro ao carregar log.</div>';
+    }
   }
 
   loadEstoque();

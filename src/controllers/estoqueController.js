@@ -76,4 +76,24 @@ async function historico(req, res) {
   }
 }
 
-module.exports = { listEstoque, movimentar, historico };
+// GET /api/estoque/log
+async function logGeral(req, res) {
+  const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  try {
+    const [rows] = await db.query(
+      `SELECT m.id, p.name AS product_name, p.franchise, p.code,
+              m.tipo, m.quantidade, m.observacao, m.created_at
+       FROM estoque_movimentacoes m
+       JOIN products p ON p.id = m.product_id
+       ORDER BY m.created_at DESC
+       LIMIT ?`,
+      [limit]
+    );
+    return res.json(rows);
+  } catch (err) {
+    console.error('Erro ao buscar log geral:', err);
+    return res.status(500).json({ error: 'Erro ao buscar log.' });
+  }
+}
+
+module.exports = { listEstoque, movimentar, historico, logGeral };
