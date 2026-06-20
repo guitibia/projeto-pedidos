@@ -437,6 +437,12 @@
         <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Fechar</button>
         <button class="btn btn-outline-primary" id="printButton"><i class="bi bi-printer me-1"></i>Imprimir</button>
         <button class="btn btn-success" id="markAsDeliveredButton"><i class="bi bi-check-circle me-1"></i>Marcar como Entregue</button>
+        <button id="cancelOrderButton"
+          style="border:1px solid rgba(248,81,73,.5);background:rgba(248,81,73,.08);color:#f85149;
+                 border-radius:8px;padding:.4rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer;
+                 display:none;transition:all .15s">
+          <i class="bi bi-x-circle me-1"></i> Cancelar Pedido
+        </button>
       </div>
     </div>
   </div>
@@ -804,6 +810,9 @@
     const btnDeliver = document.getElementById('markAsDeliveredButton');
     btnDeliver.onclick = () => markDelivered(id);
     btnDeliver.style.display = (order.status !== 'Entregue' && order.status !== 'Cancelado') ? '' : 'none';
+    const btnCancel = document.getElementById('cancelOrderButton');
+    btnCancel.onclick = () => cancelOrder(id);
+    btnCancel.style.display = (order.status === 'Pendente') ? '' : 'none';
     document.getElementById('printButton').onclick = () => printOrder(order);
 
     const modalEl = document.getElementById('orderDetailsModal');
@@ -847,6 +856,29 @@
     if (!res.ok) return Swal.fire('Erro', 'Não foi possível atualizar.', 'error');
     bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'))?.hide();
     Swal.fire({ icon: 'success', title: 'Pedido entregue!', timer: 1500, showConfirmButton: false });
+    loadOrders();
+  }
+
+  async function cancelOrder(id) {
+    const result = await Swal.fire({
+      title: 'Cancelar pedido?',
+      text: 'O estoque dos produtos será restaurado automaticamente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, cancelar',
+      cancelButtonText: 'Voltar',
+      confirmButtonColor: '#f85149'
+    });
+    if (!result.isConfirmed) return;
+
+    const res = await Auth.apiFetch(`/api/orders/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'Cancelado' })
+    });
+    if (!res.ok) return Swal.fire('Erro', 'Não foi possível cancelar o pedido.', 'error');
+
+    bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'))?.hide();
+    Swal.fire({ icon: 'success', title: 'Pedido cancelado!', text: 'Estoque restaurado.', timer: 2000, showConfirmButton: false });
     loadOrders();
   }
 
