@@ -595,12 +595,7 @@
             </td>
             <td style="padding:.5rem .75rem;color:var(--text-muted)">${esc(r.franchise)}</td>
             <td style="padding:.5rem .75rem;text-align:center">
-              <span style="font-size:.75rem;padding:.18rem .5rem;border-radius:5px;font-weight:700;
-                ${r.tipo==='Entrada'
-                  ? 'background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3)'
-                  : 'background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3)'}">
-                ${r.tipo === 'Entrada' ? '▲' : '▼'} ${esc(r.tipo)}
-              </span>
+              <span style="${r.tipo==='Entrada'?'background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3)':'background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3)'};font-size:.75rem;padding:.18rem .5rem;border-radius:5px;font-weight:700;white-space:nowrap"><i class="bi bi-${r.tipo==='Entrada'?'plus':'dash'}-circle" style="font-size:.7rem"></i> ${esc(r.tipo)}</span>
             </td>
             <td style="padding:.5rem .75rem;text-align:center;font-weight:700;color:var(--text-primary)">${r.quantidade}</td>
             <td style="padding:.5rem .75rem;color:var(--text-muted);font-size:.8rem">${esc(r.observacao || '—')}</td>
