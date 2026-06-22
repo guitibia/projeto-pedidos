@@ -193,6 +193,18 @@
     .btn-view:hover   { background:rgba(88,166,255,.22); }
     .btn-delete { background:rgba(248,81,73,.10);border-color:rgba(248,81,73,.22);color:#f85149; }
     .btn-delete:hover { background:rgba(248,81,73,.22); }
+    .product-results {
+      position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:50;
+      background:var(--bg-card); border:1px solid var(--border); border-radius:10px;
+      max-height:260px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,.35); padding:.25rem;
+    }
+    .product-results-item {
+      padding:.5rem .65rem; border-radius:7px; cursor:pointer; font-size:.85rem;
+      color:var(--text-primary); display:flex; justify-content:space-between; gap:.5rem; align-items:center;
+    }
+    .product-results-item:hover, .product-results-item.active { background:var(--bg-hover); }
+    .product-results-item .prod-cod { font-size:.72rem; color:var(--text-muted); white-space:nowrap; }
+    .product-results-empty { padding:.6rem .65rem; font-size:.83rem; color:var(--text-muted); }
   </style>
 </head>
 <body>
@@ -275,11 +287,11 @@
               </div>
               <div class="col-12 col-sm-6">
                 <label class="form-label">Produto</label>
-                <div class="input-icon-wrap">
+                <div class="input-icon-wrap" style="position:relative">
                   <i class="bi bi-tag"></i>
-                  <select id="products" class="form-select">
-                    <option value="">Selecione um produto</option>
-                  </select>
+                  <input type="text" id="productSearch" class="form-control" placeholder="Selecione a franquia primeiro" autocomplete="off" disabled>
+                  <input type="hidden" id="selectedProductId">
+                  <div id="productResults" class="product-results" style="display:none"></div>
                 </div>
               </div>
             </div>
@@ -513,62 +525,146 @@
   }
   init();
 
+  let currentProducts = [];
+  let selectedProduct = null;
+  let resultsActiveIndex = -1;
+
   document.getElementById('franchiseId').addEventListener('change', async (e) => {
-    const f  = e.target.value;
-    const ps = document.getElementById('products');
-    ps.innerHTML = '<option value="">Selecione um produto</option>';
+    const f = e.target.value;
+    const searchEl = document.getElementById('productSearch');
+    currentProducts = [];
+    selectedProduct = null;
+    document.getElementById('selectedProductId').value = '';
+    searchEl.value = '';
     document.getElementById('productCost').value = '';
-    if (!f) return;
-    const res  = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
-    const data = await res.json();
-    data.forEach(p => ps.insertAdjacentHTML('beforeend',
-      `<option value="${p.id}" data-cost="${p.cost}" data-sale-value="${p.sale_value || ''}" data-promo-price="${p.promotion_price || ''}">${esc(p.name)} — COD ${esc(p.code)}</option>`));
+    document.getElementById('salePrice').value = '';
+    hideProductResults();
+    if (!f) {
+      searchEl.disabled = true;
+      searchEl.placeholder = 'Selecione a franquia primeiro';
+      return;
+    }
+    const res = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
+    currentProducts = await res.json();
+    searchEl.disabled = false;
+    searchEl.placeholder = 'Buscar produto por nome ou código';
   });
 
-  document.getElementById('products').addEventListener('change', (e) => {
-    const opt = e.target.selectedOptions[0];
-    document.getElementById('productCost').value = opt?.dataset.cost ? parseFloat(opt.dataset.cost).toFixed(2) : '';
+  function renderProductResults(query) {
+    const box = document.getElementById('productResults');
+    const q = (query || '').trim().toLowerCase();
+    const list = q
+      ? currentProducts.filter(p => p.name.toLowerCase().includes(q) || String(p.code).toLowerCase().includes(q))
+      : currentProducts;
+    resultsActiveIndex = -1;
+    if (!list.length) {
+      box.innerHTML = '<div class="product-results-empty">Nenhum produto encontrado</div>';
+      box.style.display = '';
+      return;
+    }
+    box.innerHTML = list.map(p =>
+      `<div class="product-results-item" data-id="${p.id}">
+         <span>${esc(p.name)}</span>
+         <span class="prod-cod">COD ${esc(String(p.code))}</span>
+       </div>`).join('');
+    box.style.display = '';
+    box.querySelectorAll('.product-results-item').forEach(el => {
+      el.addEventListener('mousedown', (ev) => { ev.preventDefault(); selectProductById(el.dataset.id); });
+    });
+  }
+
+  function hideProductResults() {
+    document.getElementById('productResults').style.display = 'none';
+    resultsActiveIndex = -1;
+  }
+
+  function selectProductById(id) {
+    const p = currentProducts.find(x => String(x.id) === String(id));
+    if (!p) return;
+    selectedProduct = p;
+    document.getElementById('selectedProductId').value = p.id;
+    document.getElementById('productSearch').value = `${p.name} — COD ${p.code}`;
+    document.getElementById('productCost').value = p.cost != null ? parseFloat(p.cost).toFixed(2) : '';
     const saleEl = document.getElementById('salePrice');
-    const sv = opt?.dataset.saleValue;
-    if (saleEl.value === '' && sv) {
-      saleEl.value = parseFloat(sv).toFixed(2);
+    if (saleEl.value === '' && p.sale_value) {
+      saleEl.value = parseFloat(p.sale_value).toFixed(2);
+    }
+    hideProductResults();
+  }
+
+  const productSearchEl = document.getElementById('productSearch');
+  productSearchEl.addEventListener('focus', () => {
+    if (productSearchEl.disabled) return;
+    productSearchEl.select();
+    renderProductResults(selectedProduct ? '' : productSearchEl.value);
+  });
+  productSearchEl.addEventListener('input', () => {
+    selectedProduct = null;
+    document.getElementById('selectedProductId').value = '';
+    renderProductResults(productSearchEl.value);
+  });
+
+  function updateActiveItem(items) {
+    items.forEach((el, i) => el.classList.toggle('active', i === resultsActiveIndex));
+    if (resultsActiveIndex >= 0) items[resultsActiveIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  productSearchEl.addEventListener('keydown', (e) => {
+    const box = document.getElementById('productResults');
+    if (box.style.display === 'none') return;
+    const items = Array.from(box.querySelectorAll('.product-results-item'));
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      resultsActiveIndex = Math.min(resultsActiveIndex + 1, items.length - 1);
+      updateActiveItem(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      resultsActiveIndex = Math.max(resultsActiveIndex - 1, 0);
+      updateActiveItem(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const target = resultsActiveIndex >= 0 ? items[resultsActiveIndex] : items[0];
+      if (target) selectProductById(target.dataset.id);
+    } else if (e.key === 'Escape') {
+      hideProductResults();
+    }
+  });
+
+  document.addEventListener('mousedown', (e) => {
+    if (!e.target.closest('#productResults') && e.target.id !== 'productSearch') {
+      hideProductResults();
     }
   });
 
   document.getElementById('promotionalPrice').addEventListener('change', (e) => {
-    const costEl     = document.getElementById('productCost');
-    const opt        = document.getElementById('products').selectedOptions[0];
-    const promoPrice = opt?.dataset?.promoPrice;
-    costEl.readOnly  = !e.target.checked;
+    const costEl = document.getElementById('productCost');
+    costEl.readOnly = !e.target.checked;
     if (e.target.checked) {
-      if (promoPrice) {
-        document.getElementById('salePrice').value = promoPrice;
+      if (selectedProduct?.promotion_price) {
+        document.getElementById('salePrice').value = parseFloat(selectedProduct.promotion_price).toFixed(2);
       }
       // Foco no Custo para o usuário editar o valor de custo promocional
       costEl.focus();
       costEl.select();
     } else {
-      const sv = opt?.dataset?.saleValue;
-      document.getElementById('salePrice').value = sv ? parseFloat(sv).toFixed(2) : '';
+      document.getElementById('salePrice').value = selectedProduct?.sale_value ? parseFloat(selectedProduct.sale_value).toFixed(2) : '';
     }
   });
 
   document.getElementById('addProductBtn').addEventListener('click', () => {
-    const sel       = document.getElementById('products');
-    const opt       = sel.selectedOptions[0];
-    const productId = sel.value;
     const salePrice = parseFloat(document.getElementById('salePrice').value);
     const qty       = parseInt(document.getElementById('productQuantity').value) || 1;
     const isPromo   = document.getElementById('promotionalPrice').checked;
     const cost      = parseFloat(document.getElementById('productCost').value);
 
-    if (!productId || isNaN(salePrice) || salePrice <= 0 || qty < 1) {
-      return Swal.fire('Atenção', 'Preencha produto, valor de venda e quantidade corretamente.', 'warning');
+    if (!selectedProduct || isNaN(salePrice) || salePrice <= 0 || qty < 1) {
+      return Swal.fire('Atenção', 'Selecione o produto, valor de venda e quantidade corretamente.', 'warning');
     }
 
-    const productName  = opt.textContent.split(' — COD ')[0];
+    const productName  = selectedProduct.name;
     const totalProduct = salePrice * qty;
-    const entry        = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null };
+    const entry        = { id: selectedProduct.id, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null };
 
     const li = document.createElement('li');
     li.className = 'product-item';
@@ -594,6 +690,9 @@
     document.getElementById('productQuantity').value = 1;
     document.getElementById('promotionalPrice').checked = false;
     document.getElementById('productCost').readOnly = true;
+    document.getElementById('productSearch').value = '';
+    document.getElementById('selectedProductId').value = '';
+    selectedProduct = null;
   });
 
   document.querySelectorAll('.pay-option').forEach(radio => {
