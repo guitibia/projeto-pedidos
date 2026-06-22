@@ -53,6 +53,18 @@ body {
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ── Scrollbar ── */
@@ -722,3 +734,25 @@ footer {
   .main-content { margin-left: 0; padding: 1rem; padding-top: 3.5rem; }
   footer { margin-left: 0; }
 }
+
+/* ── Skeleton loaders ── */
+.skeleton { position:relative; overflow:hidden; background:var(--bg-hover); border-radius:8px; }
+.skeleton::after {
+  content:""; position:absolute; inset:0; transform:translateX(-100%);
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+  animation:skeleton-shimmer 1.2s infinite;
+}
+@keyframes skeleton-shimmer { 100% { transform:translateX(100%); } }
+.skeleton-line { height:14px; margin:.4rem 0; }
+.skeleton-row  { height:64px; margin-bottom:.6rem; }
+
+/* ── Empty state rico ── */
+.empty-rich { text-align:center; padding:3rem 1rem; color:var(--text-muted); }
+.empty-rich-icon  { font-size:3rem; opacity:.25; display:block; margin-bottom:.75rem; }
+.empty-rich-title { font-size:1rem; font-weight:600; color:var(--text-primary); margin-bottom:.25rem; }
+.empty-rich-sub   { font-size:.85rem; margin-bottom:1rem; }
+.empty-rich-action {
+  display:inline-flex; align-items:center; gap:.4rem; padding:.5rem 1rem; border-radius:8px;
+  background:var(--accent); color:#fff; font-size:.85rem; font-weight:600; text-decoration:none; border:none; cursor:pointer;
+}
+.empty-rich-action:hover { filter:brightness(1.08); color:#fff; }
