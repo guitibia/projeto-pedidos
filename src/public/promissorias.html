@@ -482,9 +482,10 @@
   }
 
   async function loadPromissorias(abertos) {
+    const container = document.getElementById('promissorias-container');
+    container.innerHTML = Array.from({ length: 5 }, () => '<div class="skeleton skeleton-row"></div>').join('');
     const res  = await Auth.apiFetch('/api/promissorias');
     const data = await res.json();
-    const container = document.getElementById('promissorias-container');
 
     const todasParcelas = [];
     data.forEach(prom => {
@@ -505,7 +506,10 @@
       `${data.length} lançamento${data.length !== 1 ? 's' : ''} · ${totalPend} parcela${totalPend !== 1 ? 's' : ''} pendente${totalPend !== 1 ? 's' : ''}`;
 
     if (!todasParcelas.length) {
-      container.innerHTML = `<div class="empty-state"><i class="bi bi-receipt"></i>Nenhuma promissória cadastrada.</div>`;
+      container.innerHTML = `<div class="empty-rich">
+        <i class="bi bi-receipt empty-rich-icon"></i>
+        <div class="empty-rich-title">Nenhuma promissória</div>
+        <div class="empty-rich-sub">As promissórias dos pedidos parcelados aparecem aqui.</div></div>`;
       return;
     }
 

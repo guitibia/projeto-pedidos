@@ -367,13 +367,16 @@
       return;
     }
 
+    tbody.innerHTML = Array.from({ length: 5 }, () => '<tr><td colspan="5"><div class="skeleton skeleton-line" style="height:28px"></div></td></tr>').join('');
     const res    = await Auth.apiFetch(`/api/client-orders/${clientId}?status=${currentStatus}`);
     const orders = await res.json();
     tbody.innerHTML = '';
 
     if (!orders.length) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">
-        <i class="bi bi-inbox"></i>Nenhum pedido encontrado.</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-rich">
+        <i class="bi bi-inbox empty-rich-icon"></i>
+        <div class="empty-rich-title">Nenhum pedido encontrado</div>
+        <div class="empty-rich-sub">Este cliente ainda não tem pedidos neste filtro.</div></div></td></tr>`;
       return;
     }
 

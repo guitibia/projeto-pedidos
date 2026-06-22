@@ -777,19 +777,28 @@
     loadOrders();
   }
 
+  function skeletonTableRows(n, cols) {
+    return Array.from({ length: n }, () => `<tr><td colspan="${cols}"><div class="skeleton skeleton-line" style="height:28px"></div></td></tr>`).join('');
+  }
+
   async function loadOrders() {
     const url = currentStatus === 'Todos' ? '/api/orders' : `/api/orders?status=${currentStatus}`;
+    const tbody  = document.getElementById('ordersList');
+    tbody.innerHTML = skeletonTableRows(6, 6);
     const res    = await Auth.apiFetch(url);
     const orders = await res.json();
-    const tbody  = document.getElementById('ordersList');
     document.getElementById('order-count').textContent =
       `${orders.length} pedido${orders.length !== 1 ? 's' : ''} encontrado${orders.length !== 1 ? 's' : ''}`;
 
     tbody.innerHTML = '';
     if (!orders.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5" style="color:var(--text-muted)">
-        <i class="bi bi-inbox" style="font-size:2rem;opacity:.35;display:block;margin-bottom:.5rem"></i>
-        Nenhum pedido encontrado.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6">
+        <div class="empty-rich">
+          <i class="bi bi-bag-x empty-rich-icon"></i>
+          <div class="empty-rich-title">Nenhum pedido ainda</div>
+          <div class="empty-rich-sub">Crie seu primeiro pedido para começar.</div>
+          <button class="empty-rich-action" onclick="document.getElementById('clientId')?.focus()"><i class="bi bi-plus-circle"></i> Criar pedido</button>
+        </div></td></tr>`;
       return;
     }
     orders.forEach(o => {

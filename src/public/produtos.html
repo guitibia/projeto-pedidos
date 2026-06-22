@@ -788,6 +788,8 @@
 
   // ── Carregar produtos ──
   async function loadProducts() {
+    document.getElementById('products-container').innerHTML =
+      Array.from({ length: 5 }, () => '<div class="skeleton skeleton-row"></div>').join('');
     const res   = await Auth.apiFetch('/api/products/all');
     allProducts = await res.json();
     applyFiltersAndSort();
@@ -802,9 +804,10 @@
       `${list.length} produto${list.length !== 1 ? 's' : ''} cadastrado${list.length !== 1 ? 's' : ''}`;
 
     if (!list.length) {
-      container.innerHTML = `<div class="text-center py-5" style="color:var(--text-muted)">
-        <i class="bi bi-inbox" style="font-size:2.5rem;opacity:.35"></i>
-        <div class="mt-2">Nenhum produto encontrado.</div></div>`;
+      container.innerHTML = `<div class="empty-rich">
+        <i class="bi bi-box empty-rich-icon"></i>
+        <div class="empty-rich-title">Nenhum produto</div>
+        <div class="empty-rich-sub">Cadastre produtos para usá-los nos pedidos.</div></div>`;
       return;
     }
 

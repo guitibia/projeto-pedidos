@@ -356,6 +356,8 @@
   }
 
   async function loadEstoque() {
+    document.getElementById('estoque-container').innerHTML =
+      Array.from({ length: 6 }, () => '<div class="skeleton skeleton-row"></div>').join('');
     const res  = await Auth.apiFetch('/api/estoque');
     allEstoque = await res.json();
     render(allEstoque);
@@ -364,7 +366,10 @@
   function render(items) {
     const container = document.getElementById('estoque-container');
     if (!items.length) {
-      container.innerHTML = '<div class="empty-state"><i class="bi bi-archive"></i>Nenhum produto cadastrado.</div>';
+      container.innerHTML = `<div class="empty-rich">
+        <i class="bi bi-archive empty-rich-icon"></i>
+        <div class="empty-rich-title">Estoque vazio</div>
+        <div class="empty-rich-sub">Nenhum produto em estoque ainda.</div></div>`;
       return;
     }
 
