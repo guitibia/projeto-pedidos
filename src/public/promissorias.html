@@ -8,6 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/theme.js"></script>
   <style>
     .form-page-hero {
       display: flex; align-items: center; gap: 1rem; margin-bottom: 0;
@@ -191,8 +192,10 @@
     <a class="nav-link" href="/pedidos.html"><i class="bi bi-bag-check"></i> Pedidos</a>
     <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
     <a class="nav-link active" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
+    <a class="nav-link" href="#" onclick="window.CommandPalette && CommandPalette.openHelp(); return false;"><i class="bi bi-keyboard"></i> Atalhos</a>
   </nav>
   <div class="sidebar-footer">
+    <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()" style="margin-bottom:.5rem"><i class="bi bi-sun"></i> Tema claro</button>
     <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
   </div>
 </div>
@@ -209,9 +212,13 @@
           <div class="form-page-sub" id="prom-count">Carregando...</div>
         </div>
       </div>
-      <button class="btn-nova" data-bs-toggle="modal" data-bs-target="#cadastrarModal">
-        <i class="bi bi-plus-circle-fill"></i> Nova Promissória
-      </button>
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <button class="btn btn-sm btn-outline-secondary" onclick="exportarPromissorias('csv')"><i class="bi bi-filetype-csv"></i> CSV</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="exportarPromissorias('pdf')"><i class="bi bi-filetype-pdf"></i> PDF</button>
+        <button class="btn-nova" data-bs-toggle="modal" data-bs-target="#cadastrarModal">
+          <i class="bi bi-plus-circle-fill"></i> Nova Promissória
+        </button>
+      </div>
     </div>
 
     <div id="promissorias-container">
@@ -273,6 +280,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/export-utils.js"></script>
 <script>
   Auth.requireAuth();
   document.getElementById('footer-year').textContent = new Date().getFullYear();
@@ -481,10 +490,22 @@
     </div>`;
   }
 
+  let allParcelas = [];
+
+  function exportarPromissorias(fmtTipo) {
+    if (!allParcelas.length) return Swal.fire('Atenção', 'Nada para exportar.', 'info');
+    const headers = ['Fornecedor', 'Parcela', 'Valor', 'Status', 'Vencimento'];
+    const rows = allParcelas.map(p => [p.fornecedor, p.numParcela,
+      Number(p.valor || 0).toFixed(2), p.status, p.vencimento || '']);
+    if (fmtTipo === 'csv') exportCsv('promissorias', headers, rows);
+    else exportPdf('Promissórias', headers, rows);
+  }
+
   async function loadPromissorias(abertos) {
+    const container = document.getElementById('promissorias-container');
+    container.innerHTML = Array.from({ length: 5 }, () => '<div class="skeleton skeleton-row"></div>').join('');
     const res  = await Auth.apiFetch('/api/promissorias');
     const data = await res.json();
-    const container = document.getElementById('promissorias-container');
 
     const todasParcelas = [];
     data.forEach(prom => {
@@ -500,12 +521,16 @@
       });
     });
 
+    allParcelas = todasParcelas;
     const totalPend = todasParcelas.filter(p => p.status !== 'Pago').length;
     document.getElementById('prom-count').textContent =
       `${data.length} lançamento${data.length !== 1 ? 's' : ''} · ${totalPend} parcela${totalPend !== 1 ? 's' : ''} pendente${totalPend !== 1 ? 's' : ''}`;
 
     if (!todasParcelas.length) {
-      container.innerHTML = `<div class="empty-state"><i class="bi bi-receipt"></i>Nenhuma promissória cadastrada.</div>`;
+      container.innerHTML = `<div class="empty-rich">
+        <i class="bi bi-receipt empty-rich-icon"></i>
+        <div class="empty-rich-title">Nenhuma promissória</div>
+        <div class="empty-rich-sub">As promissórias dos pedidos parcelados aparecem aqui.</div></div>`;
       return;
     }
 

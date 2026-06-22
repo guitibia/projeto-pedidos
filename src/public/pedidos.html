@@ -8,6 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/theme.js"></script>
   <style>
     /* ── Tabs ── */
     .page-tabs {
@@ -83,7 +84,7 @@
     .product-item {
       display:flex;align-items:center;justify-content:space-between;
       gap:.75rem;
-      background:rgba(255,255,255,.03);border:1px solid var(--border-color);
+      background:var(--hover-tint);border:1px solid var(--border-color);
       border-radius:9px;padding:.6rem .9rem;margin-bottom:.4rem;
     }
     .product-item-name { font-size:.85rem;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
@@ -174,7 +175,7 @@
       border-bottom:1px solid var(--border-color);background:transparent;
     }
     .list-card tbody tr { transition:background .12s; }
-    .list-card tbody tr:hover { background:rgba(255,255,255,.03); }
+    .list-card tbody tr:hover { background:var(--hover-tint); }
     .list-card tbody td {
       padding:.65rem 1rem;font-size:.875rem;
       border-bottom:1px solid var(--border-color);vertical-align:middle;
@@ -227,8 +228,10 @@
     <a class="nav-link active" href="/pedidos.html"><i class="bi bi-bag-check"></i> Pedidos</a>
     <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
     <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
+    <a class="nav-link" href="#" onclick="window.CommandPalette && CommandPalette.openHelp(); return false;"><i class="bi bi-keyboard"></i> Atalhos</a>
   </nav>
   <div class="sidebar-footer">
+    <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()" style="margin-bottom:.5rem"><i class="bi bi-sun"></i> Tema claro</button>
     <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
   </div>
 </div>
@@ -276,7 +279,7 @@
             <div class="field-group-title"><i class="bi bi-box-seam"></i> Produtos</div>
 
             <div class="row g-2 mb-3">
-              <div class="col-12 col-sm-6">
+              <div class="col-12 col-sm-5">
                 <label class="form-label">Franquia</label>
                 <div class="input-icon-wrap">
                   <i class="bi bi-shop"></i>
@@ -285,11 +288,12 @@
                   </select>
                 </div>
               </div>
-              <div class="col-12 col-sm-6">
+              <div class="col-12 col-sm-7">
                 <label class="form-label">Produto</label>
                 <div class="input-icon-wrap" style="position:relative">
                   <i class="bi bi-tag"></i>
-                  <input type="text" id="productSearch" class="form-control" placeholder="Selecione a franquia primeiro" autocomplete="off" disabled>
+                  <input type="text" id="productSearch" class="form-control" placeholder="Selecione a franquia primeiro" autocomplete="off" style="padding-right:2rem" disabled>
+                  <i class="bi bi-chevron-down" id="productChevron" style="position:absolute;left:auto;right:.75rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.8rem;pointer-events:none"></i>
                   <input type="hidden" id="selectedProductId">
                   <div id="productResults" class="product-results" style="display:none"></div>
                 </div>
@@ -411,6 +415,10 @@
           <button class="filter-pill" data-status="Entregue" onclick="setFilter(this)"><i class="bi bi-check-circle"></i> Entregue</button>
           <button class="filter-pill" data-status="Cancelado" onclick="setFilter(this)"><i class="bi bi-x-circle"></i> Cancelado</button>
         </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" onclick="exportarPedidos('csv')"><i class="bi bi-filetype-csv"></i> CSV</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="exportarPedidos('pdf')"><i class="bi bi-filetype-pdf"></i> PDF</button>
+        </div>
       </div>
 
       <div class="list-card">
@@ -467,6 +475,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/export-utils.js"></script>
 <script>
   Auth.requireAuth();
   document.getElementById('footer-year').textContent = new Date().getFullYear();
@@ -492,6 +502,11 @@
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  }
+
+  function irParaCriarPedido() {
+    switchTab(document.querySelector('[data-tab="criar"]'));
+    document.getElementById('clientId')?.focus();
   }
 
   if (location.hash === '#listar') {
@@ -585,18 +600,24 @@
     document.getElementById('selectedProductId').value = p.id;
     document.getElementById('productSearch').value = `${p.name} — COD ${p.code}`;
     document.getElementById('productCost').value = p.cost != null ? parseFloat(p.cost).toFixed(2) : '';
-    const saleEl = document.getElementById('salePrice');
-    if (saleEl.value === '' && p.sale_value) {
-      saleEl.value = parseFloat(p.sale_value).toFixed(2);
-    }
+    document.getElementById('salePrice').value = p.sale_value ? parseFloat(p.sale_value).toFixed(2) : '';
     hideProductResults();
   }
 
   const productSearchEl = document.getElementById('productSearch');
   productSearchEl.addEventListener('focus', () => {
     if (productSearchEl.disabled) return;
-    productSearchEl.select();
-    renderProductResults(selectedProduct ? '' : productSearchEl.value);
+    // limpa o texto para não precisar apagar e abre a lista completa da franquia
+    if (selectedProduct) { productSearchEl.value = ''; renderProductResults(''); }
+    else renderProductResults(productSearchEl.value);
+  });
+  productSearchEl.addEventListener('blur', () => {
+    // se saiu sem escolher outro produto, restaura o nome do produto selecionado
+    setTimeout(() => {
+      if (selectedProduct && productSearchEl.value === '') {
+        productSearchEl.value = `${selectedProduct.name} — COD ${selectedProduct.code}`;
+      }
+    }, 150);
   });
   productSearchEl.addEventListener('input', () => {
     selectedProduct = null;
@@ -769,6 +790,16 @@
 
   // ── LIST ORDERS ──
   let currentStatus = 'Todos';
+  let allOrders = [];
+
+  function exportarPedidos(fmtTipo) {
+    if (!allOrders.length) return Swal.fire('Atenção', 'Nada para exportar.', 'info');
+    const headers = ['Nº', 'Cliente', 'Pagamento', 'Status', 'Total'];
+    const rows = allOrders.map(o => [o.id, o.client_name, o.payment_method, o.status,
+      Number(o.total_cost || 0).toFixed(2)]);
+    if (fmtTipo === 'csv') exportCsv('pedidos', headers, rows);
+    else exportPdf('Pedidos', headers, rows);
+  }
 
   function setFilter(btn) {
     document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
@@ -777,19 +808,29 @@
     loadOrders();
   }
 
+  function skeletonTableRows(n, cols) {
+    return Array.from({ length: n }, () => `<tr><td colspan="${cols}"><div class="skeleton skeleton-line" style="height:28px"></div></td></tr>`).join('');
+  }
+
   async function loadOrders() {
     const url = currentStatus === 'Todos' ? '/api/orders' : `/api/orders?status=${currentStatus}`;
+    const tbody  = document.getElementById('ordersList');
+    tbody.innerHTML = skeletonTableRows(6, 6);
     const res    = await Auth.apiFetch(url);
     const orders = await res.json();
-    const tbody  = document.getElementById('ordersList');
+    allOrders = orders;
     document.getElementById('order-count').textContent =
       `${orders.length} pedido${orders.length !== 1 ? 's' : ''} encontrado${orders.length !== 1 ? 's' : ''}`;
 
     tbody.innerHTML = '';
     if (!orders.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5" style="color:var(--text-muted)">
-        <i class="bi bi-inbox" style="font-size:2rem;opacity:.35;display:block;margin-bottom:.5rem"></i>
-        Nenhum pedido encontrado.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6">
+        <div class="empty-rich">
+          <i class="bi bi-bag-x empty-rich-icon"></i>
+          <div class="empty-rich-title">Nenhum pedido ainda</div>
+          <div class="empty-rich-sub">Crie seu primeiro pedido para começar.</div>
+          <button class="empty-rich-action" onclick="irParaCriarPedido()"><i class="bi bi-plus-circle"></i> Criar pedido</button>
+        </div></td></tr>`;
       return;
     }
     orders.forEach(o => {
@@ -1004,7 +1045,14 @@
     w.document.close(); w.print();
   }
 
-  loadOrders();
+  (async () => {
+    await loadOrders();
+    const orderId = new URLSearchParams(location.search).get('order');
+    if (orderId) {
+      switchTab(document.querySelector('[data-tab="listar"]'));
+      viewOrder(parseInt(orderId));
+    }
+  })();
 </script>
 </body>
 </html>

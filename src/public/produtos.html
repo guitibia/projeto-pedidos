@@ -8,6 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/theme.js"></script>
   <style>
     /* ── Tabs ── */
     .page-tabs {
@@ -175,7 +176,7 @@
       gap: .6rem;
       padding: .5rem .7rem;
       border-radius: 9px;
-      background: rgba(255,255,255,.03);
+      background: var(--hover-tint);
       border: 1px solid var(--border-color);
       margin-bottom: .3rem;
       transition: border-color .12s;
@@ -270,7 +271,7 @@
     .franchise-name { font-size:.9rem;font-weight:700; }
     .franchise-count {
       font-size:.72rem;color:var(--text-muted);
-      background:rgba(255,255,255,.06);border:1px solid var(--border-color);
+      background:var(--hover-tint);border:1px solid var(--border-color);
       border-radius:20px;padding:.1rem .55rem;margin-left:.25rem;
     }
     .franchise-chevron { color:var(--text-muted);font-size:.85rem;transition:transform .2s; }
@@ -294,7 +295,7 @@
     .product-field { font-size:.875rem;color:var(--text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
     .product-code {
       font-size:.75rem;color:var(--text-muted);font-family:monospace;
-      background:rgba(255,255,255,.04);border:1px solid var(--border-color);
+      background:var(--hover-tint);border:1px solid var(--border-color);
       border-radius:5px;padding:.1rem .4rem;
     }
     .btn-edit-icon, .btn-delete-icon { color:var(--text-muted);font-size:.85rem;transition:color .15s;cursor:pointer; }
@@ -330,8 +331,10 @@
     <a class="nav-link" href="/pedidos.html"><i class="bi bi-bag-check"></i> Pedidos</a>
     <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
     <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
+    <a class="nav-link" href="#" onclick="window.CommandPalette && CommandPalette.openHelp(); return false;"><i class="bi bi-keyboard"></i> Atalhos</a>
   </nav>
   <div class="sidebar-footer">
+    <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()" style="margin-bottom:.5rem"><i class="bi bi-sun"></i> Tema claro</button>
     <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
   </div>
 </div>
@@ -447,7 +450,7 @@
                 <div>
                   <input type="radio" class="franchise-option" name="franchise" id="fr-outros" value="Outros" required>
                   <label class="franchise-label" for="fr-outros">
-                    <i class="bi bi-three-dots" style="color:#8b949e"></i> Outros
+                    <i class="bi bi-three-dots" style="color:var(--text-muted)"></i> Outros
                   </label>
                 </div>
               </div>
@@ -497,6 +500,10 @@
         <div class="search-wrap">
           <i class="bi bi-search"></i>
           <input id="search" placeholder="Buscar por nome ou código...">
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" onclick="exportarProdutos('csv')"><i class="bi bi-filetype-csv"></i> CSV</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="exportarProdutos('pdf')"><i class="bi bi-filetype-pdf"></i> PDF</button>
         </div>
       </div>
 
@@ -584,6 +591,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/export-utils.js"></script>
 <script>
   Auth.requireAuth();
   document.getElementById('footer-year').textContent = new Date().getFullYear();
@@ -630,7 +639,7 @@
     'Natura/Avon':   { icon: 'bi-tree',        color: '#27ae60', bg: 'rgba(39,174,96,.12)'  },
     'Abelha Rainha': { icon: 'bi-emoji-smile', color: '#f39c12', bg: 'rgba(243,156,18,.12)' },
     'Eudora':        { icon: 'bi-stars',       color: '#e74c3c', bg: 'rgba(231,76,60,.12)'  },
-    'Outros':        { icon: 'bi-three-dots',  color: '#8b949e', bg: 'rgba(139,148,158,.12)'}
+    'Outros':        { icon: 'bi-three-dots',  color: 'var(--text-muted)', bg: 'rgba(139,148,158,.12)'}
   };
   function getFranchise(name) {
     return franchiseMap[name] || { icon: 'bi-box', color: '#ff9a00', bg: 'rgba(255,154,0,.12)' };
@@ -787,7 +796,18 @@
   }
 
   // ── Carregar produtos ──
+  function exportarProdutos(fmtTipo) {
+    if (!allProducts.length) return Swal.fire('Atenção', 'Nada para exportar.', 'info');
+    const headers = ['Nome', 'Código', 'Franquia', 'Custo', 'Venda', 'Estoque'];
+    const rows = allProducts.map(p => [p.name, p.code, p.franchise,
+      Number(p.cost || 0).toFixed(2), Number(p.sale_value || 0).toFixed(2), p.estoque]);
+    if (fmtTipo === 'csv') exportCsv('produtos', headers, rows);
+    else exportPdf('Produtos', headers, rows);
+  }
+
   async function loadProducts() {
+    document.getElementById('products-container').innerHTML =
+      Array.from({ length: 5 }, () => '<div class="skeleton skeleton-row"></div>').join('');
     const res   = await Auth.apiFetch('/api/products/all');
     allProducts = await res.json();
     applyFiltersAndSort();
@@ -802,9 +822,10 @@
       `${list.length} produto${list.length !== 1 ? 's' : ''} cadastrado${list.length !== 1 ? 's' : ''}`;
 
     if (!list.length) {
-      container.innerHTML = `<div class="text-center py-5" style="color:var(--text-muted)">
-        <i class="bi bi-inbox" style="font-size:2.5rem;opacity:.35"></i>
-        <div class="mt-2">Nenhum produto encontrado.</div></div>`;
+      container.innerHTML = `<div class="empty-rich">
+        <i class="bi bi-box empty-rich-icon"></i>
+        <div class="empty-rich-title">Nenhum produto</div>
+        <div class="empty-rich-sub">Cadastre produtos para usá-los nos pedidos.</div></div>`;
       return;
     }
 
@@ -938,7 +959,14 @@
   document.getElementById('search').addEventListener('input', applyFiltersAndSort);
 
   loadDiscounts();
-  loadProducts();
+  (async () => {
+    await loadProducts();
+    const q = new URLSearchParams(location.search).get('q');
+    if (q) {
+      const s = document.getElementById('search');
+      if (s) { s.value = q; applyFiltersAndSort(); }
+    }
+  })();
 </script>
 </body>
 </html>
