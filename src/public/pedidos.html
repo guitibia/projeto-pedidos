@@ -604,6 +604,39 @@
     renderProductResults(productSearchEl.value);
   });
 
+  function updateActiveItem(items) {
+    items.forEach((el, i) => el.classList.toggle('active', i === resultsActiveIndex));
+    if (resultsActiveIndex >= 0) items[resultsActiveIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  productSearchEl.addEventListener('keydown', (e) => {
+    const box = document.getElementById('productResults');
+    if (box.style.display === 'none') return;
+    const items = Array.from(box.querySelectorAll('.product-results-item'));
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      resultsActiveIndex = Math.min(resultsActiveIndex + 1, items.length - 1);
+      updateActiveItem(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      resultsActiveIndex = Math.max(resultsActiveIndex - 1, 0);
+      updateActiveItem(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const target = resultsActiveIndex >= 0 ? items[resultsActiveIndex] : items[0];
+      if (target) selectProductById(target.dataset.id);
+    } else if (e.key === 'Escape') {
+      hideProductResults();
+    }
+  });
+
+  document.addEventListener('mousedown', (e) => {
+    if (!e.target.closest('#productResults') && e.target.id !== 'productSearch') {
+      hideProductResults();
+    }
+  });
+
   document.getElementById('promotionalPrice').addEventListener('change', (e) => {
     const costEl = document.getElementById('productCost');
     costEl.readOnly = !e.target.checked;
