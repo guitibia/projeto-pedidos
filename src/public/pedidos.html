@@ -494,6 +494,11 @@
     document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
   }
 
+  function irParaCriarPedido() {
+    switchTab(document.querySelector('[data-tab="criar"]'));
+    document.getElementById('clientId')?.focus();
+  }
+
   if (location.hash === '#listar') {
     switchTab(document.querySelector('[data-tab="listar"]'));
   }
@@ -585,10 +590,7 @@
     document.getElementById('selectedProductId').value = p.id;
     document.getElementById('productSearch').value = `${p.name} — COD ${p.code}`;
     document.getElementById('productCost').value = p.cost != null ? parseFloat(p.cost).toFixed(2) : '';
-    const saleEl = document.getElementById('salePrice');
-    if (saleEl.value === '' && p.sale_value) {
-      saleEl.value = parseFloat(p.sale_value).toFixed(2);
-    }
+    document.getElementById('salePrice').value = p.sale_value ? parseFloat(p.sale_value).toFixed(2) : '';
     hideProductResults();
   }
 
@@ -797,7 +799,7 @@
           <i class="bi bi-bag-x empty-rich-icon"></i>
           <div class="empty-rich-title">Nenhum pedido ainda</div>
           <div class="empty-rich-sub">Crie seu primeiro pedido para começar.</div>
-          <button class="empty-rich-action" onclick="document.getElementById('clientId')?.focus()"><i class="bi bi-plus-circle"></i> Criar pedido</button>
+          <button class="empty-rich-action" onclick="irParaCriarPedido()"><i class="bi bi-plus-circle"></i> Criar pedido</button>
         </div></td></tr>`;
       return;
     }
