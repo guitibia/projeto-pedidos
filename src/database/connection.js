@@ -39,6 +39,38 @@ pool.getConnection()
     // Migração: custo por item do pedido (preço de custo promocional)
     try { await conn.query('ALTER TABLE order_products ADD COLUMN cost_price DECIMAL(10,2) DEFAULT NULL'); } catch (_) {}
 
+    // Migração: valor de venda (base para cálculo de custo por desconto de franquia)
+    try { await conn.query('ALTER TABLE products ADD COLUMN sale_value DECIMAL(10,2) DEFAULT NULL'); } catch (_) {}
+
+    // Migração: tabela de percentuais de desconto por franquia
+    try {
+      await conn.query(`
+        CREATE TABLE IF NOT EXISTS franchise_discounts (
+          franchise VARCHAR(255) PRIMARY KEY,
+          percent   DECIMAL(5,2) NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+    } catch (_) {}
+
+    // Seed dos percentuais (idempotente — não sobrescreve valores já ajustados pelo usuário)
+    try {
+      await conn.query(`
+        INSERT IGNORE INTO franchise_discounts (franchise, percent) VALUES
+        ('Boticário', 15), ('Natura', 32), ('Avon', 32),
+        ('Abelha Rainha', 20), ('Eudora', 30), ('Outros', 0)
+      `);
+    } catch (_) {}
+
+    // Backfill do sale_value reconstruindo a partir do custo já descontado (roda só uma vez)
+    try {
+      await conn.query(`
+        UPDATE products p
+        LEFT JOIN franchise_discounts fd ON fd.franchise = p.franchise
+        SET p.sale_value = ROUND(p.cost / (1 - COALESCE(fd.percent, 0) / 100), 2)
+        WHERE p.sale_value IS NULL
+      `);
+    } catch (_) {}
+
     conn.release();
   })
   .catch(err => {
