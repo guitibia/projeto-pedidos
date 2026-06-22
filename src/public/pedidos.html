@@ -289,7 +289,8 @@
                 <label class="form-label">Produto</label>
                 <div class="input-icon-wrap" style="position:relative">
                   <i class="bi bi-tag"></i>
-                  <input type="text" id="productSearch" class="form-control" placeholder="Selecione a franquia primeiro" autocomplete="off" disabled>
+                  <input type="text" id="productSearch" class="form-control" placeholder="Selecione a franquia primeiro" autocomplete="off" style="padding-right:2rem" disabled>
+                  <i class="bi bi-chevron-down" id="productChevron" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.8rem;pointer-events:none"></i>
                   <input type="hidden" id="selectedProductId">
                   <div id="productResults" class="product-results" style="display:none"></div>
                 </div>
@@ -597,8 +598,17 @@
   const productSearchEl = document.getElementById('productSearch');
   productSearchEl.addEventListener('focus', () => {
     if (productSearchEl.disabled) return;
-    productSearchEl.select();
-    renderProductResults(selectedProduct ? '' : productSearchEl.value);
+    // limpa o texto para não precisar apagar e abre a lista completa da franquia
+    if (selectedProduct) { productSearchEl.value = ''; renderProductResults(''); }
+    else renderProductResults(productSearchEl.value);
+  });
+  productSearchEl.addEventListener('blur', () => {
+    // se saiu sem escolher outro produto, restaura o nome do produto selecionado
+    setTimeout(() => {
+      if (selectedProduct && productSearchEl.value === '') {
+        productSearchEl.value = `${selectedProduct.name} — COD ${selectedProduct.code}`;
+      }
+    }, 150);
   });
   productSearchEl.addEventListener('input', () => {
     selectedProduct = null;
