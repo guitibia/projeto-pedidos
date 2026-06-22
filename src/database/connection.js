@@ -1,10 +1,27 @@
 const mysql = require('mysql2/promise');
 
+// Decide qual banco usar:
+//  1. DB_NAME explícito no ambiente sempre vence (override manual)
+//  2. Senão, detecta a branch git: na "Teste" usa o banco isolado db_pedidos_teste
+//  3. Qualquer outra branch (incluindo main) usa db_pedidos
+function resolveDbName() {
+  if (process.env.DB_NAME) return process.env.DB_NAME;
+  try {
+    const branch = require('child_process')
+      .execSync('git rev-parse --abbrev-ref HEAD', { cwd: __dirname, stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString().trim();
+    if (branch === 'Teste') return 'db_pedidos_teste';
+  } catch (_) { /* fora de um repo git: cai no padrão */ }
+  return 'db_pedidos';
+}
+
+const DB_NAME = resolveDbName();
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'db_pedidos',
+  database: DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -13,7 +30,7 @@ const pool = mysql.createPool({
 
 pool.getConnection()
   .then(async conn => {
-    console.log(`✅ Banco de dados conectado: ${process.env.DB_NAME}`);
+    console.log(`✅ Banco de dados conectado: ${DB_NAME}`);
     await conn.query(`
       CREATE TABLE IF NOT EXISTS order_parcelas (
         id              INT AUTO_INCREMENT PRIMARY KEY,
