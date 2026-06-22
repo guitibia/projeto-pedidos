@@ -96,6 +96,33 @@ async function getDashboard(req, res) {
       mesesLucro.push(found ? parseFloat(found.totalLucro)  : 0);
     }
 
+    // Vendas e lucro diários dos últimos 30 dias
+    const [diarios] = await db.query(`
+      SELECT DATE(o.created_at) AS dia,
+             SUM(op.sale_price * op.quantity)            AS totalVendas,
+             SUM((op.sale_price - p.cost) * op.quantity) AS totalLucro
+      FROM orders o
+      JOIN order_products op ON o.id = op.order_id
+      JOIN products p ON op.product_id = p.id
+      WHERE o.created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+      GROUP BY dia ORDER BY dia ASC
+    `);
+    const diasLabels = [], diasVendas = [], diasLucro = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const key   = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      const found = diarios.find(r => {
+        const rd = r.dia instanceof Date
+          ? `${r.dia.getFullYear()}-${String(r.dia.getMonth()+1).padStart(2,'0')}-${String(r.dia.getDate()).padStart(2,'0')}`
+          : String(r.dia).slice(0, 10);
+        return rd === key;
+      });
+      diasLabels.push(label);
+      diasVendas.push(found ? parseFloat(found.totalVendas) : 0);
+      diasLucro.push(found ? parseFloat(found.totalLucro) : 0);
+    }
+
     // Pedidos por status
     const [statusRows] = await db.query(`
       SELECT status, COUNT(*) AS total FROM orders GROUP BY status
@@ -151,6 +178,7 @@ async function getDashboard(req, res) {
       promissoriasPagas:     promPagas.total,
       promissoriasPendentes: promPendentes.total,
       vendasMensais: { labels: mesesLabels, vendas: mesesVendas, lucro: mesesLucro },
+      vendasDiarias: { labels: diasLabels, vendas: diasVendas, lucro: diasLucro },
       statusPedidos: statusRows,
       ultimosPedidos,
       alertasEstoque,
