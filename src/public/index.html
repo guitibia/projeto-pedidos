@@ -222,7 +222,13 @@
       <div class="col-lg-8">
         <div class="card h-100">
           <div class="card-body">
-            <h6 class="card-title mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">Vendas & Lucro — Últimos 12 Meses</h6>
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+              <h6 class="card-title m-0" id="salesChartTitle" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">Vendas & Lucro — Últimos 30 Dias</h6>
+              <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary active" id="range-dia" onclick="setChartRange('dia')">30 dias</button>
+                <button type="button" class="btn btn-outline-secondary" id="range-mes" onclick="setChartRange('mes')">12 meses</button>
+              </div>
+            </div>
             <canvas id="salesChart" height="100"></canvas>
           </div>
         </div>
@@ -380,6 +386,21 @@
     }
   });
 
+  let chartData = { dia: { labels: [], vendas: [], lucro: [] }, mes: { labels: [], vendas: [], lucro: [] } };
+  let currentRange = 'dia';
+  function setChartRange(range) {
+    currentRange = range;
+    const set = chartData[range];
+    salesChart.data.labels = set.labels;
+    salesChart.data.datasets[0].data = set.vendas;
+    salesChart.data.datasets[1].data = set.lucro;
+    salesChart.update();
+    document.getElementById('salesChartTitle').textContent =
+      range === 'dia' ? 'Vendas & Lucro — Últimos 30 Dias' : 'Vendas & Lucro — Últimos 12 Meses';
+    document.getElementById('range-dia').classList.toggle('active', range === 'dia');
+    document.getElementById('range-mes').classList.toggle('active', range === 'mes');
+  }
+
   const statusBadge = { 'Entregue': 'bg-success', 'Pendente': 'bg-warning', 'Cancelado': 'bg-danger' };
 
   function renderAlertas(alertas) {
@@ -460,11 +481,9 @@
       document.getElementById('custoEntregas').textContent    = fmt(d.custoEntregas);
       document.getElementById('pedidosComTaxa').textContent   = d.pedidosComTaxa;
 
-      // Gráfico vendas + lucro
-      salesChart.data.labels = d.vendasMensais.labels;
-      salesChart.data.datasets[0].data = d.vendasMensais.vendas;
-      salesChart.data.datasets[1].data = d.vendasMensais.lucro;
-      salesChart.update();
+      // Gráfico vendas + lucro — guarda os dois conjuntos e aplica o range atual
+      chartData = { dia: d.vendasDiarias, mes: d.vendasMensais };
+      setChartRange(currentRange);
 
       // Alertas de estoque
       renderAlertas(d.alertasEstoque || []);
