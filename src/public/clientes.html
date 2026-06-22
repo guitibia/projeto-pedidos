@@ -511,7 +511,14 @@
     }
   });
 
-  loadClients();
+  (async () => {
+    await loadClients();
+    const cid = new URLSearchParams(location.search).get('client');
+    if (cid) {
+      const sel = document.getElementById('clientSelect');
+      if (sel) { sel.value = cid; loadClientOrders(); }
+    }
+  })();
 </script>
 </body>
 </html>

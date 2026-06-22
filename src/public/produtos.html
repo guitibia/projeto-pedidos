@@ -942,7 +942,14 @@
   document.getElementById('search').addEventListener('input', applyFiltersAndSort);
 
   loadDiscounts();
-  loadProducts();
+  (async () => {
+    await loadProducts();
+    const q = new URLSearchParams(location.search).get('q');
+    if (q) {
+      const s = document.getElementById('search');
+      if (s) { s.value = q; applyFiltersAndSort(); }
+    }
+  })();
 </script>
 </body>
 </html>

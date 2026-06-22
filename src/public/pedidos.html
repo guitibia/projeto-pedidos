@@ -1026,7 +1026,14 @@
     w.document.close(); w.print();
   }
 
-  loadOrders();
+  (async () => {
+    await loadOrders();
+    const orderId = new URLSearchParams(location.search).get('order');
+    if (orderId) {
+      switchTab(document.querySelector('[data-tab="listar"]'));
+      viewOrder(parseInt(orderId));
+    }
+  })();
 </script>
 </body>
 </html>
