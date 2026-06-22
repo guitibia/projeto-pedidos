@@ -41,6 +41,34 @@
   --border-color: #30363d;
   --text-color:   #e6edf3;
   --bg-color:     #0d1117;
+
+  --hover-tint:       rgba(255,255,255,.05);
+  --skeleton-shimmer: rgba(255,255,255,.06);
+}
+
+html[data-theme="light"] {
+  --bg:           #f6f8fa;
+  --bg-card:      #ffffff;
+  --bg-input:     #ffffff;
+  --bg-hover:     #eef1f4;
+  --bg-table-hd:  #f6f8fa;
+  --border:       #d0d7de;
+  --border-focus: #0969da;
+  --text-primary: #1f2328;
+  --text-muted:   #59636e;
+  --text-heading: #1f2328;
+  --sidebar-bg:     #ffffff;
+  --sidebar-hover:  #eef1f4;
+  --sidebar-active: #0969da;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+  --shadow-lg: 0 8px 28px rgba(0,0,0,.14);
+  --card-bg:      #ffffff;
+  --border-color: #d0d7de;
+  --text-color:   #1f2328;
+  --bg-color:     #f6f8fa;
+  --hover-tint:       rgba(0,0,0,.05);
+  --skeleton-shimmer: rgba(0,0,0,.05);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -70,8 +98,8 @@ body {
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #484f58; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* ══════════════════════════════════════
    SIDEBAR
@@ -489,7 +517,7 @@ h2, h4, h5 {
 .stat-card.purple .stat-value { color: #bc8cff; }
 .stat-card.teal   .stat-value { color: #39c5cf; }
 .stat-card.orange .stat-value { color: #f0883e; }
-.stat-card.gray   .stat-value { color: #8b949e; }
+.stat-card.gray   .stat-value { color: var(--text-muted); }
 
 .stat-card .stat-icon {
   font-size: 1.2rem;
@@ -516,7 +544,7 @@ h2, h4, h5 {
 .stat-card.purple .stat-icon { background: rgba(188,140,255,.15); color: #bc8cff; }
 .stat-card.teal   .stat-icon { background: rgba(57,197,207,.15);  color: #39c5cf; }
 .stat-card.orange .stat-icon { background: rgba(240,136,62,.15);  color: #f0883e; }
-.stat-card.gray   .stat-icon { background: rgba(72,79,88,.2);     color: #8b949e; }
+.stat-card.gray   .stat-icon { background: rgba(72,79,88,.2);     color: var(--text-muted); }
 
 /* ══════════════════════════════════════
    FORMS
@@ -531,7 +559,7 @@ h2, h4, h5 {
   padding: .5rem .875rem;
 }
 
-.form-control::placeholder { color: #484f58; }
+.form-control::placeholder { color: var(--text-muted); }
 
 .form-control:focus, .form-select:focus {
   background: var(--bg-input);
@@ -541,7 +569,7 @@ h2, h4, h5 {
 }
 
 .form-select option {
-  background: #1c2128;
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 
@@ -635,7 +663,7 @@ h2, h4, h5 {
 }
 
 .table-striped tbody tr:nth-child(odd) td  { background: var(--bg-card); }
-.table-striped tbody tr:nth-child(even) td { background: #0d1117; }
+.table-striped tbody tr:nth-child(even) td { background: var(--bg); }
 
 /* ══════════════════════════════════════
    BADGES
@@ -652,7 +680,7 @@ h2, h4, h5 {
 .badge.bg-danger    { background: rgba(248,81,73,.18) !important;   color: #f85149; border: 1px solid rgba(248,81,73,.28); }
 .badge.bg-warning   { background: rgba(210,153,34,.18) !important;  color: #d29922; border: 1px solid rgba(210,153,34,.28); }
 .badge.bg-primary   { background: rgba(56,139,253,.18) !important;  color: #58a6ff; border: 1px solid rgba(56,139,253,.28); }
-.badge.bg-secondary { background: rgba(139,148,158,.15) !important; color: #8b949e; border: 1px solid var(--border); }
+.badge.bg-secondary { background: rgba(139,148,158,.15) !important; color: var(--text-muted); border: 1px solid var(--border); }
 
 /* ══════════════════════════════════════
    ALERTS
@@ -739,7 +767,7 @@ footer {
 .skeleton { position:relative; overflow:hidden; background:var(--bg-hover); border-radius:8px; }
 .skeleton::after {
   content:""; position:absolute; inset:0; transform:translateX(-100%);
-  background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+  background:linear-gradient(90deg, transparent, var(--skeleton-shimmer), transparent);
   animation:skeleton-shimmer 1.2s infinite;
 }
 @keyframes skeleton-shimmer { 100% { transform:translateX(100%); } }
