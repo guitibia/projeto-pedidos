@@ -39,6 +39,12 @@
       .cmdk-help-grid kbd { background:var(--bg-hover); border:1px solid var(--border); border-radius:6px; padding:.1rem .45rem; font-size:.78rem; color:var(--text-primary); justify-self:start; }
       .cmdk-help-grid span { color:var(--text-muted); font-size:.85rem; }
       .cmdk-title { padding:.9rem 1.1rem .2rem; font-weight:700; color:var(--text-heading); font-size:.95rem; }
+      .cmdk-help-sec { padding:.85rem 1.2rem .2rem; font-size:.72rem; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); font-weight:700; }
+      .cmdk-help-actions { display:grid; grid-template-columns:repeat(2,1fr); gap:.4rem; padding:.2rem 1.1rem .4rem; }
+      .cmdk-qa { display:flex; align-items:center; gap:.6rem; padding:.55rem .7rem; border-radius:9px; background:var(--bg-hover); border:1px solid var(--border); color:var(--text-primary); font-size:.85rem; cursor:pointer; text-align:left; }
+      .cmdk-qa:hover { border-color:var(--accent); }
+      .cmdk-qa i { color:var(--accent); }
+      .cmdk-help-box { max-height:80vh; overflow-y:auto; }
     `;
     const s = document.createElement('style');
     s.textContent = css;
@@ -66,8 +72,11 @@
     help.className = 'cmdk-overlay';
     help.id = 'cmdk-help';
     help.innerHTML = `
-      <div class="cmdk-box" role="dialog" aria-label="Atalhos">
-        <div class="cmdk-title"><i class="bi bi-keyboard me-2"></i>Atalhos de teclado</div>
+      <div class="cmdk-box cmdk-help-box" role="dialog" aria-label="Ajuda e atalhos">
+        <div class="cmdk-title"><i class="bi bi-keyboard me-2"></i>Ajuda &amp; Atalhos</div>
+        <div class="cmdk-help-sec">Acesso rápido</div>
+        <div class="cmdk-help-actions" id="cmdk-help-actions"></div>
+        <div class="cmdk-help-sec">Atalhos de teclado</div>
         <div class="cmdk-help-grid">
           <kbd>Ctrl K</kbd><span>Abrir a busca rápida</span>
           <kbd>/</kbd><span>Abrir a busca rápida</span>
@@ -82,6 +91,7 @@
         <div class="cmdk-foot"><span>As letras só funcionam fora de campos de texto.</span></div>
       </div>`;
     document.body.appendChild(help);
+    renderHelpActions();
 
     overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(); });
     help.addEventListener('mousedown', (e) => { if (e.target === help) help.classList.remove('open'); });
@@ -102,7 +112,18 @@
     if (!entities && !loading) loadEntities();
   }
   function close() { document.getElementById('cmdk-overlay').classList.remove('open'); }
-  function openHelp() { document.getElementById('cmdk-help').classList.add('open'); }
+  function openHelp() { close(); document.getElementById('cmdk-help').classList.add('open'); }
+
+  function renderHelpActions() {
+    const box = document.getElementById('cmdk-help-actions');
+    if (!box) return;
+    const quick = [...NAV, ...ACTIONS.filter(a => !a.help)];
+    box.innerHTML = quick.map((it, i) =>
+      `<button class="cmdk-qa" data-i="${i}"><i class="bi ${it.icon}"></i> ${escapeHtml(it.label)}</button>`).join('');
+    box.querySelectorAll('.cmdk-qa').forEach(el => {
+      el.addEventListener('click', () => { const it = quick[parseInt(el.dataset.i)]; if (it && it.url) window.location = it.url; });
+    });
+  }
 
   function render() {
     const q = document.getElementById('cmdk-input').value.trim().toLowerCase();
