@@ -161,10 +161,16 @@
           <div class="page-hero-sub" id="estoque-sub">Carregando...</div>
         </div>
       </div>
-      <button id="btnLogGeral" onclick="toggleLog()"
-        style="border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);border-radius:8px;padding:.45rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s">
-        <i class="bi bi-journal-text me-1"></i> Log Geral
-      </button>
+      <div class="d-flex gap-2 flex-wrap">
+        <button id="btnLogGeral" onclick="toggleLog()"
+          style="border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);border-radius:8px;padding:.45rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s">
+          <i class="bi bi-journal-text me-1"></i> Log Geral
+        </button>
+        <button id="btnDescontos" onclick="toggleDescontos()"
+          style="border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);border-radius:8px;padding:.45rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s">
+          <i class="bi bi-percent me-1"></i> Descontos por Franquia
+        </button>
+      </div>
     </div>
 
     <!-- Painel Log Geral -->
@@ -177,6 +183,23 @@
           <span style="font-size:.8rem;color:var(--text-muted)" id="log-count"></span>
         </div>
         <div id="log-container">
+          <div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel Descontos por Franquia -->
+    <div id="descontosPanel" style="display:none;margin-bottom:1.5rem">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.25rem">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 style="margin:0;font-weight:600;color:var(--text-primary)">
+            <i class="bi bi-percent me-2" style="color:var(--accent)"></i>Descontos por Franquia
+          </h6>
+        </div>
+        <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem">
+          Ao salvar, o custo de todos os produtos da franquia é recalculado: custo = valor de venda × (1 − %).
+        </div>
+        <div id="descontos-container">
           <div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>
         </div>
       </div>
@@ -606,6 +629,68 @@
       document.getElementById('log-container').innerHTML =
         '<div class="empty-state"><i class="bi bi-exclamation-circle"></i>Erro ao carregar log.</div>';
     }
+  }
+
+  // ── Descontos por Franquia ──
+  let descontosVisible = false;
+  let descontosRows = [];
+
+  function toggleDescontos() {
+    descontosVisible = !descontosVisible;
+    const panel = document.getElementById('descontosPanel');
+    const btn   = document.getElementById('btnDescontos');
+    panel.style.display = descontosVisible ? '' : 'none';
+    btn.innerHTML = descontosVisible
+      ? '<i class="bi bi-x-circle me-1"></i> Fechar Descontos'
+      : '<i class="bi bi-percent me-1"></i> Descontos por Franquia';
+    if (descontosVisible) loadDescontos();
+  }
+
+  async function loadDescontos() {
+    const container = document.getElementById('descontos-container');
+    container.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>';
+    try {
+      const res  = await Auth.apiFetch('/api/franchise-discounts');
+      const rows = await res.json();
+      descontosRows = rows;
+      if (!rows.length) {
+        container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i>Nenhuma franquia.</div>';
+        return;
+      }
+      container.innerHTML = rows.map((r, i) => `
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .25rem;border-bottom:1px solid var(--border)">
+          <div style="flex:1;font-weight:600;color:var(--text-primary)">${esc(r.franchise)}</div>
+          <div style="display:flex;align-items:center;gap:.35rem">
+            <input type="number" step="0.01" min="0" max="99.99" value="${r.percent}"
+              id="desc-${i}"
+              style="width:90px;padding:.4rem .6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-primary);text-align:right">
+            <span style="color:var(--text-muted)">%</span>
+          </div>
+          <button onclick="salvarDesconto(${i})"
+            style="border:1px solid rgba(63,185,80,.4);background:rgba(63,185,80,.1);color:#3fb950;border-radius:8px;padding:.4rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer">
+            <i class="bi bi-check-lg"></i> Salvar
+          </button>
+        </div>`).join('');
+    } catch (e) {
+      container.innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-circle"></i>Erro ao carregar.</div>';
+    }
+  }
+
+  async function salvarDesconto(i) {
+    const input = document.getElementById('desc-' + i);
+    if (!input) return;
+    const franchise = descontosRows[i].franchise;
+    const percent = parseFloat(input.value);
+    if (isNaN(percent) || percent < 0 || percent >= 100) {
+      return Swal.fire('Atenção', 'Informe um percentual entre 0 e 99,99.', 'warning');
+    }
+    const res = await Auth.apiFetch(`/api/franchise-discounts/${encodeURIComponent(franchise)}`, {
+      method: 'PUT', body: JSON.stringify({ percent })
+    });
+    const data = await res.json();
+    if (!res.ok) return Swal.fire('Erro', data.error || 'Não foi possível salvar.', 'error');
+    Swal.fire({ icon: 'success', title: 'Desconto salvo!', text: `${data.recalculados} produto(s) recalculado(s).`, timer: 2200, showConfirmButton: false });
+    if (typeof loadEstoque === 'function') loadEstoque();
   }
 
   loadEstoque();

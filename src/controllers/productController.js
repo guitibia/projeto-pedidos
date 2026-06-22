@@ -1,11 +1,22 @@
 const db = require('../database/connection');
 
+// Busca o percentual de desconto da franquia (0 se não houver) e calcula o custo
+async function calcCost(conn, franchise, saleValue) {
+  const [[row]] = await conn.query('SELECT percent FROM franchise_discounts WHERE franchise = ?', [franchise]);
+  const percent = row ? parseFloat(row.percent) : 0;
+  return Math.round(saleValue * (1 - percent / 100) * 100) / 100;
+}
+
 // POST /api/products
 async function createProduct(req, res) {
-  const { name, cost, franchise, code, promotionPrice, estoqueInicial } = req.body;
+  const { name, saleValue, franchise, code, promotionPrice, estoqueInicial } = req.body;
 
-  if (!name || cost == null || !franchise || !code) {
+  if (!name || saleValue == null || !franchise || !code) {
     return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos.' });
+  }
+  const sv = parseFloat(saleValue);
+  if (isNaN(sv) || sv < 0) {
+    return res.status(400).json({ error: 'Valor de venda inválido.' });
   }
 
   const qtdInicial = parseInt(estoqueInicial) || 0;
@@ -14,9 +25,11 @@ async function createProduct(req, res) {
   try {
     await conn.beginTransaction();
 
+    const cost = await calcCost(conn, franchise, sv);
+
     const [result] = await conn.query(
-      'INSERT INTO products (name, cost, franchise, code, promotion_price, estoque) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, cost, franchise, code, promotionPrice || null, qtdInicial]
+      'INSERT INTO products (name, cost, sale_value, franchise, code, promotion_price, estoque) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, cost, sv, franchise, code, promotionPrice || null, qtdInicial]
     );
     const productId = result.insertId;
 
@@ -63,7 +76,7 @@ async function searchProductByCode(req, res) {
     const [rows] = await db.query('SELECT * FROM products WHERE code = ?', [code]);
     if (rows.length === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
     const p = rows[0];
-    return res.json({ id: p.id, name: p.name, cost: p.cost, code: p.code, promotion_price: p.promotion_price ?? null });
+    return res.json({ id: p.id, name: p.name, cost: p.cost, sale_value: p.sale_value, code: p.code, promotion_price: p.promotion_price ?? null });
   } catch (err) {
     console.error('Erro ao buscar produto por código:', err);
     return res.status(500).json({ error: 'Erro ao buscar produto.' });
@@ -80,7 +93,7 @@ async function getProductById(req, res) {
     const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
     const p = rows[0];
-    return res.json({ id: p.id, name: p.name, cost: p.cost, franchise: p.franchise, code: p.code, promotion_price: p.promotion_price ?? null });
+    return res.json({ id: p.id, name: p.name, cost: p.cost, sale_value: p.sale_value, franchise: p.franchise, code: p.code, promotion_price: p.promotion_price ?? null });
   } catch (err) {
     console.error('Erro ao buscar produto:', err);
     return res.status(500).json({ error: 'Erro ao buscar produto.' });
@@ -114,25 +127,42 @@ async function updateProduct(req, res) {
   const id = parseInt(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
 
-  const { name, cost, franchise, code, promotion_price } = req.body;
-  if (!name || cost == null || !franchise || !code) {
+  const { name, sale_value, franchise, code, promotion_price } = req.body;
+  if (!name || sale_value == null || !franchise || !code) {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
+  }
+  const sv = parseFloat(sale_value);
+  if (isNaN(sv) || sv < 0) {
+    return res.status(400).json({ error: 'Valor de venda inválido.' });
   }
 
   const promoVal = promotion_price != null && promotion_price !== ''
     ? parseFloat(promotion_price)
     : null;
 
+  const conn = await db.getConnection();
   try {
-    const [result] = await db.query(
-      'UPDATE products SET name=?, cost=?, franchise=?, code=?, promotion_price=? WHERE id=?',
-      [name, parseFloat(cost), franchise, code, promoVal, id]
+    await conn.beginTransaction();
+
+    const cost = await calcCost(conn, franchise, sv);
+
+    const [result] = await conn.query(
+      'UPDATE products SET name=?, cost=?, sale_value=?, franchise=?, code=?, promotion_price=? WHERE id=?',
+      [name, cost, sv, franchise, code, promoVal, id]
     );
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Produto não encontrado.' });
+    }
+
+    await conn.commit();
     return res.json({ message: 'Produto atualizado com sucesso.' });
   } catch (err) {
+    await conn.rollback();
     console.error('Erro ao atualizar produto:', err);
     return res.status(500).json({ error: 'Erro ao atualizar produto.' });
+  } finally {
+    conn.release();
   }
 }
 

@@ -386,10 +386,18 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label">Valor de Custo</label>
+                <label class="form-label">Valor de Venda</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-tag"></i>
+                  <input type="number" step="0.01" min="0" class="form-control" id="saleValue" placeholder="0,00" required>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Custo <span style="opacity:.5;font-weight:400">(calculado)</span></label>
                 <div class="input-icon-wrap">
                   <i class="bi bi-cash-coin"></i>
-                  <input type="number" step="0.01" min="0" class="form-control" id="cost" placeholder="0,00" required>
+                  <input type="number" step="0.01" class="form-control" id="cost" placeholder="0,00" readonly>
                 </div>
               </div>
 
@@ -537,8 +545,12 @@
             <input type="text" class="form-control" id="edit-code" required>
           </div>
           <div class="mb-3">
-            <label class="form-label">Valor de Custo (R$)</label>
-            <input type="number" step="0.01" min="0" class="form-control" id="edit-cost" required>
+            <label class="form-label">Valor de Venda (R$)</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="edit-sale-value" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Custo (R$) <span style="opacity:.5;font-weight:400">(calculado)</span></label>
+            <input type="number" step="0.01" class="form-control" id="edit-cost" readonly>
           </div>
           <div class="mb-3">
             <label class="form-label">Preço Promocional (R$) <span style="opacity:.5;font-weight:400">(opcional)</span></label>
@@ -581,6 +593,21 @@
 
   const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   let allProducts = [];
+  let franchiseDiscounts = {};
+  async function loadDiscounts() {
+    try {
+      const res = await Auth.apiFetch('/api/franchise-discounts');
+      const list = await res.json();
+      franchiseDiscounts = {};
+      list.forEach(d => { franchiseDiscounts[d.franchise] = d.percent; });
+    } catch { franchiseDiscounts = {}; }
+  }
+  function calcCostPreview(saleValue, franchise) {
+    const pct = franchiseDiscounts[franchise] ?? 0;
+    const v = parseFloat(saleValue);
+    if (isNaN(v)) return '';
+    return (Math.round(v * (1 - pct / 100) * 100) / 100).toFixed(2);
+  }
   const editModal = new bootstrap.Modal(document.getElementById('editModal'));
 
   // ── Tab switching ──
@@ -620,6 +647,13 @@
     });
   });
 
+  function refreshCostPreview() {
+    const fr = document.querySelector('.franchise-option:checked')?.value;
+    document.getElementById('cost').value = fr ? calcCostPreview(document.getElementById('saleValue').value, fr) : '';
+  }
+  document.getElementById('saleValue').addEventListener('input', refreshCostPreview);
+  document.querySelectorAll('.franchise-option').forEach(r => r.addEventListener('change', refreshCostPreview));
+
   // ── Fila de cadastro ──
   let productQueue = [];
 
@@ -649,7 +683,7 @@
           <div class="queue-item-name">${esc(p.name)}</div>
           <div class="queue-item-meta">${esc(p.franchise)} · COD ${esc(p.code)}${p.estoqueInicial ? ' · Estoque: ' + p.estoqueInicial : ''}</div>
         </div>
-        <div class="queue-item-cost">${fmt(p.cost)}</div>
+        <div class="queue-item-cost">${fmt(parseFloat(calcCostPreview(p.saleValue, p.franchise)) || 0)}</div>
         <button type="button" class="btn-queue-remove" onclick="removeFromQueue(${i})" title="Remover">
           <i class="bi bi-x-lg"></i>
         </button>
@@ -705,7 +739,7 @@
 
     productQueue.push({
       name:           document.getElementById('name').value.trim(),
-      cost:           parseFloat(document.getElementById('cost').value),
+      saleValue:      parseFloat(document.getElementById('saleValue').value),
       franchise:      franchiseSelected.value,
       code:           document.getElementById('code').value.trim(),
       estoqueInicial: parseInt(document.getElementById('estoqueInicial').value) || 0
@@ -713,6 +747,7 @@
 
     renderQueue();
     document.getElementById('productForm').reset();
+    document.getElementById('cost').value = '';
     document.querySelectorAll('.franchise-option').forEach(r => r.checked = false);
     document.getElementById('name').focus();
   });
@@ -833,14 +868,23 @@
   function openEdit(id) {
     const p = allProducts.find(x => x.id === id);
     if (!p) return;
-    document.getElementById('edit-id').value        = p.id;
-    document.getElementById('edit-name').value      = p.name;
-    document.getElementById('edit-code').value      = p.code;
-    document.getElementById('edit-cost').value            = p.cost;
+    document.getElementById('edit-id').value         = p.id;
+    document.getElementById('edit-name').value       = p.name;
+    document.getElementById('edit-code').value       = p.code;
+    document.getElementById('edit-sale-value').value = p.sale_value ?? '';
+    document.getElementById('edit-cost').value       = p.cost;
     document.getElementById('edit-promotion-price').value = p.promotion_price ?? '';
-    document.getElementById('edit-franchise').value       = p.franchise;
+    document.getElementById('edit-franchise').value  = p.franchise;
+    refreshEditCostPreview();
     editModal.show();
   }
+
+  function refreshEditCostPreview() {
+    const fr = document.getElementById('edit-franchise').value;
+    document.getElementById('edit-cost').value = calcCostPreview(document.getElementById('edit-sale-value').value, fr);
+  }
+  document.getElementById('edit-sale-value').addEventListener('input', refreshEditCostPreview);
+  document.getElementById('edit-franchise').addEventListener('change', refreshEditCostPreview);
 
   document.getElementById('edit-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -849,7 +893,7 @@
     const payload  = {
       name:            document.getElementById('edit-name').value.trim(),
       code:            document.getElementById('edit-code').value.trim(),
-      cost:            parseFloat(document.getElementById('edit-cost').value),
+      sale_value:      parseFloat(document.getElementById('edit-sale-value').value),
       franchise:       document.getElementById('edit-franchise').value,
       promotion_price: promoRaw !== '' ? parseFloat(promoRaw) : null
     };
@@ -893,6 +937,7 @@
 
   document.getElementById('search').addEventListener('input', applyFiltersAndSort);
 
+  loadDiscounts();
   loadProducts();
 </script>
 </body>
