@@ -875,6 +875,7 @@
     document.getElementById('edit-cost').value       = p.cost;
     document.getElementById('edit-promotion-price').value = p.promotion_price ?? '';
     document.getElementById('edit-franchise').value  = p.franchise;
+    refreshEditCostPreview();
     editModal.show();
   }
 
