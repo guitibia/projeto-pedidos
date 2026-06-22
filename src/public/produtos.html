@@ -176,7 +176,7 @@
       gap: .6rem;
       padding: .5rem .7rem;
       border-radius: 9px;
-      background: rgba(255,255,255,.03);
+      background: var(--hover-tint);
       border: 1px solid var(--border-color);
       margin-bottom: .3rem;
       transition: border-color .12s;
@@ -271,7 +271,7 @@
     .franchise-name { font-size:.9rem;font-weight:700; }
     .franchise-count {
       font-size:.72rem;color:var(--text-muted);
-      background:rgba(255,255,255,.06);border:1px solid var(--border-color);
+      background:var(--hover-tint);border:1px solid var(--border-color);
       border-radius:20px;padding:.1rem .55rem;margin-left:.25rem;
     }
     .franchise-chevron { color:var(--text-muted);font-size:.85rem;transition:transform .2s; }
@@ -295,7 +295,7 @@
     .product-field { font-size:.875rem;color:var(--text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
     .product-code {
       font-size:.75rem;color:var(--text-muted);font-family:monospace;
-      background:rgba(255,255,255,.04);border:1px solid var(--border-color);
+      background:var(--hover-tint);border:1px solid var(--border-color);
       border-radius:5px;padding:.1rem .4rem;
     }
     .btn-edit-icon, .btn-delete-icon { color:var(--text-muted);font-size:.85rem;transition:color .15s;cursor:pointer; }
@@ -450,7 +450,7 @@
                 <div>
                   <input type="radio" class="franchise-option" name="franchise" id="fr-outros" value="Outros" required>
                   <label class="franchise-label" for="fr-outros">
-                    <i class="bi bi-three-dots" style="color:#8b949e"></i> Outros
+                    <i class="bi bi-three-dots" style="color:var(--text-muted)"></i> Outros
                   </label>
                 </div>
               </div>
@@ -634,7 +634,7 @@
     'Natura/Avon':   { icon: 'bi-tree',        color: '#27ae60', bg: 'rgba(39,174,96,.12)'  },
     'Abelha Rainha': { icon: 'bi-emoji-smile', color: '#f39c12', bg: 'rgba(243,156,18,.12)' },
     'Eudora':        { icon: 'bi-stars',       color: '#e74c3c', bg: 'rgba(231,76,60,.12)'  },
-    'Outros':        { icon: 'bi-three-dots',  color: '#8b949e', bg: 'rgba(139,148,158,.12)'}
+    'Outros':        { icon: 'bi-three-dots',  color: 'var(--text-muted)', bg: 'rgba(139,148,158,.12)'}
   };
   function getFranchise(name) {
     return franchiseMap[name] || { icon: 'bi-box', color: '#ff9a00', bg: 'rgba(255,154,0,.12)' };

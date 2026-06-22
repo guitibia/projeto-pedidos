@@ -59,7 +59,7 @@
       padding: .5rem 1rem; gap: .5rem;
       transition: background .12s;
     }
-    .alerta-item:hover { background: rgba(255,255,255,.04); }
+    .alerta-item:hover { background: var(--hover-tint); }
     .alerta-nome  { font-size: .82rem; font-weight: 500; }
     .alerta-fr    { font-size: .7rem; color: var(--text-muted); }
     .alerta-qtd   { font-size: .8rem; font-weight: 700; white-space: nowrap; }
@@ -316,7 +316,7 @@
     document.getElementById('sidebar').classList.toggle('open');
   });
 
-  const darkTick = '#8b949e';
+  const darkTick = 'var(--text-muted)';
   const darkGrid = '#21262d';
 
   function fmt(v) {
@@ -439,13 +439,13 @@
       document.getElementById('totalReceita').textContent         = fmt(d.totalReceita);
       document.getElementById('margemLucro').textContent = Number(d.margemLucro).toFixed(1) + '%';
       document.getElementById('lucroMes').textContent    = fmt(d.lucroMes);
-      const rankColors = ['#f0883e','#8b949e','#b45309'];
+      const rankColors = ['#f0883e','var(--text-muted)','#b45309'];
       const rankLabels = ['1º','2º','3º'];
       document.getElementById('topProdutos').innerHTML = d.topProdutos.length
         ? d.topProdutos.map((p, i) => `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:.4rem;font-size:.72rem;padding:.2rem .1rem">
               <span>
-                <span style="display:inline-block;min-width:20px;text-align:center;font-size:.65rem;font-weight:700;padding:.1rem .3rem;border-radius:4px;background:rgba(255,255,255,.06);color:${rankColors[i]};margin-right:.25rem">${rankLabels[i]}</span>
+                <span style="display:inline-block;min-width:20px;text-align:center;font-size:.65rem;font-weight:700;padding:.1rem .3rem;border-radius:4px;background:var(--hover-tint);color:${rankColors[i]};margin-right:.25rem">${rankLabels[i]}</span>
                 <span style="color:var(--text-color);font-weight:500">${esc(p.nome)}</span>
               </span>
               <span style="color:var(--text-muted);white-space:nowrap">${p.total} un.</span>
