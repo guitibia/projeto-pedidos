@@ -522,12 +522,17 @@
     const res  = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
     const data = await res.json();
     data.forEach(p => ps.insertAdjacentHTML('beforeend',
-      `<option value="${p.id}" data-cost="${p.cost}" data-promo-price="${p.promotion_price || ''}">${esc(p.name)} — COD ${esc(p.code)}</option>`));
+      `<option value="${p.id}" data-cost="${p.cost}" data-sale-value="${p.sale_value || ''}" data-promo-price="${p.promotion_price || ''}">${esc(p.name)} — COD ${esc(p.code)}</option>`));
   });
 
   document.getElementById('products').addEventListener('change', (e) => {
     const opt = e.target.selectedOptions[0];
     document.getElementById('productCost').value = opt?.dataset.cost ? parseFloat(opt.dataset.cost).toFixed(2) : '';
+    const saleEl = document.getElementById('salePrice');
+    const sv = opt?.dataset.saleValue;
+    if (saleEl.value === '' && sv) {
+      saleEl.value = parseFloat(sv).toFixed(2);
+    }
   });
 
   document.getElementById('promotionalPrice').addEventListener('change', (e) => {
@@ -543,7 +548,8 @@
       costEl.focus();
       costEl.select();
     } else {
-      document.getElementById('salePrice').value = '';
+      const sv = opt?.dataset?.saleValue;
+      document.getElementById('salePrice').value = sv ? parseFloat(sv).toFixed(2) : '';
     }
   });
 
