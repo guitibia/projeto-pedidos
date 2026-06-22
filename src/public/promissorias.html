@@ -212,9 +212,13 @@
           <div class="form-page-sub" id="prom-count">Carregando...</div>
         </div>
       </div>
-      <button class="btn-nova" data-bs-toggle="modal" data-bs-target="#cadastrarModal">
-        <i class="bi bi-plus-circle-fill"></i> Nova Promissória
-      </button>
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <button class="btn btn-sm btn-outline-secondary" onclick="exportarPromissorias('csv')"><i class="bi bi-filetype-csv"></i> CSV</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="exportarPromissorias('pdf')"><i class="bi bi-filetype-pdf"></i> PDF</button>
+        <button class="btn-nova" data-bs-toggle="modal" data-bs-target="#cadastrarModal">
+          <i class="bi bi-plus-circle-fill"></i> Nova Promissória
+        </button>
+      </div>
     </div>
 
     <div id="promissorias-container">
@@ -486,6 +490,17 @@
     </div>`;
   }
 
+  let allParcelas = [];
+
+  function exportarPromissorias(fmtTipo) {
+    if (!allParcelas.length) return Swal.fire('Atenção', 'Nada para exportar.', 'info');
+    const headers = ['Fornecedor', 'Parcela', 'Valor', 'Status', 'Vencimento'];
+    const rows = allParcelas.map(p => [p.fornecedor, p.numParcela,
+      Number(p.valor || 0).toFixed(2), p.status, p.vencimento || '']);
+    if (fmtTipo === 'csv') exportCsv('promissorias', headers, rows);
+    else exportPdf('Promissórias', headers, rows);
+  }
+
   async function loadPromissorias(abertos) {
     const container = document.getElementById('promissorias-container');
     container.innerHTML = Array.from({ length: 5 }, () => '<div class="skeleton skeleton-row"></div>').join('');
@@ -506,6 +521,7 @@
       });
     });
 
+    allParcelas = todasParcelas;
     const totalPend = todasParcelas.filter(p => p.status !== 'Pago').length;
     document.getElementById('prom-count').textContent =
       `${data.length} lançamento${data.length !== 1 ? 's' : ''} · ${totalPend} parcela${totalPend !== 1 ? 's' : ''} pendente${totalPend !== 1 ? 's' : ''}`;

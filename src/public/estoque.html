@@ -173,6 +173,8 @@
           style="border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);border-radius:8px;padding:.45rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s">
           <i class="bi bi-percent me-1"></i> Descontos por Franquia
         </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="exportarEstoque('csv')"><i class="bi bi-filetype-csv"></i> CSV</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="exportarEstoque('pdf')"><i class="bi bi-filetype-pdf"></i> PDF</button>
       </div>
     </div>
 
@@ -358,6 +360,15 @@
         : 'bi bi-arrow-down-up';
     });
     render(allEstoque);
+  }
+
+  function exportarEstoque(fmtTipo) {
+    if (!allEstoque.length) return Swal.fire('Atenção', 'Nada para exportar.', 'info');
+    const headers = ['Produto', 'Código', 'Franquia', 'Custo', 'Estoque', 'Entradas', 'Saídas'];
+    const rows = allEstoque.map(p => [p.name, p.code, p.franchise,
+      Number(p.cost || 0).toFixed(2), p.estoque, p.totalEntradas, p.totalSaidas]);
+    if (fmtTipo === 'csv') exportCsv('estoque', headers, rows);
+    else exportPdf('Estoque', headers, rows);
   }
 
   async function loadEstoque() {
