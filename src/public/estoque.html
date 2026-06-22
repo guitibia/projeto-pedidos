@@ -633,6 +633,7 @@
 
   // ── Descontos por Franquia ──
   let descontosVisible = false;
+  let descontosRows = [];
 
   function toggleDescontos() {
     descontosVisible = !descontosVisible;
@@ -651,20 +652,21 @@
     try {
       const res  = await Auth.apiFetch('/api/franchise-discounts');
       const rows = await res.json();
+      descontosRows = rows;
       if (!rows.length) {
         container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i>Nenhuma franquia.</div>';
         return;
       }
-      container.innerHTML = rows.map(r => `
+      container.innerHTML = rows.map((r, i) => `
         <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .25rem;border-bottom:1px solid var(--border)">
           <div style="flex:1;font-weight:600;color:var(--text-primary)">${esc(r.franchise)}</div>
           <div style="display:flex;align-items:center;gap:.35rem">
             <input type="number" step="0.01" min="0" max="99.99" value="${r.percent}"
-              id="desc-${esc(r.franchise)}"
+              id="desc-${i}"
               style="width:90px;padding:.4rem .6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-primary);text-align:right">
             <span style="color:var(--text-muted)">%</span>
           </div>
-          <button onclick="salvarDesconto('${esc(r.franchise)}')"
+          <button onclick="salvarDesconto(${i})"
             style="border:1px solid rgba(63,185,80,.4);background:rgba(63,185,80,.1);color:#3fb950;border-radius:8px;padding:.4rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer">
             <i class="bi bi-check-lg"></i> Salvar
           </button>
@@ -674,8 +676,10 @@
     }
   }
 
-  async function salvarDesconto(franchise) {
-    const input = document.getElementById('desc-' + franchise);
+  async function salvarDesconto(i) {
+    const input = document.getElementById('desc-' + i);
+    if (!input) return;
+    const franchise = descontosRows[i].franchise;
     const percent = parseFloat(input.value);
     if (isNaN(percent) || percent < 0 || percent >= 100) {
       return Swal.fire('Atenção', 'Informe um percentual entre 0 e 99,99.', 'warning');
