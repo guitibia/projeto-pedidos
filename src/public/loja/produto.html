@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produto — Beleza Multi Marcas</title>
+  <meta name="description" content="Detalhes do produto na Beleza Multi Marcas.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/loja/loja.css">
+  <style>
+    /* ---- Product detail layout ---- */
+    .produto-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.8rem;
+      align-items: flex-start;
+      margin: 2rem 0 2.8rem;
+    }
+    @media (max-width: 768px) {
+      .produto-layout { grid-template-columns: 1fr; gap: 1.6rem; }
+    }
+
+    /* ---- Photo column ---- */
+    .produto-foto {
+      position: sticky;
+      top: calc(62px + 1.2rem); /* header height + gap */
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      aspect-ratio: 1 / 1;
+    }
+    .produto-foto img,
+    .produto-foto .img-ph {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    @media (max-width: 768px) {
+      .produto-foto { position: static; }
+    }
+
+    /* ---- Info column ---- */
+    .produto-info { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* ---- Breadcrumb ---- */
+    .breadcrumb {
+      display: flex; align-items: center; flex-wrap: wrap; gap: .3rem;
+      font-size: .85rem; color: var(--text-soft); margin-bottom: .2rem;
+    }
+    .breadcrumb a { color: var(--accent-dark); }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb .sep { opacity: .5; }
+
+    /* ---- Name ---- */
+    .produto-nome {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 600;
+      font-size: clamp(1.6rem, 4vw, 2.3rem);
+      line-height: 1.15;
+      margin: 0;
+    }
+
+    /* ---- Price block ---- */
+    .produto-preco .price { font-size: 1.5rem; }
+
+    /* ---- Stock status ---- */
+    .stock-status {
+      display: inline-flex; align-items: center; gap: .45rem;
+      font-size: .9rem; font-weight: 600;
+    }
+    .stock-status .dot {
+      width: 9px; height: 9px; border-radius: 50%; flex: none;
+    }
+    .stock-status.em-estoque .dot  { background: var(--success); }
+    .stock-status.em-estoque       { color: var(--success); }
+    .stock-status.esgotado .dot    { background: var(--danger); }
+    .stock-status.esgotado         { color: var(--danger); }
+
+    /* ---- Quantity stepper ---- */
+    .qty-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .qty-stepper {
+      display: inline-flex; align-items: center; gap: 0;
+      border: 1px solid var(--border); border-radius: 999px; overflow: hidden;
+    }
+    .qty-stepper button {
+      width: 40px; height: 40px; border: none; background: transparent;
+      color: var(--text); font-size: 1.2rem; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      transition: background .16s;
+    }
+    .qty-stepper button:hover:not(:disabled) { background: var(--accent-soft); }
+    .qty-stepper button:disabled { opacity: .35; cursor: not-allowed; }
+    .qty-stepper__val {
+      min-width: 44px; text-align: center; font-weight: 700;
+      font-size: 1rem; user-select: none;
+    }
+
+    /* ---- Add to cart ---- */
+    .produto-actions { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+    .btn-add {
+      flex: 1; min-width: 180px; font-size: 1.05rem;
+      padding: .85rem 1.6rem; gap: .55rem;
+    }
+    .btn-fav {
+      min-width: 44px; height: 44px; border-radius: 999px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text); font-size: 1.25rem; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background .16s, color .16s;
+    }
+    .btn-fav:hover { background: var(--accent-soft); color: var(--accent-dark); }
+
+    /* ---- Description ---- */
+    .produto-desc-section { margin-top: .3rem; }
+    .produto-desc-section h2 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 600; font-size: 1.2rem; margin: 0 0 .5rem;
+    }
+    .produto-descricao {
+      font-size: .97rem; line-height: 1.7; color: var(--text-soft);
+      white-space: pre-wrap; margin: 0;
+    }
+
+    /* ---- Divider ---- */
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+    /* ---- 404 state ---- */
+    .not-found-state {
+      text-align: center; padding: 4rem 1rem;
+      display: flex; flex-direction: column; align-items: center; gap: 1.2rem;
+    }
+    .not-found-state i { font-size: 3rem; color: var(--accent-soft); }
+    .not-found-state h2 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 600; font-size: 1.8rem; margin: 0;
+    }
+    .not-found-state p { color: var(--text-soft); margin: 0; }
+
+    /* ---- Loading skeleton ---- */
+    .loading-state {
+      text-align: center; padding: 3rem 1rem; color: var(--text-soft); font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="store-header" role="banner">
+    <div class="store-header__inner">
+      <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas — página inicial">
+        <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+        <div class="logo__text">
+          <span class="logo__word">Beleza</span>
+          <span class="logo__sub">Multi Marcas</span>
+        </div>
+      </a>
+
+      <form class="store-search" role="search" action="produtos.html" method="get">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Buscar produtos, marcas…" aria-label="Buscar produtos">
+      </form>
+
+      <nav class="store-header__nav" aria-label="Ações do usuário">
+        <a href="#" title="Favoritos (em breve)" aria-label="Favoritos — em breve">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+        </a>
+        <a href="#" title="Minha conta (em breve)" aria-label="Minha conta — em breve">
+          <i class="bi bi-person" aria-hidden="true"></i>
+        </a>
+        <a href="carrinho.html" title="Carrinho de compras" aria-label="Carrinho de compras" style="position:relative">
+          <i class="bi bi-bag" aria-hidden="true"></i>
+          <span id="cart-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+    <div class="container">
+      <div id="produto-root">
+        <div class="loading-state" aria-live="polite">
+          <i class="bi bi-hourglass-split" aria-hidden="true"></i> Carregando produto…
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="store-footer" role="contentinfo">
+    <div class="store-footer__inner">
+      <!-- Brand -->
+      <div>
+        <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas">
+          <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+          <div class="logo__text">
+            <span class="logo__word">Beleza</span>
+            <span class="logo__sub">Multi Marcas</span>
+          </div>
+        </a>
+        <p style="margin:.8rem 0 0;font-size:.85rem;max-width:22ch">Cosméticos e beleza das melhores marcas, reunidos para você.</p>
+      </div>
+
+      <div class="store-footer__cols">
+        <!-- Navegação -->
+        <div>
+          <h4>Navegação</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="/loja/">Início</a></li>
+            <li><a href="produtos.html">Todos os Produtos</a></li>
+            <li><a href="carrinho.html">Carrinho</a></li>
+          </ul>
+        </div>
+
+        <!-- Informações -->
+        <div>
+          <h4>Informações</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="privacidade.html">Política de Privacidade</a></li>
+            <li><a href="mailto:contato@belezamultimarcas.com.br">Contato</a></li>
+          </ul>
+        </div>
+
+        <!-- Redes sociais -->
+        <div>
+          <h4>Redes Sociais</h4>
+          <div style="display:flex;gap:.6rem;margin-top:.2rem">
+            <a href="#" aria-label="Instagram" title="Instagram" class="icon-btn"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+            <a href="#" aria-label="Facebook" title="Facebook" class="icon-btn"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+            <a href="#" aria-label="WhatsApp" title="WhatsApp" class="icon-btn"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="store-footer__bottom">
+      <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
+      &nbsp;·&nbsp;
+      <a href="privacidade.html">Privacidade</a>
+      &nbsp;·&nbsp;
+      <a href="/login.html" style="color:var(--text-soft);opacity:.55;font-size:.78rem" aria-label="Área administrativa">
+        <i class="bi bi-lock" aria-hidden="true"></i> Admin
+      </a>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="/loja/cart.js"></script>
+  <script src="/loja/loja.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      /* ---- Footer year ---- */
+      document.getElementById('ano').textContent = new Date().getFullYear();
+
+      /* ---- State ---- */
+      var produto = null;
+      var qty = 1;
+
+      /* ---- Helpers ---- */
+      function fetchJSON(url) {
+        return fetch(url).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        });
+      }
+
+      function getIdFromURL() {
+        var params = new URLSearchParams(window.location.search);
+        var raw = params.get('id');
+        if (!raw || !/^\d+$/.test(raw.trim())) return null;
+        return raw.trim();
+      }
+
+      /* ---- Render helpers ---- */
+      function stockHTML(p) {
+        var em = p.estoque != null && Number(p.estoque) > 0;
+        var cls = em ? 'em-estoque' : 'esgotado';
+        var label = em ? 'Em estoque' : 'Esgotado';
+        return '<span class="stock-status ' + cls + '" aria-label="' + label + '">' +
+          '<span class="dot" aria-hidden="true"></span>' + esc(label) +
+          '</span>';
+      }
+
+      function descHTML(p) {
+        var d = p.description != null ? String(p.description).trim() : '';
+        if (!d) return '<em>Sem descrição.</em>';
+        return esc(d);
+      }
+
+      /* ---- Qty stepper wiring ---- */
+      function updateQtyDisplay() {
+        var el = document.getElementById('qty-val');
+        if (el) el.textContent = qty;
+        var btnMinus = document.getElementById('qty-minus');
+        if (btnMinus) btnMinus.disabled = qty <= 1;
+        var btnPlus  = document.getElementById('qty-plus');
+        var max = produto && produto.estoque != null ? Number(produto.estoque) : Infinity;
+        if (btnPlus) btnPlus.disabled = qty >= max;
+      }
+
+      function onMinus() {
+        if (qty > 1) { qty--; updateQtyDisplay(); }
+      }
+
+      function onPlus() {
+        var max = produto && produto.estoque != null ? Number(produto.estoque) : Infinity;
+        if (qty < max) { qty++; updateQtyDisplay(); }
+      }
+
+      /* ---- Add to cart ---- */
+      function onAddToCart() {
+        if (!produto) return;
+        var esgotado = produto.estoque != null && Number(produto.estoque) <= 0;
+        if (esgotado) return;
+        var price = (produto.promotion_price != null && Number(produto.promotion_price) > 0)
+          ? Number(produto.promotion_price)
+          : Number(produto.sale_value || 0);
+        Cart.addItem({
+          id: String(produto.id),
+          name: produto.name,
+          price: price,
+          image: produto.image || null,
+          franchise: produto.franchise || ''
+        }, qty);
+        var btn = document.getElementById('btn-add');
+        if (btn) {
+          var orig = btn.innerHTML;
+          btn.innerHTML = '<i class="bi bi-check-lg" aria-hidden="true"></i> Adicionado!';
+          setTimeout(function () { btn.innerHTML = orig; }, 1200);
+        }
+      }
+
+      /* ---- Render full page ---- */
+      function renderProduto(p) {
+        var esgotado = p.estoque != null && Number(p.estoque) <= 0;
+        var addDisabled = esgotado ? ' disabled aria-disabled="true"' : '';
+        var maxEstoque = p.estoque != null ? Number(p.estoque) : 9999;
+        var fotoHTML = p.image
+          ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">'
+          : '<div class="img-ph"><span>' + esc(p.franchise || '') + '</span><small>' + esc(p.name) + '</small></div>';
+
+        var html =
+          /* Breadcrumb */
+          '<nav class="breadcrumb" aria-label="Navegação estrutural">' +
+            '<a href="/loja/">Início</a>' +
+            '<span class="sep" aria-hidden="true">›</span>' +
+            '<a href="produtos.html?franchise=' + encodeURIComponent(p.franchise || '') + '">' + esc(p.franchise || '') + '</a>' +
+            '<span class="sep" aria-hidden="true">›</span>' +
+            '<span aria-current="page">' + esc(p.name) + '</span>' +
+          '</nav>' +
+
+          /* 2-column layout */
+          '<div class="produto-layout">' +
+
+            /* LEFT: photo */
+            '<div class="produto-foto" aria-label="Imagem do produto">' +
+              fotoHTML +
+            '</div>' +
+
+            /* RIGHT: info */
+            '<div class="produto-info">' +
+
+              /* Badge + name */
+              '<span class="brand-badge">' + esc(p.franchise || '') + '</span>' +
+              '<h1 class="produto-nome">' + esc(p.name) + '</h1>' +
+
+              /* Price */
+              '<div class="produto-preco">' + precoHTML(p) + '</div>' +
+
+              /* Stock */
+              stockHTML(p) +
+
+              /* Qty stepper */
+              (esgotado ? '' :
+                '<div class="qty-row">' +
+                  '<span style="font-size:.9rem;color:var(--text-soft);font-weight:600">Quantidade:</span>' +
+                  '<div class="qty-stepper" role="group" aria-label="Selecionar quantidade">' +
+                    '<button id="qty-minus" type="button" aria-label="Diminuir quantidade" disabled>−</button>' +
+                    '<span id="qty-val" class="qty-stepper__val" aria-live="polite" aria-atomic="true">1</span>' +
+                    '<button id="qty-plus" type="button" aria-label="Aumentar quantidade"' + (maxEstoque <= 1 ? ' disabled' : '') + '>+</button>' +
+                  '</div>' +
+                '</div>'
+              ) +
+
+              /* Actions */
+              '<div class="produto-actions">' +
+                '<button id="btn-add" type="button" class="btn btn-add"' + addDisabled + '>' +
+                  '<i class="bi bi-bag-plus" aria-hidden="true"></i> ' +
+                  (esgotado ? 'Esgotado' : 'Adicionar ao carrinho') +
+                '</button>' +
+                '<button type="button" class="btn-fav" title="Favoritar (em breve)" aria-label="Favoritar — em breve">' +
+                  '<i class="bi bi-heart" aria-hidden="true"></i>' +
+                '</button>' +
+              '</div>' +
+
+              /* Description */
+              '<div class="produto-desc-section">' +
+                '<h2>Descrição</h2>' +
+                '<p class="produto-descricao">' + descHTML(p) + '</p>' +
+              '</div>' +
+
+            '</div>' + /* /.produto-info */
+          '</div>' + /* /.produto-layout */
+
+          /* Related products */
+          (p.relacionados && p.relacionados.length > 0
+            ? '<hr class="section-divider">' +
+              '<section aria-labelledby="relacionados-title">' +
+                '<h2 class="section-title" id="relacionados-title">Você também pode gostar</h2>' +
+                '<div class="product-grid" aria-label="Produtos relacionados">' +
+                  p.relacionados.map(cardHTML).join('') +
+                '</div>' +
+              '</section>'
+            : '');
+
+        var root = document.getElementById('produto-root');
+        if (root) root.innerHTML = html;
+
+        /* Wire stepper */
+        var btnMinus = document.getElementById('qty-minus');
+        var btnPlus  = document.getElementById('qty-plus');
+        var btnAdd   = document.getElementById('btn-add');
+        if (btnMinus) btnMinus.addEventListener('click', onMinus);
+        if (btnPlus)  btnPlus.addEventListener('click', onPlus);
+        if (btnAdd && !esgotado) btnAdd.addEventListener('click', onAddToCart);
+
+        updateQtyDisplay();
+
+        /* Update page title */
+        document.title = esc(p.name) + ' — Beleza Multi Marcas';
+      }
+
+      /* ---- Render 404 ---- */
+      function renderNotFound(msg) {
+        var root = document.getElementById('produto-root');
+        if (!root) return;
+        root.innerHTML =
+          '<div class="not-found-state">' +
+            '<i class="bi bi-emoji-frown" aria-hidden="true"></i>' +
+            '<h2>Produto não encontrado</h2>' +
+            '<p>' + esc(msg || 'O produto que você procura não existe ou foi removido.') + '</p>' +
+            '<a href="/loja/produtos.html" class="btn"><i class="bi bi-arrow-left" aria-hidden="true"></i> Ver todos os produtos</a>' +
+          '</div>';
+      }
+
+      /* ---- Boot ---- */
+      var id = getIdFromURL();
+
+      if (!id) {
+        renderNotFound('Nenhum produto foi especificado. Verifique o link e tente novamente.');
+      } else {
+        fetchJSON('/api/loja/produtos/' + id)
+          .then(function (p) {
+            if (!p || !p.id) {
+              renderNotFound('');
+              return;
+            }
+            produto = p;
+            renderProduto(p);
+          })
+          .catch(function (err) {
+            if (err && err.message && err.message.indexOf('404') !== -1) {
+              renderNotFound('');
+            } else {
+              renderNotFound('Ocorreu um erro ao carregar o produto. Tente novamente mais tarde.');
+            }
+          });
+      }
+
+    })();
+  </script>
+</body>
+</html>
