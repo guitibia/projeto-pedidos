@@ -133,7 +133,7 @@
     </div>
 
     <div class="store-footer__bottom">
-      <span>© 2025 Beleza Multi Marcas — Todos os direitos reservados.</span>
+      <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
       &nbsp;·&nbsp;
       <a href="privacidade.html">Privacidade</a>
       &nbsp;·&nbsp;
@@ -143,12 +143,6 @@
     </div>
   </footer>
 
-  <!-- ===== COOKIE BANNER ===== -->
-  <div class="cookie-banner" id="cookie-banner" role="region" aria-label="Aviso de cookies" aria-live="polite">
-    <p>Usamos cookies para melhorar sua experiência. Ao continuar navegando, você concorda com nossa <a href="privacidade.html">Política de Privacidade</a>.</p>
-    <button class="btn" id="cookie-ok" type="button">Entendido</button>
-  </div>
-
   <!-- ===== SCRIPTS ===== -->
   <script src="/loja/cart.js"></script>
   <script src="/loja/loja.js"></script>
@@ -156,64 +150,8 @@
     (function () {
       'use strict';
 
-      /* ---- Cookie banner ---- */
-      const banner = document.getElementById('cookie-banner');
-      const cookieBtn = document.getElementById('cookie-ok');
-      if (localStorage.getItem('cookie_ok')) banner.classList.add('is-hidden');
-      cookieBtn.addEventListener('click', function () {
-        localStorage.setItem('cookie_ok', '1');
-        banner.classList.add('is-hidden');
-      });
-
-      /* ---- Card builder ---- */
-      function cardHTML(p) {
-        const preco = (p.promotion_price != null && Number(p.promotion_price) > 0)
-          ? Number(p.promotion_price)
-          : Number(p.sale_value || 0);
-        const esgotado = (p.estoque != null && Number(p.estoque) <= 0);
-        const btnAttr = esgotado
-          ? 'disabled class="btn" aria-disabled="true"'
-          : 'class="btn" data-id="' + esc(String(p.id)) + '"';
-        const btnLabel = esgotado ? 'Esgotado' : '<i class="bi bi-bag-plus" aria-hidden="true"></i> Adicionar';
-        return (
-          '<article class="product-card">' +
-            '<div class="product-card__media">' +
-              '<a href="produto.html?id=' + esc(String(p.id)) + '" tabindex="-1" aria-hidden="true">' +
-                imgHTML(p, '') +
-              '</a>' +
-              '<span class="brand-badge">' + esc(p.franchise || '') + '</span>' +
-            '</div>' +
-            '<div class="product-card__body">' +
-              '<a href="produto.html?id=' + esc(String(p.id)) + '" class="product-card__name">' + esc(p.name) + '</a>' +
-              precoHTML(p) +
-              '<button ' + btnAttr + ' type="button"' +
-                (esgotado ? '' : ' data-name="' + esc(p.name) + '"' +
-                  ' data-price="' + esc(String(preco)) + '"' +
-                  ' data-image="' + esc(p.image || '') + '"' +
-                  ' data-franchise="' + esc(p.franchise || '') + '"') +
-              '>' + btnLabel + '</button>' +
-            '</div>' +
-          '</article>'
-        );
-      }
-
-      /* ---- Delegated "Adicionar" click ---- */
-      document.addEventListener('click', function (e) {
-        const btn = e.target.closest('[data-id]');
-        if (!btn) return;
-        Cart.addItem({
-          id: Number(btn.dataset.id),
-          name: btn.dataset.name,
-          price: Number(btn.dataset.price),
-          image: btn.dataset.image || null,
-          franchise: btn.dataset.franchise || ''
-        }, 1);
-        /* brief visual feedback */
-        btn.textContent = '✓ Adicionado';
-        setTimeout(function () {
-          btn.innerHTML = '<i class="bi bi-bag-plus" aria-hidden="true"></i> Adicionar';
-        }, 1200);
-      });
+      /* ---- Footer year ---- */
+      document.getElementById('ano').textContent = new Date().getFullYear();
 
       /* ---- Render grids ---- */
       function renderGrid(containerId, emptyId, items) {
