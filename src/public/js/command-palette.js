@@ -3,7 +3,7 @@
   if (location.pathname.endsWith('/login.html')) return;
 
   const NAV = [
-    { label: 'Dashboard',    icon: 'bi-speedometer2', url: '/' },
+    { label: 'Dashboard',    icon: 'bi-speedometer2', url: '/painel.html' },
     { label: 'Clientes',     icon: 'bi-people',       url: '/clientes.html' },
     { label: 'Produtos',     icon: 'bi-box-seam',     url: '/produtos.html' },
     { label: 'Pedidos',      icon: 'bi-bag-check',    url: '/pedidos.html' },
@@ -214,7 +214,7 @@
     else if (e.key === 'n') { window.location = '/pedidos.html'; }
     else if (e.key === 'p') { window.location = '/produtos.html'; }
     else if (e.key === 'c') { window.location = '/clientes.html'; }
-    else if (e.key === 'd') { window.location = '/'; }
+    else if (e.key === 'd') { window.location = '/painel.html'; }
     else if (e.key === 'e') { window.location = '/estoque.html'; }
   }
 

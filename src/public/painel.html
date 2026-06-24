@@ -1,0 +1,582 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Sistema de Pedidos</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Sininho */
+    .bell-btn {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1.1rem; color: var(--text-muted);
+      transition: border-color .15s, color .15s;
+      flex-shrink: 0;
+    }
+    .bell-btn:hover { border-color: rgba(88,166,255,.4); color: #58a6ff; }
+    .bell-badge {
+      position: absolute; top: -5px; right: -5px;
+      background: #f85149; color: #fff;
+      font-size: .6rem; font-weight: 700;
+      min-width: 16px; height: 16px;
+      border-radius: 8px; padding: 0 4px;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--bg-color);
+    }
+    /* Dropdown alertas */
+    .alertas-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px); right: 0;
+      width: 320px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      z-index: 9999;
+      overflow: hidden;
+    }
+    .alertas-dropdown.open { display: block; }
+    .alertas-drop-header {
+      padding: .75rem 1rem .6rem;
+      border-bottom: 1px solid var(--border-color);
+      font-size: .78rem; font-weight: 700;
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .alertas-drop-body { max-height: 320px; overflow-y: auto; padding: .4rem 0; }
+    .alerta-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .5rem 1rem; gap: .5rem;
+      transition: background .12s;
+    }
+    .alerta-item:hover { background: var(--hover-tint); }
+    .alerta-nome  { font-size: .82rem; font-weight: 500; }
+    .alerta-fr    { font-size: .7rem; color: var(--text-muted); }
+    .alerta-qtd   { font-size: .8rem; font-weight: 700; white-space: nowrap; }
+    .qtd-zero  { color: #f85149; }
+    .qtd-baixo { color: #d29922; }
+    .alertas-drop-footer {
+      padding: .6rem 1rem;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+    }
+    .alertas-drop-footer a {
+      font-size: .78rem; color: #58a6ff; text-decoration: none; font-weight: 600;
+    }
+    .alertas-drop-footer a:hover { text-decoration: underline; }
+    /* Card alertas estoque (substitui doughnut) */
+    .alerta-card-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .45rem .6rem; border-radius: 8px; gap: .5rem;
+      margin-bottom: .3rem;
+    }
+    .alerta-card-item:last-child { margin-bottom: 0; }
+    .alerta-card-zero  { background: rgba(248,81,73,.07);  border: 1px solid rgba(248,81,73,.18); }
+    .alerta-card-baixo { background: rgba(210,153,34,.07); border: 1px solid rgba(210,153,34,.2); }
+  </style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-link active" href="/painel.html"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
+    <a class="nav-link" href="/produtos.html"><i class="bi bi-box-seam"></i> Produtos</a>
+    <a class="nav-link" href="/pedidos.html"><i class="bi bi-bag-check"></i> Pedidos</a>
+    <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
+    <a class="nav-link" href="#" onclick="window.CommandPalette && CommandPalette.openHelp(); return false;"><i class="bi bi-keyboard"></i> Atalhos</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()" style="margin-bottom:.5rem"><i class="bi bi-sun"></i> Tema claro</button>
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="container-fluid py-2">
+
+    <!-- Título -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <div>
+        <h4 class="mb-0">Dashboard</h4>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:2px" id="dash-date"></div>
+      </div>
+    </div>
+
+    <!-- Linha 1: financeiro -->
+    <div class="row g-3 mb-3">
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card green" style="display:flex;flex-direction:column;gap:.5rem">
+          <div class="stat-header">
+            <div class="stat-label">Lucro Total</div>
+            <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+          </div>
+          <div class="stat-value" id="totalLucro">R$ 0,00</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2);border-radius:8px;padding:.3rem .6rem;margin-top:.1rem">
+            <span style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600">Este mês</span>
+            <span style="font-size:.85rem;font-weight:700;color:#3fb950" id="lucroMes">R$ 0,00</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card blue">
+          <div class="stat-header">
+            <div class="stat-label">Receita Total</div>
+            <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+          </div>
+          <div class="stat-value" id="totalReceita">R$ 0,00</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem">Valor de venda entregue</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card purple" style="display:flex;flex-direction:column;gap:.55rem">
+          <div class="stat-header">
+            <div class="stat-label">Desempenho</div>
+            <div class="stat-icon"><i class="bi bi-pie-chart"></i></div>
+          </div>
+          <div class="stat-value" id="margemLucro" style="color:#bc8cff">0%</div>
+          <div style="font-size:.68rem;color:var(--text-muted);margin-top:-.3rem">Margem de lucro</div>
+          <!-- Top 3 produtos -->
+          <div id="topProdutos" style="display:flex;flex-direction:column;gap:.25rem;border-top:1px solid var(--border-color);padding-top:.45rem;margin-top:.1rem"></div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card yellow">
+          <div class="stat-header">
+            <div class="stat-label">Promissórias a Pagar</div>
+            <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+          </div>
+          <div class="stat-value" id="promissoriasPendentes">R$ 0,00</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem">Em aberto</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Linha 2: operacional -->
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card gray">
+          <div class="stat-header">
+            <div class="stat-label">Total de Pedidos</div>
+            <div class="stat-icon"><i class="bi bi-bag-check"></i></div>
+          </div>
+          <div class="stat-value" id="totalPedidos">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem">Todos os status</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card orange">
+          <div class="stat-header">
+            <div class="stat-label">Pedidos Pendentes</div>
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+          </div>
+          <div class="stat-value" id="pedidosPendentes">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem">Aguardando entrega</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card teal">
+          <div class="stat-header">
+            <div class="stat-label">Clientes</div>
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
+          </div>
+          <div class="stat-value" id="totalClientes">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem">Cadastrados</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card teal">
+          <div class="stat-header">
+            <div class="stat-label">Custo de Entregas</div>
+            <div class="stat-icon"><i class="bi bi-truck"></i></div>
+          </div>
+          <div class="stat-value" id="custoEntregas">R$ 0,00</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.25rem"><span id="pedidosComTaxa">0</span> pedidos com taxa este mês</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row g-3 mb-4">
+      <div class="col-lg-8">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+              <h6 class="card-title m-0" id="salesChartTitle" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">Vendas & Lucro — Últimos 30 Dias</h6>
+              <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary active" id="range-dia" onclick="setChartRange('dia')">30 dias</button>
+                <button type="button" class="btn btn-outline-secondary" id="range-mes" onclick="setChartRange('mes')">12 meses</button>
+              </div>
+            </div>
+            <canvas id="salesChart" height="100"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column">
+            <h6 class="card-title mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">
+              <i class="bi bi-exclamation-triangle me-1" style="color:#d29922"></i>Alertas de Estoque
+            </h6>
+            <div id="alertasCardBody" style="flex:1;overflow-y:auto;max-height:280px">
+              <div style="text-align:center;padding:2rem 0;color:var(--text-muted);font-size:.82rem">
+                <i class="bi bi-hourglass-split" style="font-size:1.5rem;display:block;margin-bottom:.4rem;opacity:.4"></i>
+                Carregando...
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Promissórias próximas -->
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">
+              <i class="bi bi-receipt me-1" style="color:#d29922"></i>Promissórias a Vencer
+            </h6>
+            <div id="promProximasBody"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Últimos pedidos -->
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">Últimos Pedidos</h6>
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Cliente</th>
+                  <th>Pagamento</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="ultimosPedidosTbody">
+                <tr><td colspan="5" class="text-center text-muted py-3">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal fade" id="dashOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#1f6feb,#388bfd);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-bag-check me-2"></i>Detalhes do Pedido</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4" id="dash-order-body">
+        <div class="text-center py-3" style="color:var(--text-muted)">Carregando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center py-3 mt-4">
+  <small>&copy; <span id="footer-year"></span> Sistema de Pedidos</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/command-palette.js"></script>
+<script>
+  Auth.requireAuth();
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+  Auth.initSidebar();
+  document.getElementById('sidebarToggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('open');
+  });
+
+  const darkTick = 'var(--text-muted)';
+  const darkGrid = '#21262d';
+
+  function fmt(v) {
+    return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function esc(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // Data atual no título
+  document.getElementById('dash-date').textContent =
+    new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Gráfico de barras + linha (vendas & lucro)
+  const salesChart = new Chart(document.getElementById('salesChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Vendas',
+          data: [],
+          backgroundColor: 'rgba(88,166,255,0.25)',
+          borderColor: '#388bfd',
+          borderWidth: 1.5,
+          borderRadius: 5,
+          borderSkipped: false,
+          order: 2
+        },
+        {
+          label: 'Lucro',
+          data: [],
+          type: 'line',
+          borderColor: '#3fb950',
+          backgroundColor: 'rgba(63,185,80,0.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#3fb950',
+          pointRadius: 3,
+          tension: 0.3,
+          fill: true,
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: darkTick, boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: darkTick, font: { size: 11 } }, grid: { color: darkGrid } },
+        y: { beginAtZero: true, ticks: { color: darkTick, callback: v => 'R$' + v.toLocaleString('pt-BR') }, grid: { color: darkGrid } }
+      }
+    }
+  });
+
+  let chartData = { dia: { labels: [], vendas: [], lucro: [] }, mes: { labels: [], vendas: [], lucro: [] } };
+  let currentRange = 'dia';
+  function setChartRange(range) {
+    currentRange = range;
+    const set = chartData[range];
+    salesChart.data.labels = set.labels;
+    salesChart.data.datasets[0].data = set.vendas;
+    salesChart.data.datasets[1].data = set.lucro;
+    salesChart.update();
+    document.getElementById('salesChartTitle').textContent =
+      range === 'dia' ? 'Vendas & Lucro — Últimos 30 Dias' : 'Vendas & Lucro — Últimos 12 Meses';
+    document.getElementById('range-dia').classList.toggle('active', range === 'dia');
+    document.getElementById('range-mes').classList.toggle('active', range === 'mes');
+  }
+
+  const statusBadge = { 'Entregue': 'bg-success', 'Pendente': 'bg-warning', 'Cancelado': 'bg-danger' };
+
+  function renderAlertas(alertas) {
+    const cardBody = document.getElementById('alertasCardBody');
+
+    if (!alertas || alertas.length === 0) {
+      cardBody.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#3fb950;font-size:.82rem">
+        <i class="bi bi-check-circle-fill" style="font-size:1.6rem;display:block;margin-bottom:.4rem"></i>
+        Estoque OK — nenhum alerta
+      </div>`;
+      return;
+    }
+
+    const cardHtml = alertas.map(a => {
+      const isZero  = a.estoque <= 0;
+      const cls     = isZero ? 'qtd-zero' : 'qtd-baixo';
+      const label   = isZero ? 'Zerado' : `${a.estoque} un`;
+      const icon    = isZero ? 'bi-x-circle-fill' : 'bi-exclamation-circle-fill';
+      const cardCls = isZero ? 'alerta-card-zero' : 'alerta-card-baixo';
+      return `
+        <div class="alerta-card-item ${cardCls}">
+          <div>
+            <div style="font-size:.82rem;font-weight:500">${esc(a.name)}</div>
+            <div style="font-size:.7rem;color:var(--text-muted)">${esc(a.franchise)}</div>
+          </div>
+          <span style="font-size:.8rem;font-weight:700;white-space:nowrap" class="${cls}">
+            <i class="bi ${icon} me-1"></i>${label}
+          </span>
+        </div>`;
+    }).join('');
+
+    cardBody.innerHTML = cardHtml;
+
+    const zerados = alertas.filter(a => a.estoque <= 0).length;
+    const baixos  = alertas.filter(a => a.estoque > 0).length;
+    const resumo  = [];
+    if (zerados) resumo.push(`<span style="color:#f85149;font-weight:700">${zerados} zerado${zerados>1?'s':''}</span>`);
+    if (baixos)  resumo.push(`<span style="color:#d29922;font-weight:700">${baixos} baixo${baixos>1?'s':''}</span>`);
+    const rodape = document.createElement('div');
+    rodape.style.cssText = 'margin-top:.6rem;padding:.5rem .6rem;border-top:1px solid var(--border-color);font-size:.72rem;color:var(--text-muted);text-align:center';
+    rodape.innerHTML = resumo.join(' · ') + ` · <a href="/estoque.html" style="color:#58a6ff;text-decoration:none;font-weight:600">Gerenciar →</a>`;
+    cardBody.appendChild(rodape);
+  }
+
+  async function loadDashboard() {
+    document.getElementById('ultimosPedidosTbody').innerHTML =
+      Array.from({ length: 5 }, () => '<tr><td colspan="5"><div class="skeleton skeleton-line" style="height:24px"></div></td></tr>').join('');
+    document.getElementById('topProdutos').innerHTML =
+      Array.from({ length: 3 }, () => '<div class="skeleton skeleton-line" style="height:40px;margin:.35rem 0"></div>').join('');
+    try {
+      const res = await Auth.apiFetch('/api/dashboard');
+      if (!res) return;
+      const d = await res.json();
+
+      // Cards linha 1
+      document.getElementById('totalLucro').textContent           = fmt(d.totalLucro);
+      document.getElementById('totalReceita').textContent         = fmt(d.totalReceita);
+      document.getElementById('margemLucro').textContent = Number(d.margemLucro).toFixed(1) + '%';
+      document.getElementById('lucroMes').textContent    = fmt(d.lucroMes);
+      const rankColors = ['#f0883e','var(--text-muted)','#b45309'];
+      const rankLabels = ['1º','2º','3º'];
+      document.getElementById('topProdutos').innerHTML = d.topProdutos.length
+        ? d.topProdutos.map((p, i) => `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:.4rem;font-size:.72rem;padding:.2rem .1rem">
+              <span>
+                <span style="display:inline-block;min-width:20px;text-align:center;font-size:.65rem;font-weight:700;padding:.1rem .3rem;border-radius:4px;background:var(--hover-tint);color:${rankColors[i]};margin-right:.25rem">${rankLabels[i]}</span>
+                <span style="color:var(--text-color);font-weight:500">${esc(p.nome)}</span>
+              </span>
+              <span style="color:var(--text-muted);white-space:nowrap">${p.total} un.</span>
+            </div>`).join('')
+        : '<div style="font-size:.72rem;color:var(--text-muted)">Nenhuma venda ainda</div>';
+      document.getElementById('promissoriasPendentes').textContent = fmt(d.promissoriasPendentes);
+
+      // Cards linha 2
+      document.getElementById('totalPedidos').textContent     = d.totalPedidos;
+      document.getElementById('pedidosPendentes').textContent  = d.pedidosPendentes;
+      document.getElementById('totalClientes').textContent    = d.totalClientes;
+      document.getElementById('custoEntregas').textContent    = fmt(d.custoEntregas);
+      document.getElementById('pedidosComTaxa').textContent   = d.pedidosComTaxa;
+
+      // Gráfico vendas + lucro — guarda os dois conjuntos e aplica o range atual
+      chartData = { dia: d.vendasDiarias, mes: d.vendasMensais };
+      setChartRange(currentRange);
+
+      // Alertas de estoque
+      renderAlertas(d.alertasEstoque || []);
+
+      // Promissórias próximas
+      const promBody = document.getElementById('promProximasBody');
+      const proms = d.promProximas || [];
+      if (!proms.length) {
+        promBody.innerHTML = `<div style="text-align:center;padding:1.2rem 0;color:var(--text-muted);font-size:.82rem">
+          <i class="bi bi-check-circle" style="font-size:1.4rem;display:block;margin-bottom:.3rem;opacity:.4"></i>
+          Nenhuma promissória nos próximos 60 dias
+        </div>`;
+      } else {
+        const hoje = new Date(); hoje.setHours(0,0,0,0);
+        promBody.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5rem">` +
+          proms.map(p => {
+            const [y, m, d] = p.data_vencimento.split('-').map(Number);
+            const venc = new Date(y, m - 1, d);
+            const dias = Math.round((venc - hoje) / 86400000);
+            let cor, bg, label;
+            if (dias < 0)       { cor = '#f85149'; bg = 'rgba(248,81,73,.08)';  label = `Venceu há ${Math.abs(dias)} dia${Math.abs(dias)!==1?'s':''}`; }
+            else if (dias <= 7) { cor = '#f85149'; bg = 'rgba(248,81,73,.08)';  label = dias === 0 ? 'Vence hoje!' : `Vence em ${dias} dia${dias!==1?'s':''}`; }
+            else if (dias <= 15){ cor = '#d29922'; bg = 'rgba(210,153,34,.08)'; label = `Vence em ${dias} dias`; }
+            else                { cor = '#58a6ff'; bg = 'rgba(88,166,255,.06)'; label = `Vence em ${dias} dias`; }
+            const fornecedor = p.fornecedor || 'Outro';
+            const dtFmt = venc.toLocaleDateString('pt-BR');
+            return `<div style="background:${bg};border:1px solid ${cor}33;border-radius:10px;padding:.65rem .85rem;display:flex;flex-direction:column;gap:.2rem">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:.4rem">
+                <span style="font-size:.78rem;font-weight:700;color:${cor}">${label}</span>
+                <span style="font-size:.82rem;font-weight:700">${fmt(p.valor)}</span>
+              </div>
+              <div style="font-size:.72rem;color:var(--text-muted)">${esc(fornecedor)} · ${dtFmt}</div>
+            </div>`;
+          }).join('') + `</div>`;
+      }
+
+      // Tabela últimos pedidos
+      const tbody = document.getElementById('ultimosPedidosTbody');
+      if (!d.ultimosPedidos.length) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-rich">
+          <i class="bi bi-clipboard-data empty-rich-icon"></i>
+          <div class="empty-rich-title">Sem dados ainda</div>
+          <div class="empty-rich-sub">Os pedidos e indicadores aparecem aqui assim que houver movimento.</div></div></td></tr>`;
+      } else {
+        tbody.innerHTML = d.ultimosPedidos.map(p => `
+          <tr style="cursor:pointer" onclick="viewDashOrder(${p.id})">
+            <td style="color:var(--text-muted);font-size:.82rem">#${p.id}</td>
+            <td class="td-client">${esc(p.client_name)}</td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${esc(p.payment_method)}</td>
+            <td style="font-size:.85rem;font-weight:600;color:var(--accent)">${fmt(p.total_cost)}</td>
+            <td><span class="badge ${statusBadge[p.status] || 'bg-secondary'}">${esc(p.status)}</span></td>
+          </tr>`).join('');
+      }
+    } catch (err) {
+      console.error('Erro ao carregar dashboard:', err);
+    }
+  }
+
+  const dashOrderModal = new bootstrap.Modal(document.getElementById('dashOrderModal'));
+
+  async function viewDashOrder(id) {
+    document.getElementById('dash-order-body').innerHTML =
+      '<div class="text-center py-3" style="color:var(--text-muted)">Carregando...</div>';
+    dashOrderModal.show();
+    try {
+      const res   = await Auth.apiFetch(`/api/orders/${id}`);
+      const order = await res.json();
+      const rows  = order.products.map(p =>
+        `<tr><td>${esc(p.product_name)}</td><td>${p.quantity}</td><td>${fmt(p.sale_price * p.quantity)}</td></tr>`
+      ).join('');
+      const taxaHtml = order.delivery_fee > 0
+        ? `<div style="color:var(--text-muted)">Taxa de entrega: ${fmt(order.delivery_fee)}</div>`
+        : '';
+      document.getElementById('dash-order-body').innerHTML =
+        `<div style="margin-bottom:1rem">
+          <strong>${esc(order.client_name)}</strong>
+          <span style="margin-left:.75rem;font-size:.8rem;color:var(--text-muted)">${esc(order.payment_method)}</span>
+        </div>
+        <table class="table table-sm" style="font-size:.85rem">
+          <thead><tr><th>Produto</th><th>Qtd</th><th>Valor</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div style="text-align:right;font-size:.9rem">
+          ${taxaHtml}
+          <strong>Total: ${fmt(order.total_cost)}</strong>
+        </div>`;
+    } catch {
+      document.getElementById('dash-order-body').innerHTML =
+        '<div class="text-center py-3" style="color:#f85149">Erro ao carregar pedido.</div>';
+    }
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>
