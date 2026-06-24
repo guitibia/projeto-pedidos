@@ -7,6 +7,10 @@ const app = express();
 
 // ── Middlewares globais ───────────────────────────────────────────────────────
 app.use(express.json());
+
+// Raiz pública → loja (o cliente cai direto na vitrine)
+app.get('/', (req, res) => res.redirect('/loja/'));
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Rate limiting — 120 req/min por IP nas rotas de API
