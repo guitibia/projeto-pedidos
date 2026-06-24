@@ -59,6 +59,10 @@ pool.getConnection()
     // Migração: valor de venda (base para cálculo de custo por desconto de franquia)
     try { await conn.query('ALTER TABLE products ADD COLUMN sale_value DECIMAL(10,2) DEFAULT NULL'); } catch (_) {}
 
+    // Migração: foto e descrição de produto (para a loja)
+    try { await conn.query('ALTER TABLE products ADD COLUMN image VARCHAR(255) DEFAULT NULL'); } catch (_) {}
+    try { await conn.query('ALTER TABLE products ADD COLUMN description TEXT DEFAULT NULL'); } catch (_) {}
+
     // Migração: tabela de percentuais de desconto por franquia
     try {
       await conn.query(`
