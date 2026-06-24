@@ -1,0 +1,10 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Beleza Multi Marcas">
+  <g fill="none" stroke="#B76E79" stroke-width="2.1" stroke-linejoin="round">
+    <ellipse cx="32" cy="18" rx="6.4" ry="11"/>
+    <ellipse cx="32" cy="18" rx="6.4" ry="11" transform="rotate(72 32 32)"/>
+    <ellipse cx="32" cy="18" rx="6.4" ry="11" transform="rotate(144 32 32)"/>
+    <ellipse cx="32" cy="18" rx="6.4" ry="11" transform="rotate(216 32 32)"/>
+    <ellipse cx="32" cy="18" rx="6.4" ry="11" transform="rotate(288 32 32)"/>
+  </g>
+  <circle cx="32" cy="32" r="3.6" fill="#B76E79"/>
+</svg>

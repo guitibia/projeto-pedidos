@@ -12,7 +12,10 @@
 
 - Branch de trabalho: `Teste` — nunca commitar direto na `main`
 - Loja isolada do admin: páginas em `src/public/loja/`, API em `/api/loja/*` **sem** o middleware `auth`
-- Paleta Clean Boutique: `--bg:#FAF8F6`, `--surface:#FFFFFF`, `--text:#2B2B2B`, `--text-soft:#6B6B6B`, `--accent:#B76E79`, `--accent-soft:#E7D5CE`, `--border:#EADFD9`; fonte Nunito Sans
+- Paleta Clean Boutique: `--bg:#FAF8F6`, `--surface:#FFFFFF`, `--text:#2B2B2B`, `--text-soft:#6B6B6B`, `--accent:#B76E79`, `--accent-soft:#E7D5CE`, `--border:#EADFD9`; corpo em **Nunito Sans**, títulos/wordmark em **Cormorant Garamond** (serif)
+- **Nome da loja: "Beleza Multi Marcas"** (usar exatamente assim em header, `<title>`, footer)
+- **Logo:** emblema vetorial já criado em `/loja/emblem.svg` (flor line-art rosé). O logo do header/footer = `<img src="/loja/emblem.svg">` + wordmark: "Beleza" em Cormorant Garamond + "Multi Marcas" em caixa-alta pequena com letter-spacing. Já existe um placeholder em `loja/index.html` que será **substituído** pela home real (Task 5)
+- `/` (raiz) já redireciona para `/loja/` (cliente cai direto na vitrine); admin via `/login.html`; manter o link discreto "Área administrativa" no footer da loja
 - Preço de venda = `sale_value`; promoção = `promotion_price` (quando não nulo, risca o `sale_value`)
 - Imagens enviadas em `src/public/uploads/products/`, **ignoradas no git**; caminho relativo em `products.image`
 - `esc()`/escape de HTML em qualquer dado do banco renderizado
@@ -307,7 +310,7 @@ git commit -m "feat(loja): API pública /api/loja (produtos, produto, franquias)
 
 Criar `src/public/loja/loja.css` com:
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Nunito+Sans:wght@300;400;600;700;800&display=swap');
 :root{
   --bg:#FAF8F6; --surface:#FFFFFF; --text:#2B2B2B; --text-soft:#6B6B6B;
   --accent:#B76E79; --accent-dark:#9d5b66; --accent-soft:#E7D5CE; --border:#EADFD9;
@@ -405,7 +408,7 @@ git commit -m "feat(loja): assets base — loja.css (Clean Boutique), cart.js, l
 - [ ] **Step 1: Estrutura da home**
 
 Criar `src/public/loja/index.html` com `<head>` linkando `loja.css`, Nunito Sans, e no fim do body `cart.js` + `loja.js`. Seções (na ordem):
-1. **Header** (`.store-header`): logo "Beleza & Cia" (texto), barra de busca (`.store-search`, form → `produtos.html?q=`), ícones ♡ (favoritos — placeholder), 👤 (conta — link para `#`, "em breve"), 🛒 com `<span id="cart-count" class="cart-count">` (link → `carrinho.html`). Header fixo no topo, responsivo (busca colapsa em ícone no mobile).
+1. **Header** (`.store-header`): logo = `<a href="/loja/">` com `<img src="/loja/emblem.svg">` + wordmark "Beleza" (Cormorant) e "Multi Marcas" (caixa-alta pequena); barra de busca (`.store-search`, form → `produtos.html?q=`), ícones ♡ (favoritos — placeholder), 👤 (conta — link para `#`, "em breve"), 🛒 com `<span id="cart-count" class="cart-count">` (link → `carrinho.html`). Header fixo no topo, responsivo (busca colapsa em ícone no mobile).
 2. **Hero** (`.hero`): título "Beleza para o seu dia", subtítulo, botão "Comprar agora" → `produtos.html`. Fundo em gradiente `--accent-soft`.
 3. **Compre por marca**: `.section-title` + linha de `.brand-chip` gerados de `/api/loja/franquias` (cada um → `produtos.html?franchise=<marca>`).
 4. **Ofertas**: `.section-title` "Ofertas" + `.product-grid` com produtos que têm `promotion_price` (filtrar client-side do `/api/loja/produtos`); máx 8.
