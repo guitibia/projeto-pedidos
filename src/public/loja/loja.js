@@ -12,6 +12,6 @@ function imgHTML(p, cls=''){
     ? `<img class="${cls}" src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`
     : `<div class="img-ph ${cls}"><span>${esc(p.franchise||'')}</span><small>${esc(p.name)}</small></div>`;
 }
-function syncCartCount(){ const el=document.getElementById('cart-count'); if(el){ const n=Cart.getCount(); el.textContent=n; el.style.display=n?'flex':'none'; } }
+function syncCartCount(){ if (typeof Cart === 'undefined') return; const el=document.getElementById('cart-count'); if(el){ const n=Cart.getCount(); el.textContent=n; el.style.display=n?'flex':'none'; } }
 document.addEventListener('DOMContentLoaded', syncCartCount);
 document.addEventListener('cart:changed', syncCartCount);
