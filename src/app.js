@@ -33,6 +33,9 @@ const loginLimiter = rateLimit({
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', loginLimiter, authRoutes);
 
+const lojaRoutes = require('./routes/loja');
+app.use('/api/loja', apiLimiter, lojaRoutes);
+
 // ── Rotas protegidas por JWT ──────────────────────────────────────────────────
 const auth = require('./middleware/auth');
 const clientRoutes = require('./routes/clients');
