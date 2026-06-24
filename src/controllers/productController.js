@@ -194,8 +194,9 @@ function setProductImage(req, res) {
       const [[old]] = await db.query('SELECT image FROM products WHERE id = ?', [id]);
       await db.query('UPDATE products SET image = ? WHERE id = ?', [rel, id]);
       if (old && old.image) {
-        const oldPath = path.join(__dirname, '..', 'public', old.image);
-        fs.unlink(oldPath, () => {});
+        const oldAbs = path.resolve(__dirname, '..', 'public', '.' + old.image);
+        const uploadAbs = path.resolve(UPLOAD_DIR);
+        if (oldAbs.startsWith(uploadAbs + path.sep)) fs.unlink(oldAbs, () => {});
       }
       return res.json({ message: 'Imagem atualizada.', image: rel });
     } catch (e) {
