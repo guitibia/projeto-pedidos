@@ -23,8 +23,8 @@ async function listProdutos(req, res) {
 }
 
 async function getProduto(req, res) {
-  const id = parseInt(req.params.id);
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ error: 'ID inválido.' });
+  const id = parseInt(req.params.id, 10);
   try {
     const [[p]] = await db.query(
       'SELECT id, name, franchise, code, sale_value, promotion_price, image, description, estoque FROM products WHERE id = ?', [id]);
