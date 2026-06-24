@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produtos — Beleza Multi Marcas</title>
+  <meta name="description" content="Todos os produtos de cosméticos e beleza das melhores marcas.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/loja/loja.css">
+  <style>
+    /* ---- Filter bar ---- */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .7rem;
+      margin: 1.4rem 0 1rem;
+    }
+    .filter-search {
+      flex: 1;
+      min-width: 180px;
+      max-width: 320px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .filter-search i {
+      position: absolute;
+      left: .9rem;
+      color: var(--text-soft);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    .filter-search input {
+      width: 100%;
+      height: 40px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 999px;
+      padding: 0 1rem 0 2.4rem;
+      font: inherit;
+      font-size: .9rem;
+      color: var(--text);
+      transition: border-color .18s, box-shadow .18s;
+    }
+    .filter-search input:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .filter-sort select {
+      height: 40px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 999px;
+      padding: 0 1.2rem;
+      font: inherit;
+      font-size: .9rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color .18s;
+    }
+    .filter-sort select:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-color: var(--accent);
+    }
+
+    /* ---- Chips row ---- */
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-bottom: 1.2rem;
+    }
+
+    /* ---- Page title row ---- */
+    .page-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: .9rem;
+      margin: 2rem 0 .2rem;
+    }
+    .page-title-row h1 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 600;
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
+      color: var(--text);
+      margin: 0;
+    }
+    .results-count {
+      font-size: .9rem;
+      color: var(--text-soft);
+      white-space: nowrap;
+    }
+
+    /* ---- Skeleton ---- */
+    .skeleton-grid {
+      display: grid;
+      gap: 1.4rem;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      margin: 1rem 0 2rem;
+    }
+    .skeleton-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .skeleton-card__media {
+      aspect-ratio: 1/1;
+      background: linear-gradient(90deg, var(--border) 25%, var(--accent-soft) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.3s infinite;
+    }
+    .skeleton-card__body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+    }
+    .skeleton-line {
+      height: .8rem;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--border) 25%, var(--accent-soft) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.3s infinite;
+    }
+    .skeleton-line--short { width: 55%; }
+    .skeleton-line--btn { height: 2.2rem; border-radius: 999px; margin-top: .4rem; }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ---- Empty state ---- */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .7rem;
+      padding: 4rem 1rem;
+      color: var(--text-soft);
+      text-align: center;
+    }
+    .empty-state i {
+      font-size: 2.8rem;
+      opacity: .45;
+    }
+    .empty-state p {
+      font-size: 1.05rem;
+      margin: 0;
+    }
+    .empty-state small {
+      font-size: .88rem;
+    }
+
+    @media (max-width: 768px) {
+      .skeleton-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+      .filter-search { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="store-header" role="banner">
+    <div class="store-header__inner">
+      <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas — página inicial">
+        <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+        <div class="logo__text">
+          <span class="logo__word">Beleza</span>
+          <span class="logo__sub">Multi Marcas</span>
+        </div>
+      </a>
+
+      <form class="store-search" role="search" action="produtos.html" method="get">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Buscar produtos, marcas…" aria-label="Buscar produtos">
+      </form>
+
+      <nav class="store-header__nav" aria-label="Ações do usuário">
+        <a href="#" title="Favoritos (em breve)" aria-label="Favoritos — em breve">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+        </a>
+        <a href="#" title="Minha conta (em breve)" aria-label="Minha conta — em breve">
+          <i class="bi bi-person" aria-hidden="true"></i>
+        </a>
+        <a href="carrinho.html" title="Carrinho de compras" aria-label="Carrinho de compras" style="position:relative">
+          <i class="bi bi-bag" aria-hidden="true"></i>
+          <span id="cart-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+    <div class="container">
+
+      <!-- Page title + count -->
+      <div class="page-title-row">
+        <h1 id="page-title">Todos os Produtos</h1>
+        <span id="results-count" class="results-count" aria-live="polite" aria-atomic="true"></span>
+      </div>
+
+      <!-- Filter bar: search + sort -->
+      <div class="filter-bar" role="search" aria-label="Filtros e ordenação">
+        <div class="filter-search">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input type="search" id="search-input" placeholder="Buscar produto…" aria-label="Buscar produto">
+        </div>
+        <div class="filter-sort">
+          <label for="sort-select" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">Ordenar por</label>
+          <select id="sort-select" aria-label="Ordenar por">
+            <option value="recentes">Recentes</option>
+            <option value="preco_asc">Menor preço</option>
+            <option value="preco_desc">Maior preço</option>
+            <option value="nome">Nome</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Brand chips -->
+      <div id="chips-row" class="chips-row" role="list" aria-label="Filtrar por marca">
+        <!-- injected by JS -->
+      </div>
+
+      <!-- Product grid -->
+      <div id="product-grid-wrap" aria-live="polite">
+        <!-- skeleton shown while loading -->
+        <div id="skeleton" class="skeleton-grid" aria-hidden="true">
+          <div class="skeleton-card"><div class="skeleton-card__media"></div><div class="skeleton-card__body"><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div><div class="skeleton-line skeleton-line--btn"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton-card__media"></div><div class="skeleton-card__body"><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div><div class="skeleton-line skeleton-line--btn"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton-card__media"></div><div class="skeleton-card__body"><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div><div class="skeleton-line skeleton-line--btn"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton-card__media"></div><div class="skeleton-card__body"><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div><div class="skeleton-line skeleton-line--btn"></div></div></div>
+        </div>
+        <div id="product-grid" class="product-grid" style="display:none" aria-label="Lista de produtos"></div>
+        <div id="empty-state" class="empty-state" style="display:none" role="status">
+          <i class="bi bi-bag-x" aria-hidden="true"></i>
+          <p>Nenhum produto encontrado.</p>
+          <small>Tente outros filtros ou termos de busca.</small>
+        </div>
+      </div>
+
+    </div><!-- /.container -->
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="store-footer" role="contentinfo">
+    <div class="store-footer__inner">
+      <!-- Brand -->
+      <div>
+        <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas">
+          <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+          <div class="logo__text">
+            <span class="logo__word">Beleza</span>
+            <span class="logo__sub">Multi Marcas</span>
+          </div>
+        </a>
+        <p style="margin:.8rem 0 0;font-size:.85rem;max-width:22ch">Cosméticos e beleza das melhores marcas, reunidos para você.</p>
+      </div>
+
+      <div class="store-footer__cols">
+        <!-- Navegação -->
+        <div>
+          <h4>Navegação</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="/loja/">Início</a></li>
+            <li><a href="produtos.html">Todos os Produtos</a></li>
+            <li><a href="carrinho.html">Carrinho</a></li>
+          </ul>
+        </div>
+
+        <!-- Informações -->
+        <div>
+          <h4>Informações</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="privacidade.html">Política de Privacidade</a></li>
+            <li><a href="mailto:contato@belezamultimarcas.com.br">Contato</a></li>
+          </ul>
+        </div>
+
+        <!-- Redes sociais -->
+        <div>
+          <h4>Redes Sociais</h4>
+          <div style="display:flex;gap:.6rem;margin-top:.2rem">
+            <a href="#" aria-label="Instagram" title="Instagram" class="icon-btn"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+            <a href="#" aria-label="Facebook" title="Facebook" class="icon-btn"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+            <a href="#" aria-label="WhatsApp" title="WhatsApp" class="icon-btn"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="store-footer__bottom">
+      <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
+      &nbsp;·&nbsp;
+      <a href="privacidade.html">Privacidade</a>
+      &nbsp;·&nbsp;
+      <a href="/login.html" style="color:var(--text-soft);opacity:.55;font-size:.78rem" aria-label="Área administrativa">
+        <i class="bi bi-lock" aria-hidden="true"></i> Admin
+      </a>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="/loja/cart.js"></script>
+  <script src="/loja/loja.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      /* ---- Footer year ---- */
+      document.getElementById('ano').textContent = new Date().getFullYear();
+
+      /* ---- State ---- */
+      var state = { franchise: '', q: '', sort: 'recentes' };
+
+      /* ---- Read initial state from URL ---- */
+      (function readURL() {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('franchise')) state.franchise = params.get('franchise');
+        if (params.get('q'))         state.q         = params.get('q');
+        if (params.get('sort'))      state.sort      = params.get('sort');
+      })();
+
+      /* ---- Apply initial state to UI ---- */
+      var searchInput = document.getElementById('search-input');
+      var sortSelect  = document.getElementById('sort-select');
+      if (searchInput) searchInput.value = state.q;
+      if (sortSelect)  sortSelect.value  = state.sort;
+
+      /* ---- Fetch helpers ---- */
+      function fetchJSON(url) {
+        return fetch(url).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        });
+      }
+
+      /* ---- Update URL (replaceState) ---- */
+      function pushState() {
+        var p = new URLSearchParams();
+        if (state.franchise) p.set('franchise', state.franchise);
+        if (state.q)         p.set('q',         state.q);
+        if (state.sort && state.sort !== 'recentes') p.set('sort', state.sort);
+        var qs = p.toString();
+        history.replaceState(null, '', qs ? ('?' + qs) : window.location.pathname);
+      }
+
+      /* ---- Page title ---- */
+      function updateTitle() {
+        var titleEl = document.getElementById('page-title');
+        if (!titleEl) return;
+        if (state.franchise) {
+          titleEl.textContent = state.franchise;
+        } else if (state.q) {
+          titleEl.textContent = 'Busca: ' + state.q;
+        } else {
+          titleEl.textContent = 'Todos os Produtos';
+        }
+      }
+
+      /* ---- Show/hide loading skeleton ---- */
+      function showSkeleton(on) {
+        var sk = document.getElementById('skeleton');
+        var gr = document.getElementById('product-grid');
+        var em = document.getElementById('empty-state');
+        if (on) {
+          if (sk) { sk.style.display = ''; sk.removeAttribute('aria-hidden'); }
+          if (gr) gr.style.display = 'none';
+          if (em) em.style.display = 'none';
+        } else {
+          if (sk) { sk.style.display = 'none'; sk.setAttribute('aria-hidden', 'true'); }
+        }
+      }
+
+      /* ---- Render products ---- */
+      function renderProducts(items) {
+        var grid  = document.getElementById('product-grid');
+        var empty = document.getElementById('empty-state');
+        var count = document.getElementById('results-count');
+
+        if (!grid) return;
+
+        if (!items || items.length === 0) {
+          grid.style.display = 'none';
+          grid.innerHTML = '';
+          if (empty) empty.style.display = '';
+          if (count) count.textContent = '0 produtos';
+          return;
+        }
+
+        grid.innerHTML = items.map(cardHTML).join('');
+        grid.style.display = '';
+        if (empty) empty.style.display = 'none';
+        if (count) count.textContent = items.length + (items.length === 1 ? ' produto' : ' produtos');
+      }
+
+      /* ---- Fetch & render products ---- */
+      function loadProducts() {
+        showSkeleton(true);
+        updateTitle();
+        pushState();
+
+        var params = new URLSearchParams();
+        if (state.franchise) params.set('franchise', state.franchise);
+        if (state.q)         params.set('q',         state.q);
+        if (state.sort)      params.set('sort',      state.sort);
+
+        fetchJSON('/api/loja/produtos?' + params.toString())
+          .then(function (data) {
+            showSkeleton(false);
+            renderProducts(data);
+          })
+          .catch(function (err) {
+            console.warn('[produtos] load error:', err);
+            showSkeleton(false);
+            renderProducts([]);
+          });
+      }
+
+      /* ---- Render brand chips ---- */
+      function renderChips(franquias) {
+        var row = document.getElementById('chips-row');
+        if (!row) return;
+
+        var chips = ['<a href="#" class="brand-chip' + (state.franchise === '' ? ' is-active' : '') +
+          '" data-franchise="" role="listitem" aria-pressed="' + (state.franchise === '' ? 'true' : 'false') + '">' +
+          '<i class="bi bi-grid" aria-hidden="true"></i>Todas</a>'];
+
+        franquias.forEach(function (f) {
+          var nome = typeof f === 'string' ? f : (f.franchise || f.name || '');
+          var active = (state.franchise === nome);
+          chips.push(
+            '<a href="#" class="brand-chip' + (active ? ' is-active' : '') +
+            '" data-franchise="' + esc(nome) + '" role="listitem" aria-pressed="' + active + '">' +
+            '<i class="bi bi-stars" aria-hidden="true"></i>' + esc(nome) + '</a>'
+          );
+        });
+
+        row.innerHTML = chips.join('');
+
+        /* Chip click handler */
+        row.addEventListener('click', function (e) {
+          var chip = e.target.closest('[data-franchise]');
+          if (!chip) return;
+          e.preventDefault();
+          state.franchise = chip.dataset.franchise;
+
+          /* Update active states */
+          row.querySelectorAll('.brand-chip').forEach(function (c) {
+            var active = (c.dataset.franchise === state.franchise);
+            c.classList.toggle('is-active', active);
+            c.setAttribute('aria-pressed', String(active));
+          });
+
+          loadProducts();
+        });
+      }
+
+      /* ---- Fetch brand chips ---- */
+      fetchJSON('/api/loja/franquias')
+        .then(function (data) { renderChips(data); })
+        .catch(function (err) {
+          console.warn('[produtos] franquias:', err);
+          var row = document.getElementById('chips-row');
+          if (row) row.innerHTML = '';
+        });
+
+      /* ---- Search input (debounced) ---- */
+      var searchTimer = null;
+      if (searchInput) {
+        searchInput.addEventListener('input', function () {
+          clearTimeout(searchTimer);
+          searchTimer = setTimeout(function () {
+            state.q = searchInput.value.trim();
+            loadProducts();
+          }, 350);
+        });
+      }
+
+      /* ---- Sort select ---- */
+      if (sortSelect) {
+        sortSelect.addEventListener('change', function () {
+          state.sort = sortSelect.value;
+          loadProducts();
+        });
+      }
+
+      /* ---- Initial load ---- */
+      loadProducts();
+
+    })();
+  </script>
+</body>
+</html>
