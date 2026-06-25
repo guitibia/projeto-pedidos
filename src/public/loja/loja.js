@@ -79,3 +79,19 @@ function lojaAddToCart(btn) {
     };
   });
 })();
+
+// ── Sincroniza o link de conta no header conforme estado de login ──
+function syncAccountLink() {
+  var el = document.getElementById('account-link');
+  if (!el) return;
+  var logged = false;
+  try { logged = !!localStorage.getItem('loja_token'); } catch (e) {}
+  el.setAttribute('href', logged ? '/loja/conta.html' : '/loja/entrar.html');
+  el.setAttribute('title', logged ? 'Minha conta' : 'Entrar ou cadastrar');
+  el.setAttribute('aria-label', logged ? 'Minha conta' : 'Entrar ou cadastrar');
+}
+function lojaLogout() {
+  try { localStorage.removeItem('loja_token'); localStorage.removeItem('loja_user'); } catch (e) {}
+  window.location = '/loja/';
+}
+document.addEventListener('DOMContentLoaded', syncAccountLink);
