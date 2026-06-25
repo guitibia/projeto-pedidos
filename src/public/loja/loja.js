@@ -69,8 +69,8 @@ function lojaAddToCart(btn) {
     b.className = 'cookie-banner';
     b.setAttribute('role', 'region');
     b.setAttribute('aria-label', 'Aviso de cookies');
-    b.innerHTML = '<span>Usamos cookies para melhorar sua experiência. Veja nossa ' +
-      '<a href="/loja/privacidade.html">Política de Privacidade</a>.</span>' +
+    b.innerHTML = '<p>Usamos cookies para melhorar sua experiência. Veja nossa ' +
+      '<a href="/loja/privacidade.html">Política de Privacidade</a>.</p>' +
       '<button class="btn accent-btn" id="cookie-ok" type="button">Aceitar</button>';
     document.body.appendChild(b);
     document.getElementById('cookie-ok').onclick = function () {

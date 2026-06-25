@@ -3,10 +3,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads', 'products');
+const MIME_EXT = { 'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => {
-    const ext = (path.extname(file.originalname) || '.jpg').toLowerCase();
+    // extensão derivada do mimetype VALIDADO (nunca do nome do arquivo do cliente)
+    const ext = MIME_EXT[file.mimetype] || '.jpg';
     cb(null, `p${req.params.id}_${Date.now()}${ext}`);
   }
 });

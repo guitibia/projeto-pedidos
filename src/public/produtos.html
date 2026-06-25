@@ -908,7 +908,7 @@
     document.getElementById('edit-description').value = p.description ?? '';
     document.getElementById('edit-image').value = '';
     document.getElementById('edit-image-preview').innerHTML = p.image
-      ? `<img src="${p.image}" style="height:70px;border-radius:8px">`
+      ? `<img src="${esc(p.image)}" style="height:70px;border-radius:8px">`
       : '';
     refreshEditCostPreview();
     editModal.show();
