@@ -63,6 +63,20 @@ pool.getConnection()
     try { await conn.query('ALTER TABLE products ADD COLUMN image VARCHAR(255) DEFAULT NULL'); } catch (_) {}
     try { await conn.query('ALTER TABLE products ADD COLUMN description TEXT DEFAULT NULL'); } catch (_) {}
 
+    // Migração: contas de cliente da loja
+    for (const sql of [
+      'ALTER TABLE clients ADD COLUMN email VARCHAR(255) DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN cpf VARCHAR(11) DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN birthdate DATE DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN password_hash VARCHAR(255) DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN email_verified TINYINT(1) NOT NULL DEFAULT 0',
+      'ALTER TABLE clients ADD COLUMN verification_token VARCHAR(64) DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN verification_expires DATETIME DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN lgpd_consent_at DATETIME DEFAULT NULL',
+      'CREATE UNIQUE INDEX uq_clients_email ON clients(email)',
+      'CREATE UNIQUE INDEX uq_clients_cpf ON clients(cpf)',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Migração: tabela de percentuais de desconto por franquia
     try {
       await conn.query(`
