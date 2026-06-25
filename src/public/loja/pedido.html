@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalhe do Pedido — Beleza Multi Marcas</title>
+  <meta name="description" content="Detalhes do seu pedido na Beleza Multi Marcas.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/loja/loja.css">
+  <style>
+    .pedido-wrap { max-width: 760px; margin: 2rem auto 3.5rem; padding: 0 20px; }
+
+    /* Breadcrumb / voltar */
+    .back-link { display: inline-flex; align-items: center; gap: .4rem; color: var(--text-soft); font-size: .9rem; margin-bottom: 1.6rem; transition: color .18s; }
+    .back-link:hover { color: var(--accent-dark); }
+
+    /* Header do pedido */
+    .pedido-header { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem 1.6rem; margin-bottom: 1.2rem; box-shadow: 0 2px 12px rgba(60,40,35,.06); }
+    .pedido-header__top { display: flex; align-items: flex-start; flex-wrap: wrap; gap: .7rem 1.4rem; margin-bottom: 1rem; }
+    .pedido-header__id { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 1.55rem; color: var(--text); margin: 0; }
+    .pedido-header__meta { display: flex; flex-wrap: wrap; gap: .4rem .9rem; color: var(--text-soft); font-size: .9rem; align-items: center; }
+
+    /* Status badges */
+    .badge { display: inline-flex; align-items: center; gap: .3rem; padding: .25rem .75rem; border-radius: 999px; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+    .badge--pendente  { background: #fff8e1; color: #b07d00; border: 1px solid #ffe082; }
+    .badge--entregue  { background: #edf7f1; color: var(--success); border: 1px solid #b7e2c8; }
+    .badge--cancelado { background: #fdf0ef; color: var(--danger); border: 1px solid #f5c6c3; }
+
+    /* Seção genérica */
+    .pedido-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.4rem 1.6rem; margin-bottom: 1.2rem; box-shadow: 0 2px 12px rgba(60,40,35,.06); }
+    .pedido-section h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 1.3rem; margin: 0 0 1.2rem; color: var(--text); display: flex; align-items: center; gap: .5rem; }
+
+    /* Tabela de itens */
+    .itens-table { width: 100%; border-collapse: collapse; font-size: .93rem; }
+    .itens-table th { text-align: left; font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-soft); border-bottom: 1px solid var(--border); padding: .5rem .4rem; }
+    .itens-table td { padding: .75rem .4rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .itens-table tr:last-child td { border-bottom: none; }
+    .itens-table .col-produto { font-weight: 700; color: var(--text); }
+    .itens-table .col-franquia { font-size: .8rem; color: var(--text-soft); text-transform: uppercase; letter-spacing: .05em; }
+    .itens-table .col-num { text-align: right; white-space: nowrap; }
+
+    /* Totais */
+    .totais-row { display: flex; justify-content: space-between; align-items: center; padding: .55rem 0; font-size: .95rem; border-bottom: 1px solid var(--border); }
+    .totais-row:last-child { border-bottom: none; }
+    .totais-row--total { font-weight: 800; font-size: 1.08rem; color: var(--text); margin-top: .2rem; }
+    .totais-row .label { color: var(--text-soft); }
+    .totais-row--total .label { color: var(--text); }
+    .frete-gratis { color: var(--success); font-weight: 700; }
+
+    /* Endereço */
+    .address-block { color: var(--text); font-size: .95rem; line-height: 1.65; }
+
+    /* Not-found state */
+    .not-found { text-align: center; padding: 3.5rem 1rem; color: var(--text-soft); }
+    .not-found i { font-size: 3.2rem; color: var(--border); display: block; margin-bottom: 1rem; }
+    .not-found p { font-size: 1.05rem; margin: 0 0 1.4rem; }
+
+    /* Loading */
+    .skeleton-block { background: var(--border); border-radius: var(--radius); animation: pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+    @media (max-width: 560px) {
+      .itens-table th:nth-child(3),
+      .itens-table td:nth-child(3) { display: none; }
+      .pedido-section { padding: 1.1rem 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="store-header" role="banner">
+    <div class="store-header__inner">
+      <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas — página inicial">
+        <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+        <div class="logo__text">
+          <span class="logo__word">Beleza</span>
+          <span class="logo__sub">Multi Marcas</span>
+        </div>
+      </a>
+
+      <form class="store-search" role="search" action="produtos.html" method="get">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Buscar produtos, marcas…" aria-label="Buscar produtos">
+      </form>
+
+      <nav class="store-header__nav" aria-label="Ações do usuário">
+        <a href="#" title="Favoritos (em breve)" aria-label="Favoritos — em breve">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+        </a>
+        <a id="account-link" href="/loja/entrar.html" title="Entrar ou cadastrar" aria-label="Entrar ou cadastrar">
+          <i class="bi bi-person" aria-hidden="true"></i>
+        </a>
+        <a href="carrinho.html" title="Carrinho de compras" aria-label="Carrinho de compras" style="position:relative">
+          <i class="bi bi-bag" aria-hidden="true"></i>
+          <span id="cart-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+    <div class="pedido-wrap">
+
+      <a href="meus-pedidos.html" class="back-link">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar para Meus pedidos
+      </a>
+
+      <!-- Estado de carregamento -->
+      <div id="loading-state" aria-live="polite" aria-label="Carregando pedido">
+        <div class="skeleton-block" style="height:110px;margin-bottom:1.2rem"></div>
+        <div class="skeleton-block" style="height:200px;margin-bottom:1.2rem"></div>
+        <div class="skeleton-block" style="height:100px"></div>
+      </div>
+
+      <!-- Conteúdo do pedido -->
+      <div id="pedido-content" style="display:none"></div>
+
+      <!-- Pedido não encontrado -->
+      <div id="not-found-state" style="display:none">
+        <div class="not-found">
+          <i class="bi bi-bag-x" aria-hidden="true"></i>
+          <p>Pedido não encontrado.</p>
+          <a href="meus-pedidos.html" class="btn">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            Voltar para Meus pedidos
+          </a>
+        </div>
+      </div>
+
+      <!-- Erro genérico -->
+      <div id="error-state" style="display:none;text-align:center;padding:2rem 1rem;color:var(--danger)" role="alert"></div>
+
+    </div><!-- /.pedido-wrap -->
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="store-footer" role="contentinfo">
+    <div class="store-footer__inner">
+      <div>
+        <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas">
+          <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+          <div class="logo__text">
+            <span class="logo__word">Beleza</span>
+            <span class="logo__sub">Multi Marcas</span>
+          </div>
+        </a>
+        <p style="margin:.8rem 0 0;font-size:.85rem;max-width:22ch">Cosméticos e beleza das melhores marcas, reunidos para você.</p>
+      </div>
+
+      <div class="store-footer__cols">
+        <div>
+          <h4>Navegação</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="/loja/">Início</a></li>
+            <li><a href="produtos.html">Todos os Produtos</a></li>
+            <li><a href="carrinho.html">Carrinho</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Informações</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="privacidade.html">Política de Privacidade</a></li>
+            <li><a href="mailto:contato@belezamultimarcas.com.br">Contato</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Redes Sociais</h4>
+          <div style="display:flex;gap:.6rem;margin-top:.2rem">
+            <a href="#" aria-label="Instagram" title="Instagram" class="icon-btn"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+            <a href="#" aria-label="Facebook" title="Facebook" class="icon-btn"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+            <a href="#" aria-label="WhatsApp" title="WhatsApp" class="icon-btn"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="store-footer__bottom">
+      <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
+      &nbsp;·&nbsp;
+      <a href="privacidade.html">Privacidade</a>
+      &nbsp;·&nbsp;
+      <a href="/login.html" style="color:var(--text-soft);opacity:.55;font-size:.78rem" aria-label="Área administrativa">
+        <i class="bi bi-lock" aria-hidden="true"></i> Admin
+      </a>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="/loja/cart.js"></script>
+  <script src="/loja/loja.js"></script>
+  <script src="/loja/account.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      document.getElementById('ano').textContent = new Date().getFullYear();
+
+      /* ---- Auth guard ---- */
+      if (!StoreAuth.isLoggedIn()) {
+        location.replace('entrar.html?next=' + encodeURIComponent('/loja/meus-pedidos.html'));
+        return;
+      }
+
+      /* ---- Read & validate ?id= ---- */
+      var params = new URLSearchParams(location.search);
+      var rawId  = params.get('id') || '';
+      if (!/^\d+$/.test(rawId)) {
+        location.replace('meus-pedidos.html');
+        return;
+      }
+      var pedidoId = rawId;
+
+      var loadingEl  = document.getElementById('loading-state');
+      var contentEl  = document.getElementById('pedido-content');
+      var notFoundEl = document.getElementById('not-found-state');
+      var errorEl    = document.getElementById('error-state');
+
+      function statusBadge(status) {
+        var s = (status || '').toLowerCase();
+        var cls = 'badge--pendente';
+        var label = 'Pendente';
+        if (s === 'entregue')  { cls = 'badge--entregue';  label = 'Entregue'; }
+        if (s === 'cancelado') { cls = 'badge--cancelado'; label = 'Cancelado'; }
+        return '<span class="badge ' + cls + '">' + label + '</span>';
+      }
+
+      function renderOrder(o) {
+        loadingEl.style.display = 'none';
+
+        var date = new Date(o.created_at).toLocaleDateString('pt-br');
+
+        /* Products table rows */
+        var prodRows = (o.products || []).map(function (p) {
+          var subtotal = fmtBRL(p.sale_price * p.quantity);
+          return '<tr>' +
+            '<td>' +
+              '<div class="col-produto">' + esc(p.name) + '</div>' +
+              '<div class="col-franquia">' + esc(p.franchise || '') + '</div>' +
+            '</td>' +
+            '<td class="col-num">' + esc(String(p.quantity)) + '</td>' +
+            '<td class="col-num">' + fmtBRL(p.sale_price) + '</td>' +
+            '<td class="col-num">' + subtotal + '</td>' +
+          '</tr>';
+        }).join('');
+
+        /* Frete */
+        var freteVal = Number(o.delivery_fee);
+        var freteHtml = freteVal === 0
+          ? '<span class="frete-gratis">Grátis</span>'
+          : fmtBRL(freteVal);
+
+        /* Address */
+        var addrParts = [
+          esc(o.address || '') + (o.house_number ? ', ' + esc(String(o.house_number)) : ''),
+          esc(o.neighborhood || ''),
+          esc(o.city || ''),
+          esc(o.cep || '')
+        ].filter(Boolean);
+
+        var html =
+          /* Header */
+          '<div class="pedido-header">' +
+            '<div class="pedido-header__top">' +
+              '<h1 class="pedido-header__id"><i class="bi bi-receipt" aria-hidden="true"></i> Pedido #' + esc(String(o.id)) + '</h1>' +
+            '</div>' +
+            '<div class="pedido-header__meta">' +
+              '<span><i class="bi bi-calendar3" aria-hidden="true"></i> ' + esc(date) + '</span>' +
+              statusBadge(o.status) +
+              '<span><i class="bi bi-credit-card" aria-hidden="true"></i> Pagamento: A combinar</span>' +
+            '</div>' +
+          '</div>' +
+
+          /* Products */
+          '<section class="pedido-section" aria-labelledby="itens-title">' +
+            '<h2 id="itens-title"><i class="bi bi-bag" aria-hidden="true"></i> Itens do pedido</h2>' +
+            '<table class="itens-table" aria-label="Lista de itens">' +
+              '<thead>' +
+                '<tr>' +
+                  '<th>Produto</th>' +
+                  '<th class="col-num">Qtd.</th>' +
+                  '<th class="col-num">Preço unit.</th>' +
+                  '<th class="col-num">Subtotal</th>' +
+                '</tr>' +
+              '</thead>' +
+              '<tbody>' + prodRows + '</tbody>' +
+            '</table>' +
+          '</section>' +
+
+          /* Totals */
+          '<section class="pedido-section" aria-labelledby="totais-title">' +
+            '<h2 id="totais-title"><i class="bi bi-calculator" aria-hidden="true"></i> Resumo</h2>' +
+            '<div class="totais-row">' +
+              '<span class="label">Frete</span>' +
+              '<span>' + freteHtml + '</span>' +
+            '</div>' +
+            '<div class="totais-row totais-row--total">' +
+              '<span class="label">Total</span>' +
+              '<span>' + fmtBRL(o.total_cost) + '</span>' +
+            '</div>' +
+          '</section>' +
+
+          /* Delivery address */
+          '<section class="pedido-section" aria-labelledby="endereco-title">' +
+            '<h2 id="endereco-title"><i class="bi bi-geo-alt" aria-hidden="true"></i> Endereço de entrega</h2>' +
+            '<div class="address-block">' +
+              addrParts.join('<br>') +
+            '</div>' +
+          '</section>' +
+
+          /* Back link */
+          '<div style="margin-top:1.6rem">' +
+            '<a href="meus-pedidos.html" class="btn btn-ghost">' +
+              '<i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar para Meus pedidos' +
+            '</a>' +
+          '</div>';
+
+        contentEl.innerHTML = html;
+        contentEl.style.display = '';
+      }
+
+      function showNotFound() {
+        loadingEl.style.display = 'none';
+        notFoundEl.style.display = '';
+      }
+
+      function showError(msg) {
+        loadingEl.style.display = 'none';
+        errorEl.textContent = msg;
+        errorEl.style.display = '';
+      }
+
+      fetch('/api/loja/pedidos/' + pedidoId, {
+        headers: { 'Authorization': 'Bearer ' + StoreAuth.getToken() }
+      })
+        .then(function (res) {
+          if (res.status === 401 || res.status === 403) {
+            StoreAuth.logout();
+            location.replace('entrar.html');
+            return null;
+          }
+          if (res.status === 404) {
+            showNotFound();
+            return null;
+          }
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          if (data === null) return;
+          renderOrder(data);
+        })
+        .catch(function (err) {
+          console.error('[pedido]', err);
+          showError('Não foi possível carregar o pedido. Tente novamente.');
+        });
+
+    })();
+  </script>
+</body>
+</html>
