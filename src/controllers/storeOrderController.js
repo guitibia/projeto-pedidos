@@ -181,4 +181,45 @@ async function criarPedido(req, res) {
   }
 }
 
-module.exports = { resumo, criarPedido };
+// GET /api/loja/pedidos — histórico do próprio cliente
+async function listarPedidos(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT o.id, o.created_at, o.status, o.total_cost, o.delivery_fee,
+              (SELECT COALESCE(SUM(op.quantity), 0) FROM order_products op WHERE op.order_id = o.id) AS item_count
+       FROM orders o WHERE o.client_id = ? ORDER BY o.id DESC`,
+      [req.customer.id]
+    );
+    return res.json(rows);
+  } catch (e) {
+    console.error('Erro ao listar pedidos do cliente:', e);
+    return res.status(500).json({ error: 'Erro ao buscar seus pedidos.' });
+  }
+}
+
+// GET /api/loja/pedidos/:id — detalhe (apenas do dono; senão 404)
+async function detalhePedido(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  try {
+    const [[order]] = await db.query(
+      `SELECT o.id, o.created_at, o.status, o.payment_method, o.total_cost, o.delivery_fee, o.client_id,
+              c.name AS client_name, c.address, c.house_number, c.neighborhood, c.cep, c.city
+       FROM orders o JOIN clients c ON c.id = o.client_id WHERE o.id = ?`,
+      [id]
+    );
+    if (!order || order.client_id !== req.customer.id) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    const [products] = await db.query(
+      `SELECT p.name, p.franchise, op.sale_price, op.quantity
+       FROM order_products op JOIN products p ON p.id = op.product_id WHERE op.order_id = ?`,
+      [id]
+    );
+    delete order.client_id;
+    return res.json({ ...order, products });
+  } catch (e) {
+    console.error('Erro ao buscar pedido do cliente:', e);
+    return res.status(500).json({ error: 'Erro ao buscar o pedido.' });
+  }
+}
+
+module.exports = { resumo, criarPedido, listarPedidos, detalhePedido };
