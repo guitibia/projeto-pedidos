@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finalizar Pedido — Beleza Multi Marcas</title>
+  <meta name="description" content="Revise seus itens, informe o endereço de entrega e finalize seu pedido.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/loja/loja.css">
+  <style>
+    .checkout-wrap { max-width: 820px; margin: 2rem auto 3.5rem; padding: 0 20px; }
+    .checkout-wrap h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 2rem; margin: 0 0 1.8rem; color: var(--text); }
+    .co-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.8rem 1.6rem; margin-bottom: 1.4rem; box-shadow: 0 2px 12px rgba(60,40,35,.06); }
+    .co-section h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 1.35rem; margin: 0 0 1.3rem; color: var(--text); display: flex; align-items: center; gap: .5rem; }
+    /* Items list */
+    .co-items-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .9rem; }
+    .co-item { display: flex; align-items: center; gap: 1rem; padding: .65rem .8rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); }
+    .co-item.is-unavailable { border-color: var(--danger); background: #fdf8f8; }
+    .co-item__img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: var(--border); flex: none; }
+    .co-item__info { flex: 1; min-width: 0; }
+    .co-item__name { font-weight: 700; font-size: .95rem; color: var(--text); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .co-item__qty { font-size: .85rem; color: var(--text-soft); margin-top: .15rem; }
+    .co-item__warn { font-size: .82rem; color: var(--danger); margin-top: .2rem; display: flex; align-items: center; gap: .3rem; }
+    .co-empty { text-align: center; padding: 2.5rem 1rem; color: var(--text-soft); }
+    .co-empty i { font-size: 2.5rem; margin-bottom: .6rem; color: var(--accent-soft); }
+    .co-empty p { margin: .4rem 0; }
+    /* Address form */
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: .88rem; font-weight: 700; margin-bottom: .3rem; color: var(--text); }
+    .field input[type="text"],
+    .field input[type="tel"] {
+      width: 100%; height: 44px; border: 1px solid var(--border); border-radius: 10px;
+      padding: 0 .9rem; font: inherit; font-size: .95rem; color: var(--text);
+      background: var(--bg); transition: border-color .18s, box-shadow .18s;
+    }
+    .field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 560px) { .field-row { grid-template-columns: 1fr; } }
+    .cep-hint { font-size: .81rem; margin-top: .25rem; display: none; }
+    .cep-hint.error { color: var(--danger); display: block; }
+    .cep-hint.loading { color: var(--text-soft); display: block; }
+    /* Summary */
+    .co-summary-rows { display: flex; flex-direction: column; gap: .5rem; }
+    .co-summary-row { display: flex; justify-content: space-between; font-size: .95rem; color: var(--text-soft); }
+    .co-summary-row.total { font-weight: 800; font-size: 1.1rem; color: var(--text); border-top: 1px solid var(--border); padding-top: .7rem; margin-top: .3rem; }
+    .co-summary-loading { color: var(--text-soft); font-size: .9rem; }
+    /* Alert */
+    .form-alert { border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1rem; font-size: .93rem; display: none; }
+    .form-alert.error { background: #fdf0ef; color: var(--danger); border: 1px solid #f5c6c3; display: block; }
+    /* Finalize btn */
+    .co-finalize { display: flex; justify-content: flex-end; margin-top: .4rem; }
+    .co-finalize .btn { font-size: 1rem; padding: .85rem 2rem; gap: .6rem; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="store-header" role="banner">
+    <div class="store-header__inner">
+      <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas — página inicial">
+        <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+        <div class="logo__text">
+          <span class="logo__word">Beleza</span>
+          <span class="logo__sub">Multi Marcas</span>
+        </div>
+      </a>
+
+      <form class="store-search" role="search" action="produtos.html" method="get">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Buscar produtos, marcas…" aria-label="Buscar produtos">
+      </form>
+
+      <nav class="store-header__nav" aria-label="Ações do usuário">
+        <a href="#" title="Favoritos (em breve)" aria-label="Favoritos — em breve">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+        </a>
+        <a id="account-link" href="/loja/entrar.html" title="Entrar ou cadastrar" aria-label="Entrar ou cadastrar">
+          <i class="bi bi-person" aria-hidden="true"></i>
+        </a>
+        <a href="carrinho.html" title="Carrinho de compras" aria-label="Carrinho de compras" style="position:relative">
+          <i class="bi bi-bag" aria-hidden="true"></i>
+          <span id="cart-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+    <div class="checkout-wrap">
+      <h1><i class="bi bi-bag-check" aria-hidden="true"></i> Finalizar Pedido</h1>
+
+      <!-- ITENS DO CARRINHO -->
+      <section class="co-section" aria-labelledby="co-items-title">
+        <h2 id="co-items-title"><i class="bi bi-cart3" aria-hidden="true"></i> Itens do pedido</h2>
+        <ul id="co-items-list" class="co-items-list" aria-label="Itens no carrinho">
+          <!-- preenchido via JS -->
+        </ul>
+        <div id="co-empty" class="co-empty" style="display:none">
+          <i class="bi bi-bag-x" aria-hidden="true"></i>
+          <p>Seu carrinho está vazio.</p>
+          <a href="produtos.html" class="btn" style="margin-top:.6rem">
+            <i class="bi bi-bag-heart-fill" aria-hidden="true"></i> Ver produtos
+          </a>
+        </div>
+      </section>
+
+      <!-- ENDEREÇO DE ENTREGA -->
+      <section class="co-section" aria-labelledby="co-address-title">
+        <h2 id="co-address-title"><i class="bi bi-geo-alt" aria-hidden="true"></i> Endereço de entrega</h2>
+
+        <form id="address-form" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="cep">CEP</label>
+              <input type="tel" id="cep" name="cep" placeholder="00000-000" maxlength="9" inputmode="numeric" autocomplete="postal-code">
+              <span id="cep-hint" class="cep-hint" aria-live="polite"></span>
+            </div>
+            <div class="field">
+              <label for="houseNumber">Número</label>
+              <input type="text" id="houseNumber" name="houseNumber" placeholder="Ex.: 123" autocomplete="address-line2">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="address">Logradouro</label>
+            <input type="text" id="address" name="address" placeholder="Rua, Av., Travessa…" autocomplete="address-line1">
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="neighborhood">Bairro</label>
+              <input type="text" id="neighborhood" name="neighborhood" placeholder="Seu bairro" autocomplete="address-level3">
+            </div>
+            <div class="field">
+              <label for="city">Cidade</label>
+              <input type="text" id="city" name="city" placeholder="Sua cidade" autocomplete="address-level2">
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <!-- RESUMO DO PEDIDO -->
+      <section class="co-section" aria-labelledby="co-summary-title">
+        <h2 id="co-summary-title"><i class="bi bi-receipt" aria-hidden="true"></i> Resumo</h2>
+        <div id="co-summary-content">
+          <span class="co-summary-loading">Calculando…</span>
+        </div>
+      </section>
+
+      <!-- ALERTA GERAL -->
+      <div id="co-alert" class="form-alert" role="alert" aria-live="assertive"></div>
+
+      <!-- BOTÃO FINALIZAR -->
+      <div class="co-finalize">
+        <button id="btn-finalizar" class="btn accent-btn" type="button">
+          <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Finalizar pedido
+        </button>
+      </div>
+    </div><!-- /.checkout-wrap -->
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="store-footer" role="contentinfo">
+    <div class="store-footer__inner">
+      <!-- Brand -->
+      <div>
+        <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas">
+          <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+          <div class="logo__text">
+            <span class="logo__word">Beleza</span>
+            <span class="logo__sub">Multi Marcas</span>
+          </div>
+        </a>
+        <p style="margin:.8rem 0 0;font-size:.85rem;max-width:22ch">Cosméticos e beleza das melhores marcas, reunidos para você.</p>
+      </div>
+
+      <div class="store-footer__cols">
+        <!-- Navegação -->
+        <div>
+          <h4>Navegação</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="/loja/">Início</a></li>
+            <li><a href="produtos.html">Todos os Produtos</a></li>
+            <li><a href="carrinho.html">Carrinho</a></li>
+          </ul>
+        </div>
+
+        <!-- Informações -->
+        <div>
+          <h4>Informações</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="privacidade.html">Política de Privacidade</a></li>
+            <li><a href="mailto:contato@belezamultimarcas.com.br">Contato</a></li>
+          </ul>
+        </div>
+
+        <!-- Redes sociais -->
+        <div>
+          <h4>Redes Sociais</h4>
+          <div style="display:flex;gap:.6rem;margin-top:.2rem">
+            <a href="#" aria-label="Instagram" title="Instagram" class="icon-btn"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+            <a href="#" aria-label="Facebook" title="Facebook" class="icon-btn"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+            <a href="#" aria-label="WhatsApp" title="WhatsApp" class="icon-btn"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="store-footer__bottom">
+      <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
+      &nbsp;·&nbsp;
+      <a href="privacidade.html">Privacidade</a>
+      &nbsp;·&nbsp;
+      <a href="/login.html" style="color:var(--text-soft);opacity:.55;font-size:.78rem" aria-label="Área administrativa">
+        <i class="bi bi-lock" aria-hidden="true"></i> Admin
+      </a>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="/loja/cart.js"></script>
+  <script src="/loja/loja.js"></script>
+  <script src="/loja/account.js"></script>
+  <script>
+(function () {
+  'use strict';
+
+  /* ---------- Guard de autenticação ---------- */
+  if (!StoreAuth.isLoggedIn()) {
+    location.replace('entrar.html?next=' + encodeURIComponent('/loja/checkout.html'));
+    return;
+  }
+
+  /* ---------- Footer year ---------- */
+  document.getElementById('ano').textContent = new Date().getFullYear();
+
+  /* ---------- Refs ---------- */
+  var itens = Cart.getItems();
+
+  var elList      = document.getElementById('co-items-list');
+  var elEmpty     = document.getElementById('co-empty');
+  var elSummary   = document.getElementById('co-summary-content');
+  var elAlert     = document.getElementById('co-alert');
+  var btnFinalizar = document.getElementById('btn-finalizar');
+
+  var inpCep          = document.getElementById('cep');
+  var inpAddress      = document.getElementById('address');
+  var inpHouseNumber  = document.getElementById('houseNumber');
+  var inpNeighborhood = document.getElementById('neighborhood');
+  var inpCity         = document.getElementById('city');
+  var elCepHint       = document.getElementById('cep-hint');
+
+  /* ---------- Render de itens ---------- */
+  function renderItens() {
+    if (itens.length === 0) {
+      elList.style.display = 'none';
+      elEmpty.style.display = '';
+      btnFinalizar.style.display = 'none';
+      return;
+    }
+    elEmpty.style.display = 'none';
+    elList.style.display = '';
+    elList.innerHTML = itens.map(function (item) {
+      var imgHtml = item.image
+        ? '<img class="co-item__img" src="' + esc(item.image) + '" alt="" loading="lazy">'
+        : '<div class="co-item__img img-ph"><span>' + esc(item.name) + '</span></div>';
+      return '<li class="co-item" id="co-item-' + esc(String(item.id)) + '">' +
+        imgHtml +
+        '<div class="co-item__info">' +
+          '<div class="co-item__name">' + esc(item.name) + '</div>' +
+          '<div class="co-item__qty">Qtd: ' + esc(String(item.qty)) + ' &nbsp;·&nbsp; ' + fmtBRL(item.price * item.qty) + '</div>' +
+        '</div>' +
+      '</li>';
+    }).join('');
+  }
+
+  /* ---------- Helpers de endereço ---------- */
+  function getAddressValues() {
+    return {
+      cep:          inpCep.value.trim(),
+      address:      inpAddress.value.trim(),
+      houseNumber:  inpHouseNumber.value.trim(),
+      neighborhood: inpNeighborhood.value.trim(),
+      city:         inpCity.value.trim()
+    };
+  }
+
+  /* ---------- ViaCEP ---------- */
+  async function buscarCep(cepRaw) {
+    var cep = String(cepRaw || '').replace(/\D/g, '');
+    if (cep.length !== 8) return null;
+    try {
+      var r = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+      if (!r.ok) return null;
+      var d = await r.json();
+      if (d.erro) return null;
+      return d; // { logradouro, bairro, localidade, uf }
+    } catch (e) { return null; }
+  }
+
+  function setCepHint(type, msg) {
+    elCepHint.className = 'cep-hint ' + (type || '');
+    elCepHint.textContent = msg || '';
+    if (!type) elCepHint.style.display = 'none';
+  }
+
+  inpCep.addEventListener('input', function () {
+    var digits = inpCep.value.replace(/\D/g, '');
+    if (digits.length === 8) {
+      handleCepLookup(digits);
+    } else {
+      setCepHint('', '');
+    }
+  });
+
+  inpCep.addEventListener('blur', function () {
+    var digits = inpCep.value.replace(/\D/g, '');
+    if (digits.length === 8) {
+      handleCepLookup(digits);
+    }
+  });
+
+  async function handleCepLookup(digits) {
+    setCepHint('loading', 'Buscando CEP…');
+    var d = await buscarCep(digits);
+    if (d) {
+      inpAddress.value      = d.logradouro  || inpAddress.value;
+      inpNeighborhood.value = d.bairro      || inpNeighborhood.value;
+      inpCity.value         = d.localidade  || inpCity.value;
+      setCepHint('', '');
+      inpHouseNumber.focus();
+      agendarResumo();
+    } else {
+      setCepHint('error', 'CEP não encontrado — preencha o endereço manualmente.');
+    }
+  }
+
+  /* ---------- Pré-preencher endereço via /me ---------- */
+  StoreAuth.api('/me').then(function (me) {
+    if (!me) return;
+    if (me.cep          && !inpCep.value)          inpCep.value          = me.cep;
+    if (me.address      && !inpAddress.value)      inpAddress.value      = me.address;
+    if (me.house_number && !inpHouseNumber.value)  inpHouseNumber.value  = me.house_number;
+    if (me.neighborhood && !inpNeighborhood.value) inpNeighborhood.value = me.neighborhood;
+    if (me.city         && !inpCity.value)         inpCity.value         = me.city;
+    atualizarResumo();
+  }).catch(function () { /* silencia — campos ficam em branco */ });
+
+  /* ---------- Resumo ---------- */
+  function atualizarResumo() {
+    if (itens.length === 0) {
+      elSummary.innerHTML = '<span class="co-summary-loading">Nenhum item no carrinho.</span>';
+      return;
+    }
+    var addr = getAddressValues();
+    fetch('/api/loja/checkout/resumo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + StoreAuth.getToken()
+      },
+      body: JSON.stringify({
+        items:        itens.map(function (i) { return { id: i.id, qty: i.qty }; }),
+        cep:          addr.cep,
+        address:      addr.address,
+        houseNumber:  addr.houseNumber,
+        neighborhood: addr.neighborhood,
+        city:         addr.city
+      })
+    })
+    .then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
+    .then(function (res) {
+      var d = res.data;
+
+      /* Marcar itens indisponíveis */
+      var todosOk = true;
+      var motivoBloqueio = '';
+      if (Array.isArray(d.items)) {
+        d.items.forEach(function (item) {
+          var li = document.getElementById('co-item-' + item.id);
+          if (!li) return;
+          if (item.ok === false) {
+            todosOk = false;
+            motivoBloqueio = item.reason || 'Item indisponível';
+            li.classList.add('is-unavailable');
+            var warnEl = li.querySelector('.co-item__warn');
+            if (!warnEl) {
+              warnEl = document.createElement('div');
+              warnEl.className = 'co-item__warn';
+              li.querySelector('.co-item__info').appendChild(warnEl);
+            }
+            warnEl.innerHTML = '<i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i> ' + esc(item.reason || 'Indisponível');
+          } else {
+            li.classList.remove('is-unavailable');
+            var existingWarn = li.querySelector('.co-item__warn');
+            if (existingWarn) existingWarn.remove();
+          }
+        });
+      }
+
+      /* Renderizar totais */
+      var subtotal    = typeof d.subtotal    === 'number' ? d.subtotal    : 0;
+      var deliveryFee = typeof d.deliveryFee === 'number' ? d.deliveryFee : 0;
+      var total       = typeof d.total       === 'number' ? d.total       : (subtotal + deliveryFee);
+      var freteStr    = deliveryFee === 0 ? 'Grátis' : fmtBRL(deliveryFee);
+
+      elSummary.innerHTML =
+        '<div class="co-summary-rows">' +
+          '<div class="co-summary-row"><span>Subtotal</span><span>' + fmtBRL(subtotal) + '</span></div>' +
+          '<div class="co-summary-row"><span>Frete</span><span>' + esc(freteStr) + '</span></div>' +
+          '<div class="co-summary-row total"><span>Total</span><span>' + fmtBRL(total) + '</span></div>' +
+        '</div>';
+
+      /* Habilitar/desabilitar Finalizar */
+      if (!todosOk) {
+        btnFinalizar.disabled = true;
+        btnFinalizar.title = motivoBloqueio;
+        showAlert(motivoBloqueio);
+      } else {
+        btnFinalizar.disabled = false;
+        btnFinalizar.title = '';
+        hideAlert();
+      }
+    })
+    .catch(function (err) {
+      console.warn('[checkout] resumo error:', err);
+      elSummary.innerHTML = '<span class="co-summary-loading">Não foi possível calcular o resumo.</span>';
+    });
+  }
+
+  /* Debounce simples para atualizar resumo em blur */
+  var resumoTimer = null;
+  function agendarResumo() {
+    clearTimeout(resumoTimer);
+    resumoTimer = setTimeout(atualizarResumo, 400);
+  }
+
+  /* Address fields blur atualiza resumo */
+  [inpAddress, inpHouseNumber, inpNeighborhood, inpCity].forEach(function (el) {
+    el.addEventListener('blur', agendarResumo);
+  });
+
+  /* ---------- Alertas ---------- */
+  function showAlert(msg) {
+    elAlert.textContent = msg;
+    elAlert.className = 'form-alert error';
+  }
+  function hideAlert() {
+    elAlert.textContent = '';
+    elAlert.className = 'form-alert';
+  }
+
+  /* ---------- Finalizar pedido ---------- */
+  btnFinalizar.addEventListener('click', async function () {
+    btnFinalizar.disabled = true;
+    hideAlert();
+
+    var addr = getAddressValues();
+
+    try {
+      var r = await fetch('/api/loja/pedidos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + StoreAuth.getToken()
+        },
+        body: JSON.stringify({
+          items:        itens.map(function (i) { return { id: i.id, qty: i.qty }; }),
+          cep:          addr.cep,
+          address:      addr.address,
+          houseNumber:  addr.houseNumber,
+          neighborhood: addr.neighborhood,
+          city:         addr.city
+        })
+      });
+
+      var data = await r.json();
+
+      if (r.status === 201) {
+        Cart.clear();
+        location.href = 'pedido-confirmado.html?id=' + encodeURIComponent(data.orderId);
+        return;
+      }
+
+      if (r.status === 400) {
+        showAlert(data.error || 'Erro ao finalizar pedido.');
+        btnFinalizar.disabled = false;
+        return;
+      }
+
+      if (r.status === 401 || r.status === 403) {
+        StoreAuth.logout();
+        location.href = 'entrar.html';
+        return;
+      }
+
+      showAlert(data.error || 'Erro inesperado. Tente novamente.');
+      btnFinalizar.disabled = false;
+
+    } catch (err) {
+      console.error('[checkout] finalizar error:', err);
+      showAlert('Erro de conexão. Verifique sua internet e tente novamente.');
+      btnFinalizar.disabled = false;
+    }
+  });
+
+  /* ---------- Boot ---------- */
+  renderItens();
+  atualizarResumo();
+
+})();
+  </script>
+</body>
+</html>
