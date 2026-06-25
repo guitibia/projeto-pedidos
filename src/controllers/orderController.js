@@ -241,23 +241,32 @@ async function deleteOrder(req, res) {
     conn = await db.getConnection();
     await conn.beginTransaction();
 
+    // Status atual: pedido Cancelado já teve o estoque restaurado no cancelamento.
+    // Restaurar de novo na exclusão inflaria o estoque (dupla Entrada), então só
+    // restauramos quando o pedido NÃO estava cancelado.
+    const [[ordem]] = await conn.query('SELECT status FROM orders WHERE id = ?', [id]);
+    const jaCancelado = ordem && ordem.status === 'Cancelado';
+
     // Busca produtos do pedido para restaurar estoque
     const [produtos] = await conn.query(
       'SELECT product_id, quantity, not_came FROM order_products WHERE order_id = ?',
       [id]
     );
 
-    // Restaura estoque apenas dos produtos que efetivamente vieram
-    for (const p of produtos) {
-      if (!p.not_came) {
-        await conn.query(
-          'UPDATE products SET estoque = estoque + ? WHERE id = ?',
-          [p.quantity, p.product_id]
-        );
-        await conn.query(
-          'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)',
-          [p.product_id, 'Entrada', p.quantity, `Pedido #${id} excluído`]
-        );
+    // Restaura estoque apenas dos produtos que efetivamente vieram, e apenas se o
+    // pedido não estava cancelado (cancelamento já havia restaurado).
+    if (!jaCancelado) {
+      for (const p of produtos) {
+        if (!p.not_came) {
+          await conn.query(
+            'UPDATE products SET estoque = estoque + ? WHERE id = ?',
+            [p.quantity, p.product_id]
+          );
+          await conn.query(
+            'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)',
+            [p.product_id, 'Entrada', p.quantity, `Pedido #${id} excluído`]
+          );
+        }
       }
     }
 
