@@ -78,4 +78,64 @@ async function resend(req, res) {
   } catch (e) { console.error('Erro no reenvio:', e); return res.status(500).json({ error: 'Erro ao reenviar.' }); }
 }
 
-module.exports = { register, verify, resend };
+// POST /api/loja/auth/login
+async function login(req, res) {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
+  try {
+    const [[c]] = await db.query('SELECT id, name, email, password_hash, email_verified FROM clients WHERE email = ?', [email]);
+    if (!c || !c.password_hash) return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
+    const ok = await bcrypt.compare(password, c.password_hash);
+    if (!ok) return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
+    if (!c.email_verified) return res.status(403).json({ error: 'Confirme seu e-mail antes de entrar.', needsVerification: true });
+    const token = jwt.sign({ id: c.id, email: c.email, type: 'customer' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    return res.json({ token, user: { id: c.id, name: c.name, email: c.email } });
+  } catch (e) { console.error('Erro no login do cliente:', e); return res.status(500).json({ error: 'Erro ao entrar.' }); }
+}
+
+// GET /api/loja/auth/me
+async function me(req, res) {
+  try {
+    const [[c]] = await db.query(
+      'SELECT id, name, email, cpf, birthdate, phone, address, house_number, neighborhood FROM clients WHERE id = ?',
+      [req.customer.id]);
+    if (!c) return res.status(404).json({ error: 'Conta não encontrada.' });
+    return res.json(c);
+  } catch (e) { console.error('Erro em me:', e); return res.status(500).json({ error: 'Erro ao buscar conta.' }); }
+}
+
+// PUT /api/loja/auth/me
+async function updateMe(req, res) {
+  const { name, phone, address, houseNumber, neighborhood, birthdate } = req.body;
+  if (!name) return res.status(400).json({ error: 'O nome é obrigatório.' });
+  try {
+    await db.query(
+      'UPDATE clients SET name=?, phone=?, address=?, house_number=?, neighborhood=?, birthdate=? WHERE id=?',
+      [name, phone || null, address || null, houseNumber || null, neighborhood || null, birthdate || null, req.customer.id]);
+    return res.json({ message: 'Dados atualizados.' });
+  } catch (e) { console.error('Erro em updateMe:', e); return res.status(500).json({ error: 'Erro ao atualizar.' }); }
+}
+
+// PUT /api/loja/auth/password
+async function changePassword(req, res) {
+  const { current, novo } = req.body;
+  if (!novo || String(novo).length < 8) return res.status(400).json({ error: 'A nova senha deve ter ao menos 8 caracteres.' });
+  try {
+    const [[c]] = await db.query('SELECT password_hash FROM clients WHERE id = ?', [req.customer.id]);
+    const ok = await bcrypt.compare(current || '', c.password_hash || '');
+    if (!ok) return res.status(400).json({ error: 'Senha atual incorreta.' });
+    const hash = await bcrypt.hash(novo, 10);
+    await db.query('UPDATE clients SET password_hash = ? WHERE id = ?', [hash, req.customer.id]);
+    return res.json({ message: 'Senha alterada.' });
+  } catch (e) { console.error('Erro em changePassword:', e); return res.status(500).json({ error: 'Erro ao alterar a senha.' }); }
+}
+
+// DELETE /api/loja/auth/me  (direito de exclusão LGPD)
+async function deleteMe(req, res) {
+  try {
+    await db.query('DELETE FROM clients WHERE id = ?', [req.customer.id]);
+    return res.json({ message: 'Conta excluída.' });
+  } catch (e) { console.error('Erro em deleteMe:', e); return res.status(500).json({ error: 'Erro ao excluir a conta.' }); }
+}
+
+module.exports = { register, verify, resend, login, me, updateMe, changePassword, deleteMe };
