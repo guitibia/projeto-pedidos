@@ -292,7 +292,7 @@
 
       /* ---- Auth guard ---- */
       if (!StoreAuth.isLoggedIn()) {
-        location.replace('entrar.html');
+        location.replace('entrar.html'); return;
       }
 
       /* ---- Handle 401/403 from any protected call ---- */
