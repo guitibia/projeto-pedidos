@@ -77,6 +77,14 @@ pool.getConnection()
       'CREATE UNIQUE INDEX uq_clients_cpf ON clients(cpf)',
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Migração: checkout da loja (sub-projeto 3)
+    for (const sql of [
+      "ALTER TABLE orders ADD COLUMN origin VARCHAR(20) NOT NULL DEFAULT 'painel'",
+      'ALTER TABLE clients ADD COLUMN cep VARCHAR(8) DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN city VARCHAR(120) DEFAULT NULL',
+      "ALTER TABLE orders MODIFY COLUMN payment_method ENUM('PIX','DINHEIRO','CARTÃO DE CRÉDITO','PARCELADO','PAGAMENTO COMBINADO','A COMBINAR') NOT NULL",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Migração: tabela de percentuais de desconto por franquia
     try {
       await conn.query(`
