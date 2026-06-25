@@ -85,6 +85,31 @@ pool.getConnection()
       "ALTER TABLE orders MODIFY COLUMN payment_method ENUM('PIX','DINHEIRO','CARTÃO DE CRÉDITO','PARCELADO','PAGAMENTO COMBINADO','A COMBINAR') NOT NULL",
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Migração: pagamento (sub-projeto 4)
+    try {
+      await conn.query(`
+        CREATE TABLE IF NOT EXISTS payment_intents (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          client_id INT NOT NULL,
+          external_reference VARCHAR(64) NOT NULL UNIQUE,
+          items_json JSON NOT NULL,
+          address VARCHAR(255), house_number VARCHAR(30), neighborhood VARCHAR(120),
+          cep VARCHAR(8), city VARCHAR(120),
+          subtotal DECIMAL(10,2) NOT NULL,
+          delivery_fee DECIMAL(6,2) NOT NULL DEFAULT 0,
+          total DECIMAL(10,2) NOT NULL,
+          mp_preference_id VARCHAR(64),
+          mp_payment_id VARCHAR(64),
+          status VARCHAR(20) NOT NULL DEFAULT 'pendente',
+          order_id INT DEFAULT NULL,
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`);
+    } catch (_) {}
+    for (const sql of [
+      "ALTER TABLE orders ADD COLUMN payment_status VARCHAR(20) DEFAULT NULL",
+      "ALTER TABLE orders ADD COLUMN mp_payment_id VARCHAR(64) DEFAULT NULL",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Migração: tabela de percentuais de desconto por franquia
     try {
       await conn.query(`
