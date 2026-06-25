@@ -60,3 +60,22 @@ function lojaAddToCart(btn) {
   btn.textContent = 'Adicionado ✓';
   setTimeout(function () { btn.textContent = orig; }, 1000);
 }
+
+// ── Banner de consentimento de cookies (LGPD) — global em todas as páginas da loja ──
+(function cookieBanner(){
+  try { if (localStorage.getItem('loja_cookie_consent') === '1') return; } catch (e) { return; }
+  document.addEventListener('DOMContentLoaded', function () {
+    var b = document.createElement('div');
+    b.className = 'cookie-banner';
+    b.setAttribute('role', 'region');
+    b.setAttribute('aria-label', 'Aviso de cookies');
+    b.innerHTML = '<span>Usamos cookies para melhorar sua experiência. Veja nossa ' +
+      '<a href="/loja/privacidade.html">Política de Privacidade</a>.</span>' +
+      '<button class="btn accent-btn" id="cookie-ok" type="button">Aceitar</button>';
+    document.body.appendChild(b);
+    document.getElementById('cookie-ok').onclick = function () {
+      try { localStorage.setItem('loja_cookie_consent', '1'); } catch (e) {}
+      b.remove();
+    };
+  });
+})();
