@@ -211,11 +211,10 @@
           '<div class="cart-summary">' +
             '<div>' +
               '<div class="cart-summary__total"><span>Subtotal</span>' + fmtBRL(subtotal) + '</div>' +
-              '<p class="cart-checkout-note"><i class="bi bi-info-circle" aria-hidden="true"></i> Login e checkout no próximo passo.</p>' +
             '</div>' +
-            '<button type="button" class="btn" disabled aria-disabled="true">' +
-              '<i class="bi bi-lock" aria-hidden="true"></i> Finalizar compra' +
-            '</button>' +
+            '<a href="checkout.html" class="btn accent-btn">' +
+              '<i class="bi bi-bag-check-fill" aria-hidden="true"></i> Finalizar compra' +
+            '</a>' +
           '</div>';
 
         body.innerHTML = '<div id="cart-items">' + rows + '</div>' + summary;
