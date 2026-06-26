@@ -4,6 +4,7 @@ const customerAuth = require('../middleware/customerAuth');
 const c = require('../controllers/paymentController');
 
 router.post('/', customerAuth, c.criarPagamento);
-// /webhook e /:ref entram na Task 5
+router.post('/webhook', c.webhook);          // público (MP) — valida via API
+router.get('/:ref', customerAuth, c.statusPagamento);
 
 module.exports = router;
