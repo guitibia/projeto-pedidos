@@ -71,4 +71,45 @@ async function buscarPagamentoPorReferencia(externalReference) {
   };
 }
 
-module.exports = { isConfigured, criarPreferencia, buscarPagamento, buscarPagamentoPorReferencia };
+// Formata uma data em ISO 8601 com offset local (ex.: 2026-06-26T12:30:00.000-03:00)
+function isoComOffset(d) {
+  const p = n => String(n).padStart(2, '0');
+  const off = -d.getTimezoneOffset();
+  const sinal = off >= 0 ? '+' : '-';
+  const oh = p(Math.floor(Math.abs(off) / 60));
+  const om = p(Math.abs(off) % 60);
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+    'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) +
+    '.000' + sinal + oh + ':' + om;
+}
+
+// Cria um pagamento PIX (transparente). Retorna o QR (copia-e-cola + imagem base64).
+async function criarPagamentoPix({ externalReference, total, descricao, payer, expiracaoMin }) {
+  const pay = new Payment(getClient());
+  const exp = new Date(Date.now() + (expiracaoMin || 15) * 60 * 1000);
+  const res = await pay.create({
+    body: {
+      transaction_amount: Number(total),
+      description: descricao || 'Beleza Multi Marcas — Pedido',
+      payment_method_id: 'pix',
+      external_reference: externalReference,
+      date_of_expiration: isoComOffset(exp),
+      payer: {
+        email: payer.email,
+        first_name: payer.first_name || undefined,
+        last_name: payer.last_name || undefined,
+        identification: payer.cpf ? { type: 'CPF', number: String(payer.cpf).replace(/\D/g, '') } : undefined,
+      },
+    },
+  });
+  const td = (res.point_of_interaction && res.point_of_interaction.transaction_data) || {};
+  return {
+    id: res.id,
+    status: res.status,
+    qr_code: td.qr_code || null,            // copia-e-cola
+    qr_code_base64: td.qr_code_base64 || null, // imagem PNG em base64
+    expiration: exp,
+  };
+}
+
+module.exports = { isConfigured, criarPreferencia, buscarPagamento, buscarPagamentoPorReferencia, criarPagamentoPix };
