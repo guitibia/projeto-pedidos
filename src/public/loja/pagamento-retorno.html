@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retorno do Pagamento — Beleza Multi Marcas</title>
+  <meta name="description" content="Confirmação do pagamento do seu pedido.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/loja/loja.css">
+  <style>
+    .retorno-wrap { max-width: 600px; margin: 3rem auto 4rem; padding: 0 20px; text-align: center; }
+    .retorno-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.8rem 2rem; box-shadow: 0 2px 16px rgba(60,40,35,.08); }
+    .retorno-icon { font-size: 3.2rem; margin-bottom: .8rem; }
+    .retorno-title { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 700; font-size: 1.9rem; margin: 0 0 .6rem; color: var(--text); }
+    .retorno-msg { color: var(--text-soft); margin: 0 0 1.6rem; line-height: 1.6; }
+    .retorno-actions { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: center; margin-top: 1.4rem; }
+    .retorno-actions .btn { font-size: .95rem; padding: .75rem 1.5rem; }
+    .retorno-spinner { display: inline-block; width: 2rem; height: 2rem; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="store-header" role="banner">
+    <div class="store-header__inner">
+      <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas — página inicial">
+        <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+        <div class="logo__text">
+          <span class="logo__word">Beleza</span>
+          <span class="logo__sub">Multi Marcas</span>
+        </div>
+      </a>
+
+      <form class="store-search" role="search" action="produtos.html" method="get">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Buscar produtos, marcas…" aria-label="Buscar produtos">
+      </form>
+
+      <nav class="store-header__nav" aria-label="Ações do usuário">
+        <a href="#" title="Favoritos (em breve)" aria-label="Favoritos — em breve">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+        </a>
+        <a id="account-link" href="/loja/entrar.html" title="Entrar ou cadastrar" aria-label="Entrar ou cadastrar">
+          <i class="bi bi-person" aria-hidden="true"></i>
+        </a>
+        <a href="carrinho.html" title="Carrinho de compras" aria-label="Carrinho de compras" style="position:relative">
+          <i class="bi bi-bag" aria-hidden="true"></i>
+          <span id="cart-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+    <div class="retorno-wrap">
+      <div class="retorno-card" id="retorno-card" aria-live="polite" aria-atomic="true">
+        <!-- conteúdo injetado via JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="store-footer" role="contentinfo">
+    <div class="store-footer__inner">
+      <!-- Brand -->
+      <div>
+        <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas">
+          <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+          <div class="logo__text">
+            <span class="logo__word">Beleza</span>
+            <span class="logo__sub">Multi Marcas</span>
+          </div>
+        </a>
+        <p style="margin:.8rem 0 0;font-size:.85rem;max-width:22ch">Cosméticos e beleza das melhores marcas, reunidos para você.</p>
+      </div>
+
+      <div class="store-footer__cols">
+        <!-- Navegação -->
+        <div>
+          <h4>Navegação</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="/loja/">Início</a></li>
+            <li><a href="produtos.html">Todos os Produtos</a></li>
+            <li><a href="carrinho.html">Carrinho</a></li>
+          </ul>
+        </div>
+
+        <!-- Informações -->
+        <div>
+          <h4>Informações</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="privacidade.html">Política de Privacidade</a></li>
+            <li><a href="mailto:contato@belezamultimarcas.com.br">Contato</a></li>
+          </ul>
+        </div>
+
+        <!-- Redes sociais -->
+        <div>
+          <h4>Redes Sociais</h4>
+          <div style="display:flex;gap:.6rem;margin-top:.2rem">
+            <a href="#" aria-label="Instagram" title="Instagram" class="icon-btn"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+            <a href="#" aria-label="Facebook" title="Facebook" class="icon-btn"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+            <a href="#" aria-label="WhatsApp" title="WhatsApp" class="icon-btn"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="store-footer__bottom">
+      <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
+      &nbsp;·&nbsp;
+      <a href="privacidade.html">Privacidade</a>
+      &nbsp;·&nbsp;
+      <a href="/login.html" style="color:var(--text-soft);opacity:.55;font-size:.78rem" aria-label="Área administrativa">
+        <i class="bi bi-lock" aria-hidden="true"></i> Admin
+      </a>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="/loja/cart.js"></script>
+  <script src="/loja/loja.js"></script>
+  <script src="/loja/account.js"></script>
+  <script>
+(function () {
+  'use strict';
+
+  /* ---------- Guard de autenticação ---------- */
+  if (!StoreAuth.isLoggedIn()) {
+    location.replace('entrar.html?next=' + encodeURIComponent('/loja/meus-pedidos.html'));
+    return;
+  }
+
+  /* ---------- Footer year ---------- */
+  document.getElementById('ano').textContent = new Date().getFullYear();
+
+  /* ---------- Helpers de UI ---------- */
+  var card = document.getElementById('retorno-card');
+
+  function showLoading() {
+    card.innerHTML =
+      '<div class="retorno-icon"><div class="retorno-spinner" role="status" aria-label="Carregando"></div></div>' +
+      '<h1 class="retorno-title">Verificando pagamento…</h1>' +
+      '<p class="retorno-msg">Aguarde enquanto confirmamos seu pagamento.</p>';
+  }
+
+  function showNotFound() {
+    card.innerHTML =
+      '<div class="retorno-icon" style="color:var(--text-soft)"><i class="bi bi-question-circle" aria-hidden="true"></i></div>' +
+      '<h1 class="retorno-title">Não encontramos seu pagamento</h1>' +
+      '<p class="retorno-msg">Não foi possível identificar o pagamento. Verifique seus pedidos para acompanhar o status.</p>' +
+      '<div class="retorno-actions">' +
+        '<a href="meus-pedidos.html" class="btn">Ver meus pedidos</a>' +
+      '</div>';
+  }
+
+  function showFailed() {
+    card.innerHTML =
+      '<div class="retorno-icon" style="color:#d32f2f"><i class="bi bi-x-circle" aria-hidden="true"></i></div>' +
+      '<h1 class="retorno-title">Pagamento não aprovado</h1>' +
+      '<p class="retorno-msg">Seu pagamento não foi aprovado. Você pode tentar novamente pelo carrinho.</p>' +
+      '<div class="retorno-actions">' +
+        '<a href="carrinho.html" class="btn">Voltar ao carrinho</a>' +
+        '<a href="meus-pedidos.html" class="btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border)">Meus pedidos</a>' +
+      '</div>';
+  }
+
+  function showPending() {
+    card.innerHTML =
+      '<div class="retorno-icon"><div class="retorno-spinner" role="status" aria-label="Processando"></div></div>' +
+      '<h1 class="retorno-title">Estamos confirmando seu pagamento…</h1>' +
+      '<p class="retorno-msg">Isso pode levar alguns instantes. Por favor, aguarde.</p>';
+  }
+
+  function showStillProcessing() {
+    card.innerHTML =
+      '<div class="retorno-icon" style="color:#f59e0b"><i class="bi bi-clock-history" aria-hidden="true"></i></div>' +
+      '<h1 class="retorno-title">Ainda processando</h1>' +
+      '<p class="retorno-msg">Seu pagamento ainda está sendo processado. Acompanhe o status em Meus pedidos.</p>' +
+      '<div class="retorno-actions">' +
+        '<a href="meus-pedidos.html" class="btn">Meus pedidos</a>' +
+      '</div>';
+  }
+
+  /* ---------- Ler external_reference ---------- */
+  var params = new URLSearchParams(location.search);
+  var ref = params.get('external_reference') || '';
+
+  if (!ref || !/^[a-f0-9]{64}$/.test(ref)) {
+    showNotFound();
+    return;
+  }
+
+  /* ---------- Polling ---------- */
+  var MAX_ATTEMPTS = 10;
+  var attempts = 0;
+
+  showLoading();
+
+  function consultar() {
+    fetch('/api/loja/pagamentos/' + ref, {
+      headers: { Authorization: 'Bearer ' + StoreAuth.getToken() }
+    })
+      .then(function (res) {
+        if (res.status === 401 || res.status === 403) {
+          StoreAuth.logout();
+          location.replace('entrar.html');
+          return null;
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+
+        if (data.status === 'pago') {
+          Cart.clear();
+          location.replace('pedido-confirmado.html?id=' + encodeURIComponent(String(data.orderId)));
+          return;
+        }
+
+        if (data.status === 'falhou') {
+          showFailed();
+          return;
+        }
+
+        /* pendente ou erro — polling */
+        if (data.status === 'pendente' || data.status === 'erro') {
+          attempts += 1;
+          if (attempts >= MAX_ATTEMPTS) {
+            showStillProcessing();
+            return;
+          }
+          showPending();
+          setTimeout(consultar, 3000);
+          return;
+        }
+
+        /* status inesperado */
+        showStillProcessing();
+      })
+      .catch(function (err) {
+        console.warn('[pagamento-retorno] fetch error:', err);
+        attempts += 1;
+        if (attempts >= MAX_ATTEMPTS) {
+          showStillProcessing();
+          return;
+        }
+        showPending();
+        setTimeout(consultar, 3000);
+      });
+  }
+
+  consultar();
+
+})();
+  </script>
+</body>
+</html>
