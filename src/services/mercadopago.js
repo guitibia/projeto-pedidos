@@ -16,25 +16,29 @@ function appUrl() {
 async function criarPreferencia({ externalReference, total, descricao }) {
   const pref = new Preference(getClient());
   const base = appUrl();
-  const res = await pref.create({
-    body: {
-      items: [{
-        id: externalReference,
-        title: descricao || 'Beleza Multi Marcas — Pedido',
-        quantity: 1,
-        unit_price: Number(total),
-        currency_id: 'BRL',
-      }],
-      external_reference: externalReference,
-      back_urls: {
-        success: base + '/loja/pagamento-retorno.html',
-        failure: base + '/loja/pagamento-retorno.html',
-        pending: base + '/loja/pagamento-retorno.html',
-      },
-      auto_return: 'approved',
-      notification_url: base + '/api/loja/pagamentos/webhook',
+  const publico = /^https:\/\//i.test(base); // MP exige URLs públicas (https) p/ auto_return/webhook
+  const body = {
+    items: [{
+      id: externalReference,
+      title: descricao || 'Beleza Multi Marcas — Pedido',
+      quantity: 1,
+      unit_price: Number(total),
+      currency_id: 'BRL',
+    }],
+    external_reference: externalReference,
+    back_urls: {
+      success: base + '/loja/pagamento-retorno.html',
+      failure: base + '/loja/pagamento-retorno.html',
+      pending: base + '/loja/pagamento-retorno.html',
     },
-  });
+  };
+  // auto_return e notification_url só com URL pública (o MP rejeita localhost).
+  // Em local, a confirmação acontece pela página de retorno (buscarPagamentoPorReferencia).
+  if (publico) {
+    body.auto_return = 'approved';
+    body.notification_url = base + '/api/loja/pagamentos/webhook';
+  }
+  const res = await pref.create({ body });
   return { id: res.id, init_point: res.init_point };
 }
 
