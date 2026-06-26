@@ -454,6 +454,14 @@
   /* ---------- Finalizar e pagar ---------- */
   btnFinalizar.addEventListener('click', async function () {
     btnFinalizar.disabled = true;
+    // Abre a aba do Mercado Pago já no gesto do clique (evita bloqueio de pop-up após o await)
+    var mpWin = window.open('', '_blank');
+    if (mpWin) {
+      try {
+        mpWin.document.write('<!doctype html><meta charset="utf-8"><title>Pagamento</title>' +
+          '<p style="font-family:system-ui,Segoe UI,sans-serif;color:#6b6b6b;padding:2rem">Abrindo o pagamento seguro do Mercado Pago…</p>');
+      } catch (e) {}
+    }
     var corpo = {
       items: Cart.getItems().map(function (i) { return { id: i.id, qty: i.qty }; }),
       cep: inpCep.value, address: inpAddress.value, houseNumber: inpHouseNumber.value,
@@ -465,13 +473,20 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + StoreAuth.getToken() },
         body: JSON.stringify(corpo)
       });
-      if (r.status === 401 || r.status === 403) { StoreAuth.logout(); location.href = 'entrar.html'; return; }
+      if (r.status === 401 || r.status === 403) { if (mpWin) mpWin.close(); StoreAuth.logout(); location.href = 'entrar.html'; return; }
       var data = await r.json().catch(function () { return {}; });
-      if (r.status === 201 && data.init_point) { window.location = data.init_point; return; }
+      if (r.status === 201 && data.init_point) {
+        // Mercado Pago na nova aba; a aba atual acompanha o pagamento e confirma sozinha
+        if (mpWin) { mpWin.location = data.init_point; } else { window.open(data.init_point, '_blank'); }
+        window.location = 'pagamento-retorno.html?external_reference=' + encodeURIComponent(data.external_reference);
+        return;
+      }
+      if (mpWin) mpWin.close();
       if (r.status === 503) { showAlert('Pagamento indisponível no momento. Tente mais tarde.'); }
       else { showAlert(data.error || 'Não foi possível iniciar o pagamento.'); }
       btnFinalizar.disabled = false;
     } catch (e) {
+      if (mpWin) mpWin.close();
       showAlert('Falha de conexão ao iniciar o pagamento.');
       btnFinalizar.disabled = false;
     }

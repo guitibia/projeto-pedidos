@@ -170,18 +170,21 @@
   function showPending() {
     card.innerHTML =
       '<div class="retorno-icon"><div class="retorno-spinner" role="status" aria-label="Processando"></div></div>' +
-      '<h1 class="retorno-title">Estamos confirmando seu pagamento…</h1>' +
-      '<p class="retorno-msg">Isso pode levar alguns instantes. Por favor, aguarde.</p>';
+      '<h1 class="retorno-title">Aguardando seu pagamento…</h1>' +
+      '<p class="retorno-msg">Conclua o pagamento na aba do Mercado Pago. Assim que for aprovado, confirmamos aqui automaticamente.</p>';
   }
 
   function showStillProcessing() {
     card.innerHTML =
       '<div class="retorno-icon" style="color:#f59e0b"><i class="bi bi-clock-history" aria-hidden="true"></i></div>' +
-      '<h1 class="retorno-title">Ainda processando</h1>' +
-      '<p class="retorno-msg">Seu pagamento ainda está sendo processado. Acompanhe o status em Meus pedidos.</p>' +
+      '<h1 class="retorno-title">Ainda aguardando</h1>' +
+      '<p class="retorno-msg">Se você já concluiu o pagamento, clique em "Verificar pagamento". Caso contrário, finalize na aba do Mercado Pago.</p>' +
       '<div class="retorno-actions">' +
-        '<a href="meus-pedidos.html" class="btn">Meus pedidos</a>' +
+        '<button id="btn-verificar" class="btn accent-btn" type="button">Verificar pagamento</button>' +
+        '<a href="meus-pedidos.html" class="btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border)">Meus pedidos</a>' +
       '</div>';
+    var b = document.getElementById('btn-verificar');
+    if (b) b.addEventListener('click', function () { attempts = 0; showPending(); consultar(); });
   }
 
   /* ---------- Ler external_reference ---------- */
@@ -194,7 +197,9 @@
   }
 
   /* ---------- Polling ---------- */
-  var MAX_ATTEMPTS = 10;
+  // Paga-se na outra aba, então damos bastante margem (~40 x 3s = 2 min) antes
+  // de oferecer o botão manual de "Verificar pagamento".
+  var MAX_ATTEMPTS = 40;
   var attempts = 0;
 
   showLoading();
