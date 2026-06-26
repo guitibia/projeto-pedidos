@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificar e-mail — Beleza Multi Marcas</title>
+  <meta name="description" content="Confirme seu endereço de e-mail para ativar sua conta na Beleza Multi Marcas.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/loja/loja.css">
+  <style>
+    .auth-wrap { max-width: 480px; margin: 2.5rem auto 3rem; padding: 0 20px; }
+    .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.2rem 2rem; box-shadow: var(--shadow); text-align: center; }
+    .state-icon { font-size: 3.5rem; margin-bottom: .8rem; line-height: 1; }
+    .state-icon.loading { color: var(--text-soft); }
+    .state-icon.success { color: var(--success); }
+    .state-icon.error { color: var(--danger); }
+    .auth-card h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 1.75rem; margin: 0 0 .6rem; color: var(--text); }
+    .auth-card p { color: var(--text-soft); font-size: .96rem; margin: 0 0 1.4rem; }
+    .auth-card .btn { min-width: 180px; margin: .4rem auto 0; display: inline-flex; }
+    .form-alert { border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1rem; font-size: .93rem; }
+    .form-alert.error { background: #fdf0ef; color: var(--danger); border: 1px solid #f5c6c3; }
+    .form-alert.success { background: #edf7f1; color: var(--success); border: 1px solid #b7e2c8; }
+    .resend-form { margin-top: 1.2rem; text-align: left; }
+    .resend-form label { display: block; font-size: .88rem; font-weight: 700; margin-bottom: .3rem; color: var(--text); }
+    .resend-form input[type="email"] {
+      width: 100%; height: 44px; border: 1px solid var(--border); border-radius: 10px;
+      padding: 0 .9rem; font: inherit; font-size: .95rem; color: var(--text);
+      background: var(--bg); margin-bottom: .8rem; transition: border-color .18s, box-shadow .18s;
+    }
+    .resend-form input[type="email"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .footer-link { margin-top: 1.4rem; font-size: .9rem; color: var(--text-soft); }
+    .footer-link a { color: var(--accent-dark); font-weight: 700; }
+    /* Loading spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { display: inline-block; animation: spin .8s linear infinite; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="store-header" role="banner">
+    <div class="store-header__inner">
+      <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas — página inicial">
+        <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+        <div class="logo__text">
+          <span class="logo__word">Beleza</span>
+          <span class="logo__sub">Multi Marcas</span>
+        </div>
+      </a>
+
+      <form class="store-search" role="search" action="produtos.html" method="get">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Buscar produtos, marcas…" aria-label="Buscar produtos">
+      </form>
+
+      <nav class="store-header__nav" aria-label="Ações do usuário">
+        <a href="#" title="Favoritos (em breve)" aria-label="Favoritos — em breve">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+        </a>
+        <a href="entrar.html" title="Minha conta" aria-label="Minha conta">
+          <i class="bi bi-person" aria-hidden="true"></i>
+        </a>
+        <a href="carrinho.html" title="Carrinho de compras" aria-label="Carrinho de compras" style="position:relative">
+          <i class="bi bi-bag" aria-hidden="true"></i>
+          <span id="cart-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+    <div class="auth-wrap">
+      <div class="auth-card" id="verify-card" role="status" aria-live="polite">
+
+        <!-- Loading state (default) -->
+        <div id="state-loading">
+          <div class="state-icon loading">
+            <i class="bi bi-envelope spinner" aria-hidden="true"></i>
+          </div>
+          <h1>Confirmando seu e-mail…</h1>
+          <p>Aguarde enquanto verificamos seu link.</p>
+        </div>
+
+        <!-- Success state (hidden initially) -->
+        <div id="state-success" style="display:none">
+          <div class="state-icon success">
+            <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+          </div>
+          <h1>E-mail confirmado!</h1>
+          <p>Sua conta foi ativada com sucesso. Agora você pode entrar.</p>
+          <a href="entrar.html" class="btn">
+            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+            Entrar
+          </a>
+        </div>
+
+        <!-- Error state (hidden initially) -->
+        <div id="state-error" style="display:none">
+          <div class="state-icon error">
+            <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+          </div>
+          <h1>Link inválido</h1>
+          <div class="form-alert error" id="error-msg" role="alert"></div>
+          <div class="resend-form">
+            <label for="resend-email">Reenviar link de verificação para:</label>
+            <input type="email" id="resend-email" placeholder="seu@email.com" autocomplete="email">
+            <div class="form-alert" id="resend-alert" role="alert" aria-live="assertive" style="display:none"></div>
+            <button type="button" class="btn" id="resend-btn" style="width:100%">
+              <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+              Reenviar link
+            </button>
+          </div>
+          <div class="footer-link">
+            <a href="entrar.html">Já tenho conta ativa, entrar</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="store-footer" role="contentinfo">
+    <div class="store-footer__inner">
+      <div>
+        <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas">
+          <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+          <div class="logo__text">
+            <span class="logo__word">Beleza</span>
+            <span class="logo__sub">Multi Marcas</span>
+          </div>
+        </a>
+        <p style="margin:.8rem 0 0;font-size:.85rem;max-width:22ch">Cosméticos e beleza das melhores marcas, reunidos para você.</p>
+      </div>
+
+      <div class="store-footer__cols">
+        <div>
+          <h4>Navegação</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="/loja/">Início</a></li>
+            <li><a href="produtos.html">Todos os Produtos</a></li>
+            <li><a href="carrinho.html">Carrinho</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Informações</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="privacidade.html">Política de Privacidade</a></li>
+            <li><a href="mailto:contato@belezamultimarcas.com.br">Contato</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Redes Sociais</h4>
+          <div style="display:flex;gap:.6rem;margin-top:.2rem">
+            <a href="#" aria-label="Instagram" title="Instagram" class="icon-btn"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+            <a href="#" aria-label="Facebook" title="Facebook" class="icon-btn"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+            <a href="#" aria-label="WhatsApp" title="WhatsApp" class="icon-btn"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="store-footer__bottom">
+      <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
+      &nbsp;·&nbsp;
+      <a href="privacidade.html">Privacidade</a>
+      &nbsp;·&nbsp;
+      <a href="/login.html" style="color:var(--text-soft);opacity:.55;font-size:.78rem" aria-label="Área administrativa">
+        <i class="bi bi-lock" aria-hidden="true"></i> Admin
+      </a>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="/loja/cart.js"></script>
+  <script src="/loja/loja.js"></script>
+  <script src="/loja/account.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      document.getElementById('ano').textContent = new Date().getFullYear();
+
+      function showState(name) {
+        ['loading', 'success', 'error'].forEach(function (s) {
+          document.getElementById('state-' + s).style.display = (s === name) ? '' : 'none';
+        });
+      }
+
+      /* ---------- Verify on load ---------- */
+      (async function () {
+        var params = new URLSearchParams(window.location.search);
+        var token = params.get('token');
+
+        if (!token) {
+          document.getElementById('error-msg').textContent = 'Nenhum token de verificação encontrado na URL.';
+          showState('error');
+          return;
+        }
+
+        try {
+          var res = await StoreAuth.api('/verify?token=' + encodeURIComponent(token));
+          var data = await res.json().catch(function () { return {}; });
+
+          if (res.ok) {
+            showState('success');
+          } else {
+            var msg = (data && data.error) ? data.error : (data && data.message) ? data.message : 'Link inválido ou expirado.';
+            document.getElementById('error-msg').textContent = esc(msg);
+            showState('error');
+          }
+        } catch (err) {
+          document.getElementById('error-msg').textContent = 'Erro de conexão ao verificar o link.';
+          showState('error');
+        }
+      })();
+
+      /* ---------- Resend link ---------- */
+      document.getElementById('resend-btn').addEventListener('click', async function () {
+        var btn = this;
+        var emailInput = document.getElementById('resend-email');
+        var alertEl = document.getElementById('resend-alert');
+        var email = emailInput.value.trim();
+
+        alertEl.style.display = 'none';
+        alertEl.className = 'form-alert';
+        alertEl.textContent = '';
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          alertEl.textContent = 'Informe um e-mail válido.';
+          alertEl.className = 'form-alert error';
+          alertEl.style.display = 'block';
+          emailInput.focus();
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i> Enviando…';
+
+        try {
+          var res = await StoreAuth.api('/resend', {
+            method: 'POST',
+            body: JSON.stringify({ email: email })
+          });
+          var data = await res.json().catch(function () { return {}; });
+
+          if (res.ok) {
+            alertEl.textContent = 'Link reenviado! Verifique sua caixa de entrada.';
+            alertEl.className = 'form-alert success';
+          } else {
+            var msg = (data && data.error) ? data.error : 'Erro ao reenviar. Tente novamente.';
+            alertEl.textContent = esc(msg);
+            alertEl.className = 'form-alert error';
+          }
+          alertEl.style.display = 'block';
+        } catch (err) {
+          alertEl.textContent = 'Erro de conexão. Tente novamente.';
+          alertEl.className = 'form-alert error';
+          alertEl.style.display = 'block';
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reenviar link';
+      });
+
+    })();
+  </script>
+</body>
+</html>

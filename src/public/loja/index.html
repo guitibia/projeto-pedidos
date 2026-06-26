@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beleza Multi Marcas — Cosméticos e Beleza</title>
+  <meta name="description" content="Descubra cosméticos e produtos de beleza das melhores marcas com preços incríveis.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/loja/loja.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="store-header" role="banner">
+    <div class="store-header__inner">
+      <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas — página inicial">
+        <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+        <div class="logo__text">
+          <span class="logo__word">Beleza</span>
+          <span class="logo__sub">Multi Marcas</span>
+        </div>
+      </a>
+
+      <form class="store-search" role="search" action="produtos.html" method="get">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Buscar produtos, marcas…" aria-label="Buscar produtos">
+      </form>
+
+      <nav class="store-header__nav" aria-label="Ações do usuário">
+        <a href="#" title="Favoritos (em breve)" aria-label="Favoritos — em breve">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+        </a>
+        <a id="account-link" href="/loja/entrar.html" title="Entrar ou cadastrar" aria-label="Entrar ou cadastrar">
+          <i class="bi bi-person" aria-hidden="true"></i>
+        </a>
+        <a href="carrinho.html" title="Carrinho de compras" aria-label="Carrinho de compras" style="position:relative">
+          <i class="bi bi-bag" aria-hidden="true"></i>
+          <span id="cart-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+    <div class="container">
+
+      <!-- HERO -->
+      <section class="hero" aria-labelledby="hero-title">
+        <h1 id="hero-title">Beleza para o seu dia</h1>
+        <p>Descubra cosméticos, perfumes e cuidados das melhores marcas — com os melhores preços reunidos em um só lugar.</p>
+        <a href="produtos.html" class="btn">
+          <i class="bi bi-bag-heart-fill" aria-hidden="true"></i>
+          Comprar agora
+        </a>
+      </section>
+
+      <!-- COMPRE POR MARCA -->
+      <section aria-labelledby="marcas-title">
+        <h2 class="section-title" id="marcas-title">Compre por marca</h2>
+        <div id="marcas-row" style="display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:2rem" role="list" aria-label="Filtrar por marca">
+          <!-- chips injetados via JS -->
+          <span class="brand-chip" style="opacity:.4;pointer-events:none">Carregando…</span>
+        </div>
+      </section>
+
+      <!-- OFERTAS -->
+      <section aria-labelledby="ofertas-title">
+        <h2 class="section-title" id="ofertas-title">Ofertas</h2>
+        <div id="grid-ofertas" class="product-grid" aria-live="polite" aria-label="Produtos em oferta">
+          <!-- cards injetados via JS -->
+        </div>
+        <div id="ofertas-empty" style="display:none;color:var(--text-soft);margin-bottom:2rem">Nenhuma oferta no momento.</div>
+      </section>
+
+      <!-- NOVIDADES -->
+      <section aria-labelledby="novidades-title">
+        <h2 class="section-title" id="novidades-title">Novidades</h2>
+        <div id="grid-novidades" class="product-grid" aria-live="polite" aria-label="Produtos mais recentes">
+          <!-- cards injetados via JS -->
+        </div>
+        <div id="novidades-empty" style="display:none;color:var(--text-soft);margin-bottom:2rem">Nenhum produto encontrado.</div>
+      </section>
+
+    </div><!-- /.container -->
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="store-footer" role="contentinfo">
+    <div class="store-footer__inner">
+      <!-- Brand -->
+      <div>
+        <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas">
+          <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+          <div class="logo__text">
+            <span class="logo__word">Beleza</span>
+            <span class="logo__sub">Multi Marcas</span>
+          </div>
+        </a>
+        <p style="margin:.8rem 0 0;font-size:.85rem;max-width:22ch">Cosméticos e beleza das melhores marcas, reunidos para você.</p>
+      </div>
+
+      <div class="store-footer__cols">
+        <!-- Navegação -->
+        <div>
+          <h4>Navegação</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="/loja/">Início</a></li>
+            <li><a href="produtos.html">Todos os Produtos</a></li>
+            <li><a href="carrinho.html">Carrinho</a></li>
+          </ul>
+        </div>
+
+        <!-- Informações -->
+        <div>
+          <h4>Informações</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="privacidade.html">Política de Privacidade</a></li>
+            <li><a href="mailto:contato@belezamultimarcas.com.br">Contato</a></li>
+          </ul>
+        </div>
+
+        <!-- Redes sociais -->
+        <div>
+          <h4>Redes Sociais</h4>
+          <div style="display:flex;gap:.6rem;margin-top:.2rem">
+            <a href="#" aria-label="Instagram" title="Instagram" class="icon-btn"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+            <a href="#" aria-label="Facebook" title="Facebook" class="icon-btn"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+            <a href="#" aria-label="WhatsApp" title="WhatsApp" class="icon-btn"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="store-footer__bottom">
+      <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
+      &nbsp;·&nbsp;
+      <a href="privacidade.html">Privacidade</a>
+      &nbsp;·&nbsp;
+      <a href="/login.html" style="color:var(--text-soft);opacity:.55;font-size:.78rem" aria-label="Área administrativa">
+        <i class="bi bi-lock" aria-hidden="true"></i> Admin
+      </a>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="/loja/cart.js"></script>
+  <script src="/loja/loja.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      /* ---- Footer year ---- */
+      document.getElementById('ano').textContent = new Date().getFullYear();
+
+      /* ---- Render grids ---- */
+      function renderGrid(containerId, emptyId, items) {
+        const el = document.getElementById(containerId);
+        const empty = document.getElementById(emptyId);
+        if (!el) return;
+        if (!items || items.length === 0) {
+          el.style.display = 'none';
+          if (empty) empty.style.display = '';
+          return;
+        }
+        el.innerHTML = items.map(cardHTML).join('');
+        if (empty) empty.style.display = 'none';
+      }
+
+      /* ---- Render brand chips ---- */
+      function renderMarcas(franquias) {
+        const row = document.getElementById('marcas-row');
+        if (!row) return;
+        if (!franquias || franquias.length === 0) {
+          row.innerHTML = '<span style="color:var(--text-soft)">Nenhuma marca disponível.</span>';
+          return;
+        }
+        row.innerHTML = franquias.map(function (f) {
+          const nome = typeof f === 'string' ? f : (f.franchise || f.name || '');
+          return '<a href="produtos.html?franchise=' + encodeURIComponent(nome) + '" class="brand-chip" role="listitem">' +
+            '<i class="bi bi-stars" aria-hidden="true"></i>' + esc(nome) + '</a>';
+        }).join('');
+      }
+
+      /* ---- Fetch & boot ---- */
+      function fetchJSON(url) {
+        return fetch(url).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status + ' — ' + url);
+          return r.json();
+        });
+      }
+
+      /* Marcas */
+      fetchJSON('/api/loja/franquias')
+        .then(function (data) { renderMarcas(data); })
+        .catch(function (err) {
+          console.warn('[loja/index] franquias:', err);
+          const row = document.getElementById('marcas-row');
+          if (row) row.innerHTML = '';
+        });
+
+      /* Ofertas — todos os produtos, filtrar client-side por promotion_price */
+      fetchJSON('/api/loja/produtos')
+        .then(function (data) {
+          const ofertas = data
+            .filter(function (p) { return p.promotion_price != null && Number(p.promotion_price) > 0; })
+            .slice(0, 8);
+          renderGrid('grid-ofertas', 'ofertas-empty', ofertas);
+        })
+        .catch(function (err) {
+          console.warn('[loja/index] ofertas:', err);
+          renderGrid('grid-ofertas', 'ofertas-empty', []);
+        });
+
+      /* Novidades */
+      fetchJSON('/api/loja/produtos?sort=recentes')
+        .then(function (data) {
+          renderGrid('grid-novidades', 'novidades-empty', data.slice(0, 8));
+        })
+        .catch(function (err) {
+          console.warn('[loja/index] novidades:', err);
+          renderGrid('grid-novidades', 'novidades-empty', []);
+        });
+
+    })();
+  </script>
+</body>
+</html>

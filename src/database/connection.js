@@ -59,6 +59,64 @@ pool.getConnection()
     // Migração: valor de venda (base para cálculo de custo por desconto de franquia)
     try { await conn.query('ALTER TABLE products ADD COLUMN sale_value DECIMAL(10,2) DEFAULT NULL'); } catch (_) {}
 
+    // Migração: foto e descrição de produto (para a loja)
+    try { await conn.query('ALTER TABLE products ADD COLUMN image VARCHAR(255) DEFAULT NULL'); } catch (_) {}
+    try { await conn.query('ALTER TABLE products ADD COLUMN description TEXT DEFAULT NULL'); } catch (_) {}
+
+    // Migração: contas de cliente da loja
+    for (const sql of [
+      'ALTER TABLE clients ADD COLUMN email VARCHAR(255) DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN cpf VARCHAR(11) DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN birthdate DATE DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN password_hash VARCHAR(255) DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN email_verified TINYINT(1) NOT NULL DEFAULT 0',
+      'ALTER TABLE clients ADD COLUMN verification_token VARCHAR(64) DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN verification_expires DATETIME DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN lgpd_consent_at DATETIME DEFAULT NULL',
+      'CREATE UNIQUE INDEX uq_clients_email ON clients(email)',
+      'CREATE UNIQUE INDEX uq_clients_cpf ON clients(cpf)',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
+    // Migração: checkout da loja (sub-projeto 3)
+    for (const sql of [
+      "ALTER TABLE orders ADD COLUMN origin VARCHAR(20) NOT NULL DEFAULT 'painel'",
+      'ALTER TABLE clients ADD COLUMN cep VARCHAR(8) DEFAULT NULL',
+      'ALTER TABLE clients ADD COLUMN city VARCHAR(120) DEFAULT NULL',
+      "ALTER TABLE orders MODIFY COLUMN payment_method ENUM('PIX','DINHEIRO','CARTÃO DE CRÉDITO','PARCELADO','PAGAMENTO COMBINADO','A COMBINAR') NOT NULL",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
+    // Migração: pagamento (sub-projeto 4)
+    try {
+      await conn.query(`
+        CREATE TABLE IF NOT EXISTS payment_intents (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          client_id INT NOT NULL,
+          external_reference VARCHAR(64) NOT NULL UNIQUE,
+          items_json JSON NOT NULL,
+          address VARCHAR(255), house_number VARCHAR(30), neighborhood VARCHAR(120),
+          cep VARCHAR(8), city VARCHAR(120),
+          subtotal DECIMAL(10,2) NOT NULL,
+          delivery_fee DECIMAL(6,2) NOT NULL DEFAULT 0,
+          total DECIMAL(10,2) NOT NULL,
+          mp_preference_id VARCHAR(64),
+          mp_payment_id VARCHAR(64),
+          status VARCHAR(20) NOT NULL DEFAULT 'pendente',
+          order_id INT DEFAULT NULL,
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`);
+    } catch (_) {}
+    for (const sql of [
+      "ALTER TABLE orders ADD COLUMN payment_status VARCHAR(20) DEFAULT NULL",
+      "ALTER TABLE orders ADD COLUMN mp_payment_id VARCHAR(64) DEFAULT NULL",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
+    // Migração: PIX transparente (sub-projeto 5)
+    for (const sql of [
+      'ALTER TABLE payment_intents ADD COLUMN pix_qr_code TEXT DEFAULT NULL',
+      'ALTER TABLE payment_intents ADD COLUMN pix_qr_base64 MEDIUMTEXT DEFAULT NULL',
+      'ALTER TABLE payment_intents ADD COLUMN pix_expiration DATETIME DEFAULT NULL',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Migração: tabela de percentuais de desconto por franquia
     try {
       await conn.query(`

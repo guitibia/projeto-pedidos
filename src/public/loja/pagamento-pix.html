@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento PIX — Beleza Multi Marcas</title>
+  <meta name="description" content="Escaneie o QR Code ou copie o código PIX para concluir seu pagamento.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/loja/loja.css">
+  <style>
+    .pix-wrap { max-width: 600px; margin: 3rem auto 4rem; padding: 0 20px; text-align: center; }
+    .pix-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.8rem 2rem; box-shadow: 0 2px 16px rgba(60,40,35,.08); }
+    .pix-icon { font-size: 3.2rem; margin-bottom: .8rem; }
+    .pix-title { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 700; font-size: 1.9rem; margin: 0 0 .6rem; color: var(--text); }
+    .pix-msg { color: var(--text-soft); margin: 0 0 1.2rem; line-height: 1.6; }
+    .pix-qr { margin: 1rem auto; display: block; max-width: 220px; border: 4px solid var(--border); border-radius: 8px; }
+    .pix-amount { font-size: 1.5rem; font-weight: 700; color: var(--text); margin: .8rem 0; }
+    .pix-copy-wrap { display: flex; gap: .5rem; align-items: center; margin: 1rem 0; }
+    .pix-copy-wrap textarea { flex: 1; resize: none; height: 4rem; font-size: .8rem; padding: .5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg, #fafafa); color: var(--text); font-family: monospace; }
+    .pix-copy-btn { flex-shrink: 0; padding: .6rem 1rem; font-size: .9rem; white-space: nowrap; }
+    .pix-countdown { font-size: 1rem; color: var(--text-soft); margin: .6rem 0 1rem; }
+    .pix-countdown strong { color: var(--text); font-size: 1.1rem; }
+    .pix-actions { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: center; margin-top: 1.4rem; }
+    .pix-actions .btn { font-size: .95rem; padding: .75rem 1.5rem; }
+    .pix-spinner { display: inline-block; width: 2rem; height: 2rem; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: pix-spin .8s linear infinite; margin-bottom: 1rem; }
+    @keyframes pix-spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="store-header" role="banner">
+    <div class="store-header__inner">
+      <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas — página inicial">
+        <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+        <div class="logo__text">
+          <span class="logo__word">Beleza</span>
+          <span class="logo__sub">Multi Marcas</span>
+        </div>
+      </a>
+
+      <form class="store-search" role="search" action="produtos.html" method="get">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Buscar produtos, marcas…" aria-label="Buscar produtos">
+      </form>
+
+      <nav class="store-header__nav" aria-label="Ações do usuário">
+        <a href="#" title="Favoritos (em breve)" aria-label="Favoritos — em breve">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+        </a>
+        <a id="account-link" href="/loja/entrar.html" title="Entrar ou cadastrar" aria-label="Entrar ou cadastrar">
+          <i class="bi bi-person" aria-hidden="true"></i>
+        </a>
+        <a href="carrinho.html" title="Carrinho de compras" aria-label="Carrinho de compras" style="position:relative">
+          <i class="bi bi-bag" aria-hidden="true"></i>
+          <span id="cart-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+    <div class="pix-wrap">
+      <div class="pix-card" id="pix-card" aria-live="polite" aria-atomic="true">
+        <!-- conteúdo injetado via JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="store-footer" role="contentinfo">
+    <div class="store-footer__inner">
+      <!-- Brand -->
+      <div>
+        <a href="/loja/" class="logo" aria-label="Beleza Multi Marcas">
+          <img src="/loja/emblem.svg" class="logo__emblem" alt="">
+          <div class="logo__text">
+            <span class="logo__word">Beleza</span>
+            <span class="logo__sub">Multi Marcas</span>
+          </div>
+        </a>
+        <p style="margin:.8rem 0 0;font-size:.85rem;max-width:22ch">Cosméticos e beleza das melhores marcas, reunidos para você.</p>
+      </div>
+
+      <div class="store-footer__cols">
+        <!-- Navegação -->
+        <div>
+          <h4>Navegação</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="/loja/">Início</a></li>
+            <li><a href="produtos.html">Todos os Produtos</a></li>
+            <li><a href="carrinho.html">Carrinho</a></li>
+          </ul>
+        </div>
+
+        <!-- Informações -->
+        <div>
+          <h4>Informações</h4>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
+            <li><a href="privacidade.html">Política de Privacidade</a></li>
+            <li><a href="mailto:contato@belezamultimarcas.com.br">Contato</a></li>
+          </ul>
+        </div>
+
+        <!-- Redes sociais -->
+        <div>
+          <h4>Redes Sociais</h4>
+          <div style="display:flex;gap:.6rem;margin-top:.2rem">
+            <a href="#" aria-label="Instagram" title="Instagram" class="icon-btn"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+            <a href="#" aria-label="Facebook" title="Facebook" class="icon-btn"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+            <a href="#" aria-label="WhatsApp" title="WhatsApp" class="icon-btn"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="store-footer__bottom">
+      <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
+      &nbsp;·&nbsp;
+      <a href="privacidade.html">Privacidade</a>
+      &nbsp;·&nbsp;
+      <a href="/login.html" style="color:var(--text-soft);opacity:.55;font-size:.78rem" aria-label="Área administrativa">
+        <i class="bi bi-lock" aria-hidden="true"></i> Admin
+      </a>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="/loja/cart.js"></script>
+  <script src="/loja/loja.js"></script>
+  <script src="/loja/account.js"></script>
+  <script>
+(function () {
+  'use strict';
+
+  /* ---------- Guard de autenticação ---------- */
+  if (!StoreAuth.isLoggedIn()) {
+    location.replace('entrar.html?next=' + encodeURIComponent('/loja/meus-pedidos.html'));
+    return;
+  }
+
+  /* ---------- Footer year ---------- */
+  document.getElementById('ano').textContent = new Date().getFullYear();
+
+  /* ---------- Referências do DOM ---------- */
+  var card = document.getElementById('pix-card');
+
+  /* ---------- Estado do polling e cronômetro ---------- */
+  var pollTimer = null;
+  var countdownTimer = null;
+  var pixExpired = false;
+
+  /* ---------- Helpers de UI ---------- */
+  function showLoading() {
+    card.innerHTML =
+      '<div class="pix-icon"><div class="pix-spinner" role="status" aria-label="Carregando"></div></div>' +
+      '<h1 class="pix-title">Carregando PIX…</h1>' +
+      '<p class="pix-msg">Aguarde enquanto preparamos seu QR Code.</p>';
+  }
+
+  function showNotFound() {
+    card.innerHTML =
+      '<div class="pix-icon" style="color:var(--text-soft)"><i class="bi bi-question-circle" aria-hidden="true"></i></div>' +
+      '<h1 class="pix-title">Pagamento não encontrado</h1>' +
+      '<p class="pix-msg">Não foi possível identificar o pagamento. Verifique seus pedidos para acompanhar o status.</p>' +
+      '<div class="pix-actions">' +
+        '<a href="meus-pedidos.html" class="btn">Meus pedidos</a>' +
+      '</div>';
+  }
+
+  function showFailed(expired) {
+    var msg = expired
+      ? 'PIX expirado ou não aprovado'
+      : 'PIX expirado ou não aprovado';
+    card.innerHTML =
+      '<div class="pix-icon" style="color:#d32f2f"><i class="bi bi-x-circle" aria-hidden="true"></i></div>' +
+      '<h1 class="pix-title">' + esc(msg) + '</h1>' +
+      '<p class="pix-msg">O prazo para pagamento expirou ou o PIX não foi aprovado. Você pode tentar novamente pelo carrinho.</p>' +
+      '<div class="pix-actions">' +
+        '<a href="carrinho.html" class="btn">Voltar ao carrinho</a>' +
+        '<a href="meus-pedidos.html" class="btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border)">Meus pedidos</a>' +
+      '</div>';
+  }
+
+  function showExpired() {
+    card.innerHTML =
+      '<div class="pix-icon" style="color:#f59e0b"><i class="bi bi-clock-history" aria-hidden="true"></i></div>' +
+      '<h1 class="pix-title">PIX expirado</h1>' +
+      '<p class="pix-msg">O tempo para pagamento foi encerrado. Você pode tentar novamente pelo carrinho.</p>' +
+      '<div class="pix-actions">' +
+        '<a href="carrinho.html" class="btn">Voltar ao carrinho</a>' +
+        '<a href="meus-pedidos.html" class="btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border)">Meus pedidos</a>' +
+      '</div>';
+  }
+
+  /* ---------- Renderizar UI do PIX ---------- */
+  function renderPix(data) {
+    // Elemento base
+    card.innerHTML =
+      '<h1 class="pix-title">Pague com PIX</h1>' +
+      '<p class="pix-msg">Escaneie o QR Code abaixo ou copie o código PIX para pagar no seu banco.</p>' +
+      '<img id="pix-qr-img" class="pix-qr" alt="QR Code PIX" src="data:image/png;base64,' + esc(data.qr_code_base64) + '">' +
+      '<p class="pix-amount" id="pix-amount">' + esc(fmtBRL(data.total)) + '</p>' +
+      '<div class="pix-copy-wrap">' +
+        '<textarea id="pix-code" class="pix-code" readonly aria-label="Código PIX copia e cola"></textarea>' +
+        '<button id="pix-copy-btn" class="btn pix-copy-btn" type="button">' +
+          '<i class="bi bi-clipboard" aria-hidden="true"></i> Copiar código' +
+        '</button>' +
+      '</div>' +
+      '<p class="pix-countdown">Expira em: <strong id="pix-countdown">--:--</strong></p>';
+
+    // Setar o código PIX via value (não via esc/innerHTML)
+    var codeEl = document.getElementById('pix-code');
+    if (codeEl) codeEl.value = data.qr_code;
+
+    // Botão copiar
+    var copyBtn = document.getElementById('pix-copy-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        var code = data.qr_code;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code).then(function () {
+            showCopied(copyBtn);
+          }).catch(function () {
+            fallbackCopy(code, copyBtn);
+          });
+        } else {
+          fallbackCopy(code, copyBtn);
+        }
+      });
+    }
+
+    // Iniciar cronômetro
+    startCountdown(data.expiration);
+  }
+
+  function showCopied(btn) {
+    var original = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check2" aria-hidden="true"></i> Copiado!';
+    btn.disabled = true;
+    setTimeout(function () {
+      btn.innerHTML = original;
+      btn.disabled = false;
+    }, 2000);
+  }
+
+  function fallbackCopy(text, btn) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showCopied(btn);
+    } catch (e) {
+      console.warn('[pagamento-pix] fallback copy failed', e);
+    }
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- Cronômetro ---------- */
+  function startCountdown(expiration) {
+    if (countdownTimer) clearInterval(countdownTimer);
+
+    var expiresAt = new Date(expiration).getTime();
+
+    function tick() {
+      var now = Date.now();
+      var remaining = Math.max(0, expiresAt - now);
+      var el = document.getElementById('pix-countdown');
+      if (!el) { clearInterval(countdownTimer); return; }
+
+      var mins = Math.floor(remaining / 60000);
+      var secs = Math.floor((remaining % 60000) / 1000);
+      el.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+
+      if (remaining <= 0) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        pixExpired = true;
+        // Última checagem ao expirar
+        onCountdownZero();
+      }
+    }
+
+    tick();
+    countdownTimer = setInterval(tick, 1000);
+  }
+
+  function onCountdownZero() {
+    // Para o polling regular
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+    // Faz uma última verificação
+    fetch('/api/loja/pagamentos/' + ref, {
+      headers: { Authorization: 'Bearer ' + StoreAuth.getToken() }
+    })
+      .then(function (res) {
+        if (res.status === 401 || res.status === 403) {
+          StoreAuth.logout();
+          location.replace('entrar.html');
+          return null;
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        if (data.status === 'pago') {
+          Cart.clear();
+          location.replace('pedido-confirmado.html?id=' + encodeURIComponent(String(data.orderId)));
+          return;
+        }
+        // Não pago — exibir expirado
+        showExpired();
+      })
+      .catch(function (err) {
+        console.warn('[pagamento-pix] countdown final check error:', err);
+        showExpired();
+      });
+  }
+
+  /* ---------- Ler external_reference ---------- */
+  var params = new URLSearchParams(location.search);
+  var ref = params.get('external_reference') || '';
+
+  if (!ref || !/^[a-f0-9]{64}$/.test(ref)) {
+    showNotFound();
+    return;
+  }
+
+  /* ---------- Polling de status ---------- */
+  function iniciarPolling() {
+    if (pollTimer) clearTimeout(pollTimer);
+    pollTimer = setTimeout(verificarStatus, 4000);
+  }
+
+  function verificarStatus() {
+    if (pixExpired) return;
+    fetch('/api/loja/pagamentos/' + ref, {
+      headers: { Authorization: 'Bearer ' + StoreAuth.getToken() }
+    })
+      .then(function (res) {
+        if (res.status === 401 || res.status === 403) {
+          StoreAuth.logout();
+          location.replace('entrar.html');
+          return null;
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        if (pixExpired) return;
+
+        if (data.status === 'pago') {
+          if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+          Cart.clear();
+          location.replace('pedido-confirmado.html?id=' + encodeURIComponent(String(data.orderId)));
+          return;
+        }
+
+        if (data.status === 'falhou') {
+          if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+          showFailed(false);
+          return;
+        }
+
+        // pendente ou erro — continuar polling
+        iniciarPolling();
+      })
+      .catch(function (err) {
+        console.warn('[pagamento-pix] poll error:', err);
+        if (!pixExpired) iniciarPolling();
+      });
+  }
+
+  /* ---------- Carga inicial: buscar QR ---------- */
+  showLoading();
+
+  fetch('/api/loja/pagamentos/' + ref + '/pix', {
+    headers: { Authorization: 'Bearer ' + StoreAuth.getToken() }
+  })
+    .then(function (res) {
+      if (res.status === 401 || res.status === 403) {
+        StoreAuth.logout();
+        location.replace('entrar.html');
+        return null;
+      }
+      return res.json();
+    })
+    .then(function (data) {
+      if (!data) return;
+
+      // Se já estiver pago antes de renderizar
+      if (data.status === 'pago') {
+        Cart.clear();
+        location.replace('pedido-confirmado.html?id=' + encodeURIComponent(String(data.orderId)));
+        return;
+      }
+
+      // Renderizar QR e iniciar polling + cronômetro
+      renderPix(data);
+      iniciarPolling();
+    })
+    .catch(function (err) {
+      console.warn('[pagamento-pix] load error:', err);
+      card.innerHTML =
+        '<div class="pix-icon" style="color:#d32f2f"><i class="bi bi-exclamation-circle" aria-hidden="true"></i></div>' +
+        '<h1 class="pix-title">Erro ao carregar PIX</h1>' +
+        '<p class="pix-msg">Não foi possível carregar o QR Code. Tente novamente.</p>' +
+        '<div class="pix-actions">' +
+          '<a href="carrinho.html" class="btn">Voltar ao carrinho</a>' +
+        '</div>';
+    });
+
+})();
+  </script>
+</body>
+</html>

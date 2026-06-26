@@ -1,4 +1,22 @@
 const db = require('../database/connection');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads', 'products');
+const MIME_EXT = { 'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    // extensão derivada do mimetype VALIDADO (nunca do nome do arquivo do cliente)
+    const ext = MIME_EXT[file.mimetype] || '.jpg';
+    cb(null, `p${req.params.id}_${Date.now()}${ext}`);
+  }
+});
+const uploadImage = multer({
+  storage,
+  limits: { fileSize: 4 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, /image\/(jpe?g|png|webp|gif)/.test(file.mimetype))
+}).single('image');
 
 // Busca o percentual de desconto da franquia (0 se não houver) e calcula o custo
 async function calcCost(conn, franchise, saleValue) {
@@ -9,7 +27,7 @@ async function calcCost(conn, franchise, saleValue) {
 
 // POST /api/products
 async function createProduct(req, res) {
-  const { name, saleValue, franchise, code, promotionPrice, estoqueInicial } = req.body;
+  const { name, saleValue, franchise, code, promotionPrice, estoqueInicial, description } = req.body;
 
   if (!name || saleValue == null || !franchise || !code) {
     return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos.' });
@@ -28,8 +46,8 @@ async function createProduct(req, res) {
     const cost = await calcCost(conn, franchise, sv);
 
     const [result] = await conn.query(
-      'INSERT INTO products (name, cost, sale_value, franchise, code, promotion_price, estoque) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, cost, sv, franchise, code, promotionPrice || null, qtdInicial]
+      'INSERT INTO products (name, cost, sale_value, franchise, code, promotion_price, estoque, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, cost, sv, franchise, code, promotionPrice || null, qtdInicial, description ?? null]
     );
     const productId = result.insertId;
 
@@ -76,7 +94,7 @@ async function searchProductByCode(req, res) {
     const [rows] = await db.query('SELECT * FROM products WHERE code = ?', [code]);
     if (rows.length === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
     const p = rows[0];
-    return res.json({ id: p.id, name: p.name, cost: p.cost, sale_value: p.sale_value, code: p.code, promotion_price: p.promotion_price ?? null });
+    return res.json({ id: p.id, name: p.name, cost: p.cost, sale_value: p.sale_value, code: p.code, promotion_price: p.promotion_price ?? null, description: p.description ?? null, image: p.image ?? null });
   } catch (err) {
     console.error('Erro ao buscar produto por código:', err);
     return res.status(500).json({ error: 'Erro ao buscar produto.' });
@@ -93,7 +111,7 @@ async function getProductById(req, res) {
     const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
     const p = rows[0];
-    return res.json({ id: p.id, name: p.name, cost: p.cost, sale_value: p.sale_value, franchise: p.franchise, code: p.code, promotion_price: p.promotion_price ?? null });
+    return res.json({ id: p.id, name: p.name, cost: p.cost, sale_value: p.sale_value, franchise: p.franchise, code: p.code, promotion_price: p.promotion_price ?? null, description: p.description ?? null, image: p.image ?? null });
   } catch (err) {
     console.error('Erro ao buscar produto:', err);
     return res.status(500).json({ error: 'Erro ao buscar produto.' });
@@ -127,7 +145,7 @@ async function updateProduct(req, res) {
   const id = parseInt(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
 
-  const { name, sale_value, franchise, code, promotion_price } = req.body;
+  const { name, sale_value, franchise, code, promotion_price, description } = req.body;
   if (!name || sale_value == null || !franchise || !code) {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
   }
@@ -147,8 +165,8 @@ async function updateProduct(req, res) {
     const cost = await calcCost(conn, franchise, sv);
 
     const [result] = await conn.query(
-      'UPDATE products SET name=?, cost=?, sale_value=?, franchise=?, code=?, promotion_price=? WHERE id=?',
-      [name, cost, sv, franchise, code, promoVal, id]
+      'UPDATE products SET name=?, cost=?, sale_value=?, franchise=?, code=?, promotion_price=?, description=? WHERE id=?',
+      [name, cost, sv, franchise, code, promoVal, description ?? null, id]
     );
     if (result.affectedRows === 0) {
       await conn.rollback();
@@ -166,6 +184,30 @@ async function updateProduct(req, res) {
   }
 }
 
+// POST /api/products/:id/image
+function setProductImage(req, res) {
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  uploadImage(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: 'Falha no upload (máx 4MB, imagem).' });
+    if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada.' });
+    const rel = '/uploads/products/' + req.file.filename;
+    try {
+      const [[old]] = await db.query('SELECT image FROM products WHERE id = ?', [id]);
+      await db.query('UPDATE products SET image = ? WHERE id = ?', [rel, id]);
+      if (old && old.image) {
+        const oldAbs = path.resolve(__dirname, '..', 'public', '.' + old.image);
+        const uploadAbs = path.resolve(UPLOAD_DIR);
+        if (oldAbs.startsWith(uploadAbs + path.sep)) fs.unlink(oldAbs, () => {});
+      }
+      return res.json({ message: 'Imagem atualizada.', image: rel });
+    } catch (e) {
+      console.error('Erro ao salvar imagem:', e);
+      return res.status(500).json({ error: 'Erro ao salvar imagem.' });
+    }
+  });
+}
+
 // DELETE /api/products/:id
 async function deleteProduct(req, res) {
   const id = parseInt(req.params.id);
@@ -181,4 +223,4 @@ async function deleteProduct(req, res) {
   }
 }
 
-module.exports = { createProduct, listProducts, listAllProducts, searchProductByCode, getProductById, listFranchises, updateProduct, deleteProduct };
+module.exports = { createProduct, listProducts, listAllProducts, searchProductByCode, getProductById, listFranchises, updateProduct, deleteProduct, setProductImage };

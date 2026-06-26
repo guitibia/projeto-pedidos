@@ -293,7 +293,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
   <script src="/js/auth.js"></script>
   <script>
-    if (Auth.isLoggedIn()) window.location.href = '/';
+    if (Auth.isLoggedIn()) window.location.href = '/painel.html';
 
     // Password show/hide toggle
     document.getElementById('togglePass').addEventListener('click', () => {
@@ -339,7 +339,7 @@
         }
 
         Auth.setSession(data.token, data.user);
-        window.location.href = '/';
+        window.location.href = '/painel.html';
       } catch (err) {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i><span>Entrar</span>';

@@ -5,8 +5,15 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
+// Atrás do Nginx (proxy reverso): confiar no primeiro proxy para IP/rate-limit corretos
+app.set('trust proxy', 1);
+
 // ── Middlewares globais ───────────────────────────────────────────────────────
 app.use(express.json());
+
+// Raiz pública → loja (o cliente cai direto na vitrine)
+app.get('/', (req, res) => res.redirect('/loja/'));
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Rate limiting — 120 req/min por IP nas rotas de API
@@ -28,6 +35,19 @@ const loginLimiter = rateLimit({
 // ── Rotas públicas ────────────────────────────────────────────────────────────
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', loginLimiter, authRoutes);
+
+const lojaRoutes = require('./routes/loja');
+app.use('/api/loja', apiLimiter, lojaRoutes);
+
+const lojaPedidosRoutes = require('./routes/lojaPedidos');
+app.use('/api/loja', apiLimiter, lojaPedidosRoutes);
+
+const lojaPagamentosRoutes = require('./routes/lojaPagamentos');
+app.use('/api/loja/pagamentos', apiLimiter, lojaPagamentosRoutes);
+
+const lojaAuthRoutes = require('./routes/lojaAuth');
+app.use('/api/loja/auth/login', loginLimiter);      // limite mais restrito no login (Task 5)
+app.use('/api/loja/auth', apiLimiter, lojaAuthRoutes);
 
 // ── Rotas protegidas por JWT ──────────────────────────────────────────────────
 const auth = require('./middleware/auth');

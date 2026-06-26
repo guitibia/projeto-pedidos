@@ -1,0 +1,19 @@
+# /etc/nginx/sites-available/beleza-loja
+# Habilite:  sudo ln -s /etc/nginx/sites-available/beleza-loja /etc/nginx/sites-enabled/
+# HTTPS:     sudo certbot --nginx -d SEUDOMINIO.com.br -d www.SEUDOMINIO.com.br
+server {
+    listen 80;
+    server_name SEUDOMINIO.com.br www.SEUDOMINIO.com.br;
+
+    client_max_body_size 10M;   # uploads de imagem de produto
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+# O Certbot adiciona automaticamente o bloco 'listen 443 ssl' e o redirect 80→443.
