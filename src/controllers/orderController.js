@@ -104,7 +104,7 @@ async function createOrder(req, res) {
 // GET /api/orders
 async function listOrders(req, res) {
   const statusFilter = req.query.status || 'Todos';
-  let query = `SELECT o.id, o.payment_method, o.total_cost, o.status, c.name AS client_name
+  let query = `SELECT o.id, o.payment_method, o.payment_status, o.total_cost, o.status, c.name AS client_name
                FROM orders o JOIN clients c ON o.client_id = c.id`;
   const params = [];
 
@@ -131,7 +131,7 @@ async function getOrderById(req, res) {
   try {
     // Buscar cabeçalho do pedido
     const [orderRows] = await db.query(
-      `SELECT o.id, o.payment_method, o.total_cost, o.installments, o.combined_payment_value, o.status,
+      `SELECT o.id, o.payment_method, o.payment_status, o.total_cost, o.installments, o.combined_payment_value, o.status,
               o.delivery_fee,
               c.name AS client_name, c.address AS client_address,
               c.house_number AS client_house_number, c.neighborhood AS client_neighborhood

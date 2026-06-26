@@ -490,6 +490,10 @@
     return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
+  function badgePago(ps) {
+    if (ps !== 'pago') return '';
+    return ` <span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3);font-size:.66rem;vertical-align:middle"><i class="bi bi-check-circle-fill me-1"></i>Pago</span>`;
+  }
   function badgeStatus(status) {
     if (status === 'Entregue')  return `<span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3);font-size:.72rem"><i class="bi bi-check-circle me-1"></i>${status}</span>`;
     if (status === 'Cancelado') return `<span class="badge" style="background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3);font-size:.72rem"><i class="bi bi-x-circle me-1"></i>${status}</span>`;
@@ -839,7 +843,7 @@
         <tr>
           <td class="order-id">#${o.id}</td>
           <td style="font-weight:500">${esc(o.client_name)}</td>
-          <td style="font-size:.82rem;color:var(--text-muted)">${esc(o.payment_method)}</td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${esc(o.payment_method)}${badgePago(o.payment_status)}</td>
           <td>${badge}</td>
           <td class="order-value">${fmt(o.total_cost)}</td>
           <td>
@@ -904,7 +908,7 @@
           </div>`).join('')}
       </div>`).join('');
 
-    const pagamento = `${esc(order.payment_method)}${order.installments > 1 ? ` &nbsp;·&nbsp; ${order.installments}x de ${fmt(totalVenda / order.installments)}` : ''}${order.combined_payment_value ? ` &nbsp;·&nbsp; PIX/Dinheiro: ${fmt(order.combined_payment_value)}` : ''}`;
+    const pagamento = `${esc(order.payment_method)}${badgePago(order.payment_status)}${order.installments > 1 ? ` &nbsp;·&nbsp; ${order.installments}x de ${fmt(totalVenda / order.installments)}` : ''}${order.combined_payment_value ? ` &nbsp;·&nbsp; PIX/Dinheiro: ${fmt(order.combined_payment_value)}` : ''}`;
 
     const pagas = parcelas.filter(p => p.status === 'Pago').length;
     const parcelasHTML = parcelas.length > 0 ? `
