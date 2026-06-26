@@ -110,6 +110,13 @@ pool.getConnection()
       "ALTER TABLE orders ADD COLUMN mp_payment_id VARCHAR(64) DEFAULT NULL",
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Migração: PIX transparente (sub-projeto 5)
+    for (const sql of [
+      'ALTER TABLE payment_intents ADD COLUMN pix_qr_code TEXT DEFAULT NULL',
+      'ALTER TABLE payment_intents ADD COLUMN pix_qr_base64 MEDIUMTEXT DEFAULT NULL',
+      'ALTER TABLE payment_intents ADD COLUMN pix_expiration DATETIME DEFAULT NULL',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Migração: tabela de percentuais de desconto por franquia
     try {
       await conn.query(`
