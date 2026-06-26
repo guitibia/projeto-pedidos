@@ -25,6 +25,7 @@
     .badge--pendente  { background: #fff8e1; color: #b07d00; border: 1px solid #ffe082; }
     .badge--entregue  { background: #edf7f1; color: var(--success); border: 1px solid #b7e2c8; }
     .badge--cancelado { background: #fdf0ef; color: var(--danger); border: 1px solid #f5c6c3; }
+    .badge--pago      { background: #edf7f1; color: #1a7a3a; border: 1px solid #b7e2c8; }
 
     /* Empty state */
     .empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--text-soft); }
@@ -214,6 +215,7 @@
             '<div class="pedido-card__meta">' +
               '<span><i class="bi bi-calendar3" aria-hidden="true"></i> ' + esc(date) + '</span>' +
               statusBadge(o.status) +
+              (o.payment_status === 'pago' ? '<span class="badge badge--pago"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Pago</span>' : '') +
               '<span>' + itemLabel + '</span>' +
               '<span class="pedido-card__total">' + fmtBRL(o.total_cost) + '</span>' +
             '</div>' +
