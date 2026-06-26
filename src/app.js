@@ -5,6 +5,9 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
+// Atrás do Nginx (proxy reverso): confiar no primeiro proxy para IP/rate-limit corretos
+app.set('trust proxy', 1);
+
 // ── Middlewares globais ───────────────────────────────────────────────────────
 app.use(express.json());
 
