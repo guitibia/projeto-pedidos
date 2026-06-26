@@ -154,7 +154,7 @@
       <!-- BOTÃO FINALIZAR -->
       <div class="co-finalize">
         <button id="btn-finalizar" class="btn accent-btn" type="button">
-          <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Finalizar pedido
+          <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Finalizar e pagar
         </button>
       </div>
     </div><!-- /.checkout-wrap -->
@@ -451,56 +451,28 @@
     elAlert.className = 'form-alert';
   }
 
-  /* ---------- Finalizar pedido ---------- */
+  /* ---------- Finalizar e pagar ---------- */
   btnFinalizar.addEventListener('click', async function () {
     btnFinalizar.disabled = true;
-    hideAlert();
-
-    var addr = getAddressValues();
-
+    var corpo = {
+      items: Cart.getItems().map(function (i) { return { id: i.id, qty: i.qty }; }),
+      cep: inpCep.value, address: inpAddress.value, houseNumber: inpHouseNumber.value,
+      neighborhood: inpNeighborhood.value, city: inpCity.value
+    };
     try {
-      var r = await fetch('/api/loja/pedidos', {
+      var r = await fetch('/api/loja/pagamentos', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + StoreAuth.getToken()
-        },
-        body: JSON.stringify({
-          items:        itens.map(function (i) { return { id: i.id, qty: i.qty }; }),
-          cep:          addr.cep,
-          address:      addr.address,
-          houseNumber:  addr.houseNumber,
-          neighborhood: addr.neighborhood,
-          city:         addr.city
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + StoreAuth.getToken() },
+        body: JSON.stringify(corpo)
       });
-
-      var data = await r.json();
-
-      if (r.status === 201) {
-        Cart.clear();
-        location.href = 'pedido-confirmado.html?id=' + encodeURIComponent(data.orderId);
-        return;
-      }
-
-      if (r.status === 400) {
-        showAlert(data.error || 'Erro ao finalizar pedido.');
-        btnFinalizar.disabled = false;
-        return;
-      }
-
-      if (r.status === 401 || r.status === 403) {
-        StoreAuth.logout();
-        location.href = 'entrar.html';
-        return;
-      }
-
-      showAlert(data.error || 'Erro inesperado. Tente novamente.');
+      if (r.status === 401 || r.status === 403) { StoreAuth.logout(); location.href = 'entrar.html'; return; }
+      var data = await r.json().catch(function () { return {}; });
+      if (r.status === 201 && data.init_point) { window.location = data.init_point; return; }
+      if (r.status === 503) { showAlert('Pagamento indisponível no momento. Tente mais tarde.'); }
+      else { showAlert(data.error || 'Não foi possível iniciar o pagamento.'); }
       btnFinalizar.disabled = false;
-
-    } catch (err) {
-      console.error('[checkout] finalizar error:', err);
-      showAlert('Erro de conexão. Verifique sua internet e tente novamente.');
+    } catch (e) {
+      showAlert('Falha de conexão ao iniciar o pagamento.');
       btnFinalizar.disabled = false;
     }
   });
