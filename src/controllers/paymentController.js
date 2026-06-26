@@ -145,11 +145,26 @@ async function statusPagamento(req, res) {
     if (!intent || intent.client_id !== req.customer.id) return res.status(404).json({ error: 'Pagamento não encontrado.' });
     if (intent.status === 'pago' && intent.order_id) return res.json({ status: 'pago', orderId: intent.order_id });
 
-    // se ainda pendente e já temos um payment id, reconsulta o MP e tenta confirmar
-    if (intent.status === 'pendente' && intent.mp_payment_id) {
-      const pagamento = await mp.buscarPagamento(intent.mp_payment_id);
-      const r = await confirmarIntencao(intent, pagamento);
-      return res.json(r);
+    // Ainda pendente: reconsulta o MP e tenta confirmar. Se o webhook já gravou
+    // o payment id, usa-o; senão busca o pagamento pelo external_reference
+    // (fallback essencial quando o webhook não chegou — ex.: ambiente local).
+    if (intent.status === 'pendente') {
+      let pagamento = null;
+      if (intent.mp_payment_id) {
+        pagamento = await mp.buscarPagamento(intent.mp_payment_id);
+      } else {
+        const found = await mp.buscarPagamentoPorReferencia(ref);
+        if (found && found.id) {
+          await db.query('UPDATE payment_intents SET mp_payment_id=? WHERE id=?', [String(found.id), intent.id]);
+          intent.mp_payment_id = String(found.id);
+          pagamento = found;
+        }
+      }
+      if (pagamento) {
+        const r = await confirmarIntencao(intent, pagamento);
+        return res.json(r);
+      }
+      return res.json({ status: 'pendente' });
     }
     return res.json({ status: intent.status });
   } catch (e) {

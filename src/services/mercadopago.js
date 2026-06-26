@@ -50,4 +50,21 @@ async function buscarPagamento(paymentId) {
   };
 }
 
-module.exports = { isConfigured, criarPreferencia, buscarPagamento };
+// Busca o pagamento pelo external_reference (fallback quando o webhook não chegou,
+// ex.: notification_url inacessível em ambiente local). Prefere um aprovado.
+async function buscarPagamentoPorReferencia(externalReference) {
+  const pay = new Payment(getClient());
+  const r = await pay.search({ options: { external_reference: externalReference } });
+  const results = (r && r.results) || [];
+  if (!results.length) return null;
+  const chosen = results.find(p => p.status === 'approved') || results[results.length - 1];
+  return {
+    id: chosen.id,
+    status: chosen.status,
+    transaction_amount: chosen.transaction_amount,
+    external_reference: chosen.external_reference,
+    payment_type_id: chosen.payment_type_id,
+  };
+}
+
+module.exports = { isConfigured, criarPreferencia, buscarPagamento, buscarPagamentoPorReferencia };
