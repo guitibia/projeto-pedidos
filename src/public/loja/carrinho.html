@@ -20,6 +20,8 @@
       overflow: hidden; background: var(--bg); }
     .cart-item__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .cart-item__img .img-ph { width: 100%; height: 100%; aspect-ratio: unset; }
+    .cart-item__img .img-ph--mini::before { font-size: 1.9rem; opacity: .5; }
+    .cart-item__img .img-ph--mini span, .cart-item__img .img-ph--mini small { display: none; }
 
     .cart-item__info { flex: 1; min-width: 0; }
     .cart-item__name { font-weight: 700; font-size: .98rem; color: var(--text); margin: 0 0 .3rem; }
@@ -180,7 +182,7 @@
           var lineTotal = Number(item.price) * item.qty;
           var imgEl = item.image
             ? '<img src="' + esc(item.image) + '" alt="' + esc(item.name) + '" loading="lazy">'
-            : '<div class="img-ph"><span>' + esc(item.franchise || '') + '</span><small>' + esc(item.name) + '</small></div>';
+            : '<div class="img-ph img-ph--mini" aria-hidden="true"></div>';
 
           return (
             '<div class="cart-item" data-id="' + esc(String(item.id)) + '">' +
