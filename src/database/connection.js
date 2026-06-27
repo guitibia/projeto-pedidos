@@ -73,6 +73,11 @@ pool.getConnection()
       'ALTER TABLE clients ADD COLUMN verification_token VARCHAR(64) DEFAULT NULL',
       'ALTER TABLE clients ADD COLUMN verification_expires DATETIME DEFAULT NULL',
       'ALTER TABLE clients ADD COLUMN lgpd_consent_at DATETIME DEFAULT NULL',
+      // Cadastro de cliente da loja não informa endereço (só no checkout):
+      // tornar essas colunas opcionais para o INSERT de registro funcionar em MySQL strict mode.
+      'ALTER TABLE clients MODIFY address VARCHAR(255) NULL DEFAULT NULL',
+      'ALTER TABLE clients MODIFY house_number VARCHAR(50) NULL DEFAULT NULL',
+      'ALTER TABLE clients MODIFY neighborhood VARCHAR(255) NULL DEFAULT NULL',
       'CREATE UNIQUE INDEX uq_clients_email ON clients(email)',
       'CREATE UNIQUE INDEX uq_clients_cpf ON clients(cpf)',
     ]) { try { await conn.query(sql); } catch (_) {} }
