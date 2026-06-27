@@ -12,6 +12,15 @@ function imgHTML(p, cls=''){
     ? `<img class="${cls}" src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`
     : `<div class="img-ph ${cls}"><span>${esc(p.franchise||'')}</span><small>${esc(p.name)}</small></div>`;
 }
+function lojaToast(msg, href) {
+  var t = document.createElement('div');
+  t.className = 'loja-toast';
+  t.setAttribute('role', 'status');
+  t.innerHTML = esc(msg) + (href ? ' <a href="' + esc(href) + '">Entrar</a>' : '');
+  document.body.appendChild(t);
+  requestAnimationFrame(function () { t.classList.add('loja-toast--show'); });
+  setTimeout(function () { t.classList.remove('loja-toast--show'); setTimeout(function () { t.remove(); }, 300); }, 3200);
+}
 function syncCartCount(){ if (typeof Cart === 'undefined') return; const el=document.getElementById('cart-count'); if(el){ const n=Cart.getCount(); el.textContent=n; el.style.display=n?'flex':'none'; } }
 document.addEventListener('DOMContentLoaded', syncCartCount);
 document.addEventListener('cart:changed', syncCartCount);
@@ -34,6 +43,7 @@ function cardHTML(p) {
   return (
     '<article class="product-card">' +
       '<div class="product-card__media">' +
+        '<button class="card-fav" type="button" data-fav="' + esc(String(p.id)) + '" onclick="lojaToggleFav(this)" aria-label="Favoritar" aria-pressed="false"><i class="bi bi-heart"></i></button>' +
         '<a href="produto.html?id=' + esc(String(p.id)) + '" tabindex="-1" aria-hidden="true">' +
           imgHTML(p, '') +
         '</a>' +
