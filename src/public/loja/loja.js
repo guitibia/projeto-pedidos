@@ -13,10 +13,11 @@ function imgHTML(p, cls=''){
     : `<div class="img-ph ${cls}"><span>${esc(p.franchise||'')}</span><small>${esc(p.name)}</small></div>`;
 }
 function lojaToast(msg, href) {
+  var safeHref = (href && /^(https?:\/\/|\/)/.test(href)) ? href : null;
   var t = document.createElement('div');
   t.className = 'loja-toast';
   t.setAttribute('role', 'status');
-  t.innerHTML = esc(msg) + (href ? ' <a href="' + esc(href) + '">Entrar</a>' : '');
+  t.innerHTML = esc(msg) + (safeHref ? ' <a href="' + esc(safeHref) + '">Entrar</a>' : '');
   document.body.appendChild(t);
   requestAnimationFrame(function () { t.classList.add('loja-toast--show'); });
   setTimeout(function () { t.classList.remove('loja-toast--show'); setTimeout(function () { t.remove(); }, 300); }, 3200);

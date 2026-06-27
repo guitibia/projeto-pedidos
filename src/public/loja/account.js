@@ -64,13 +64,15 @@ const Favorites = (() => {
     updateCount(); syncHearts();
     try {
       if (had) {
-        await fetch('/api/loja/favoritos/' + id, { method: 'DELETE', headers: authHeaders() });
+        const res = await fetch('/api/loja/favoritos/' + id, { method: 'DELETE', headers: authHeaders() });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
       } else {
-        await fetch('/api/loja/favoritos', {
+        const res = await fetch('/api/loja/favoritos', {
           method: 'POST',
           headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
           body: JSON.stringify({ productId: id })
         });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
       }
     } catch (e) {
       if (had) ids.add(id); else ids.delete(id);  // reverte em erro
