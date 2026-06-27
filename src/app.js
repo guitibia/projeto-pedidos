@@ -45,6 +45,9 @@ app.use('/api/loja', apiLimiter, lojaPedidosRoutes);
 const lojaPagamentosRoutes = require('./routes/lojaPagamentos');
 app.use('/api/loja/pagamentos', apiLimiter, lojaPagamentosRoutes);
 
+const lojaFavoritosRoutes = require('./routes/lojaFavoritos');
+app.use('/api/loja/favoritos', apiLimiter, lojaFavoritosRoutes);
+
 const lojaAuthRoutes = require('./routes/lojaAuth');
 app.use('/api/loja/auth/login', loginLimiter);      // limite mais restrito no login (Task 5)
 app.use('/api/loja/auth', apiLimiter, lojaAuthRoutes);
