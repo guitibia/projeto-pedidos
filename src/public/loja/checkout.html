@@ -17,6 +17,10 @@
     .co-item { display: flex; align-items: center; gap: 1rem; padding: .65rem .8rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); }
     .co-item.is-unavailable { border-color: var(--danger); background: #fdf8f8; }
     .co-item__img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: var(--border); flex: none; }
+    /* placeholder compacto (sem nome) p/ itens sem foto */
+    .co-item__img.img-ph--mini { background: var(--bg); border: 1px solid var(--border); }
+    .co-item__img.img-ph--mini::before { font-size: 1.6rem; opacity: .5; }
+    .co-item__img.img-ph--mini span, .co-item__img.img-ph--mini small { display: none; }
     .co-item__info { flex: 1; min-width: 0; }
     .co-item__name { font-weight: 700; font-size: .95rem; color: var(--text); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .co-item__qty { font-size: .85rem; color: var(--text-soft); margin-top: .15rem; }
@@ -71,8 +75,9 @@
       </form>
 
       <nav class="store-header__nav" aria-label="Ações do usuário">
-        <a href="#" title="Favoritos (em breve)" aria-label="Favoritos — em breve">
+        <a href="/loja/favoritos.html" title="Favoritos" aria-label="Favoritos" style="position:relative">
           <i class="bi bi-heart" aria-hidden="true"></i>
+          <span id="fav-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
         </a>
         <a id="account-link" href="/loja/entrar.html" title="Entrar ou cadastrar" aria-label="Entrar ou cadastrar">
           <i class="bi bi-person" aria-hidden="true"></i>
@@ -223,10 +228,6 @@
       <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
       &nbsp;·&nbsp;
       <a href="privacidade.html">Privacidade</a>
-      &nbsp;·&nbsp;
-      <a href="/login.html" style="color:var(--text-soft);opacity:.55;font-size:.78rem" aria-label="Área administrativa">
-        <i class="bi bi-lock" aria-hidden="true"></i> Admin
-      </a>
     </div>
   </footer>
 
@@ -276,7 +277,7 @@
     elList.innerHTML = itens.map(function (item) {
       var imgHtml = item.image
         ? '<img class="co-item__img" src="' + esc(item.image) + '" alt="" loading="lazy">'
-        : '<div class="co-item__img img-ph"><span>' + esc(item.name) + '</span></div>';
+        : '<div class="co-item__img img-ph img-ph--mini" aria-hidden="true"></div>';
       return '<li class="co-item" id="co-item-' + esc(String(item.id)) + '">' +
         imgHtml +
         '<div class="co-item__info">' +

@@ -122,6 +122,18 @@ pool.getConnection()
       'ALTER TABLE payment_intents ADD COLUMN pix_expiration DATETIME DEFAULT NULL',
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Migração: favoritos da loja
+    try {
+      await conn.query(`
+        CREATE TABLE IF NOT EXISTS favorites (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          client_id INT NOT NULL,
+          product_id INT NOT NULL,
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE KEY uq_fav (client_id, product_id)
+        )`);
+    } catch (_) {}
+
     // Migração: tabela de percentuais de desconto por franquia
     try {
       await conn.query(`

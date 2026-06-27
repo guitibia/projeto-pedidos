@@ -163,8 +163,9 @@
       </form>
 
       <nav class="store-header__nav" aria-label="Ações do usuário">
-        <a href="#" title="Favoritos (em breve)" aria-label="Favoritos — em breve">
+        <a href="/loja/favoritos.html" title="Favoritos" aria-label="Favoritos" style="position:relative">
           <i class="bi bi-heart" aria-hidden="true"></i>
+          <span id="fav-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
         </a>
         <a id="account-link" href="/loja/entrar.html" title="Entrar ou cadastrar" aria-label="Entrar ou cadastrar">
           <i class="bi bi-person" aria-hidden="true"></i>
@@ -239,16 +240,13 @@
       <span>© <span id="ano"></span> Beleza Multi Marcas — Todos os direitos reservados.</span>
       &nbsp;·&nbsp;
       <a href="privacidade.html">Privacidade</a>
-      &nbsp;·&nbsp;
-      <a href="/login.html" style="color:var(--text-soft);opacity:.55;font-size:.78rem" aria-label="Área administrativa">
-        <i class="bi bi-lock" aria-hidden="true"></i> Admin
-      </a>
     </div>
   </footer>
 
   <!-- ===== SCRIPTS ===== -->
   <script src="/loja/cart.js"></script>
   <script src="/loja/loja.js"></script>
+  <script src="/loja/account.js"></script>
   <script>
     (function () {
       'use strict';
@@ -392,7 +390,7 @@
                   '<i class="bi bi-bag-plus" aria-hidden="true"></i> ' +
                   (esgotado ? 'Esgotado' : 'Adicionar ao carrinho') +
                 '</button>' +
-                '<button type="button" class="btn-fav" title="Favoritar (em breve)" aria-label="Favoritar — em breve">' +
+                '<button type="button" class="btn-fav" data-fav="' + esc(String(p.id)) + '" onclick="lojaToggleFav(this)" title="Favoritar" aria-label="Favoritar" aria-pressed="false">' +
                   '<i class="bi bi-heart" aria-hidden="true"></i>' +
                 '</button>' +
               '</div>' +
@@ -432,6 +430,9 @@
 
         /* Update page title */
         document.title = (p.name || '') + ' — Beleza Multi Marcas';
+
+        /* Sync favorite hearts */
+        if (typeof Favorites !== 'undefined') Favorites.syncHearts();
       }
 
       /* ---- Render 404 ---- */
