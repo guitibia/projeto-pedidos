@@ -134,6 +134,14 @@ pool.getConnection()
         )`);
     } catch (_) {}
 
+    // Migração: frete por zona + settings da loja
+    for (const sql of [
+      'CREATE TABLE IF NOT EXISTS delivery_zones (id INT AUTO_INCREMENT PRIMARY KEY, bairro VARCHAR(120) NOT NULL, fee DECIMAL(6,2) NOT NULL DEFAULT 0, active TINYINT(1) NOT NULL DEFAULT 1, UNIQUE KEY uq_bairro (bairro))',
+      'CREATE TABLE IF NOT EXISTS store_settings (skey VARCHAR(60) PRIMARY KEY, svalue VARCHAR(255))',
+      "INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('cidade_entrega', 'São João da Boa Vista')",
+      "INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('frete_padrao', '15.00')",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Migração: tabela de percentuais de desconto por franquia
     try {
       await conn.query(`
