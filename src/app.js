@@ -60,6 +60,7 @@ const orderRoutes = require('./routes/orders');
 const promissoriaRoutes = require('./routes/promissorias');
 const estoqueRoutes     = require('./routes/estoque');
 const franchiseDiscountRoutes = require('./routes/franchiseDiscounts');
+const deliveryZonesRoutes = require('./routes/deliveryZones');
 const { getDashboard } = require('./controllers/dashboardController');
 
 app.use('/api/clients', apiLimiter, auth, clientRoutes);
@@ -68,6 +69,7 @@ app.use('/api/orders', apiLimiter, auth, orderRoutes);
 app.use('/api/promissorias', apiLimiter, auth, promissoriaRoutes);
 app.use('/api/estoque',     apiLimiter, auth, estoqueRoutes);
 app.use('/api/franchise-discounts', apiLimiter, auth, franchiseDiscountRoutes);
+app.use('/api/delivery-zones', apiLimiter, auth, deliveryZonesRoutes);
 app.get('/api/dashboard', apiLimiter, auth, getDashboard);
 
 // Manter compatibilidade com rota antiga de listagem por cliente
