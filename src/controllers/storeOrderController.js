@@ -1,5 +1,6 @@
 const db = require('../database/connection');
 const { freteDoBairro, cidadeAtende, getCidadeEntrega } = require('../utils/delivery');
+const { precoEfetivo, getDescontoGlobal } = require('../utils/pricing');
 
 const DEFAULT_CITY = 'São João da Boa Vista';
 
@@ -51,6 +52,7 @@ function effectiveAddress(client, body) {
 // linhas com preço autoritativo + flags de validação (sem transação — só leitura)
 async function buildLines(items) {
   const lines = [];
+  const global = await getDescontoGlobal();
   for (const it of items) {
     const [[p]] = await db.query(
       'SELECT id, name, image, franchise, estoque, sale_value, promotion_price, cost FROM products WHERE id = ?',
@@ -58,7 +60,7 @@ async function buildLines(items) {
     );
     if (!p) { lines.push({ id: it.id, qty: it.qty, unitPrice: 0, lineTotal: 0, ok: false, reason: 'Produto indisponível.' }); continue; }
     const promo = p.promotion_price != null && Number(p.promotion_price) > 0;
-    const unitPrice = Number(promo ? p.promotion_price : p.sale_value) || 0;
+    const unitPrice = precoEfetivo(p.sale_value, p.promotion_price, global);
     const enough = p.estoque == null ? true : Number(p.estoque) >= it.qty;
     const ok = enough && unitPrice > 0;
     lines.push({

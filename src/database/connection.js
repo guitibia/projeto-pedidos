@@ -142,6 +142,12 @@ pool.getConnection()
       "INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('frete_padrao', '15.00')",
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Seeds: desconto global
+    for (const sql of [
+      "INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('desconto_global_ativo', '0')",
+      "INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('desconto_global_percent', '0')",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Migração: tabela de percentuais de desconto por franquia
     try {
       await conn.query(`
