@@ -116,6 +116,15 @@
       <section class="co-section" aria-labelledby="co-address-title">
         <h2 id="co-address-title"><i class="bi bi-geo-alt" aria-hidden="true"></i> Endereço de entrega</h2>
 
+        <div id="addr-source" class="field" role="radiogroup" aria-label="Endereço de entrega" style="margin-bottom:1rem">
+          <label style="display:flex;gap:.5rem;align-items:center;font-weight:400;cursor:pointer;margin-bottom:.4rem">
+            <input type="radio" name="addr-source" id="addr-cadastro" value="cadastro"> Usar meu endereço cadastrado
+          </label>
+          <label style="display:flex;gap:.5rem;align-items:center;font-weight:400;cursor:pointer">
+            <input type="radio" name="addr-source" id="addr-outro" value="outro"> Entregar em outro endereço
+          </label>
+        </div>
+
         <form id="address-form" novalidate>
           <div class="field-row">
             <div class="field">
@@ -411,15 +420,58 @@
     }
   }
 
-  /* ---------- Pré-preencher endereço via /me ---------- */
+  /* ---------- Radios de endereço ---------- */
+  var radioAddrCadastro = document.getElementById('addr-cadastro');
+  var radioAddrOutro    = document.getElementById('addr-outro');
+  var currentMe = null;
+
+  function temEnderecoCadastro(me) {
+    return !!(me && me.cep && me.address && me.city);
+  }
+
+  function usarCadastro(me) {
+    inpCep.value         = me.cep          || '';
+    inpAddress.value     = me.address      || '';
+    inpHouseNumber.value = me.house_number || '';
+    inpCity.value        = me.city         || '';
+    popularSelectBairros(cfg.bairros, me.neighborhood || '');
+    // Validação de cidade — mesmo padrão do handleCepLookup
+    if (me.city && cfg.cidade && !cidadeOk(me.city)) {
+      setCepHint('error', 'Desculpe, entregamos apenas em ' + cfg.cidade + '.');
+      foraDeArea = true;
+      btnFinalizar.disabled = true;
+      btnFinalizar.title = 'Fora da área de entrega';
+    } else {
+      setCepHint('', '');
+      foraDeArea = false;
+      btnFinalizar.title = '';
+    }
+    atualizarResumo();
+  }
+
+  function usarOutro() {
+    inpCep.value         = '';
+    inpAddress.value     = '';
+    inpHouseNumber.value = '';
+    inpCity.value        = '';
+    popularSelectBairros(cfg.bairros, '');
+    setCepHint('', '');
+    foraDeArea = false;
+    atualizarResumo();
+  }
+
+  radioAddrCadastro.addEventListener('change', function () {
+    if (this.checked) usarCadastro(currentMe);
+  });
+  radioAddrOutro.addEventListener('change', function () {
+    if (this.checked) usarOutro();
+  });
+
+  /* ---------- Carregar dados do cliente (/me) ---------- */
   var promiseMe = StoreAuth.api('/me').then(function (me) {
-    if (!me) return null;
-    if (me.cep          && !inpCep.value)         inpCep.value         = me.cep;
-    if (me.address      && !inpAddress.value)     inpAddress.value     = me.address;
-    if (me.house_number && !inpHouseNumber.value) inpHouseNumber.value = me.house_number;
-    if (me.city         && !inpCity.value)        inpCity.value        = me.city;
-    return me;
-  }).catch(function () { return null; });
+    currentMe = me || null;
+    return currentMe;
+  }).catch(function () { currentMe = null; return null; });
 
   /* ---------- Resumo ---------- */
   function atualizarResumo() {
@@ -614,7 +666,7 @@
   /* ---------- Boot ---------- */
   renderItens();
 
-  // Carregar config de entrega e pré-preencher select, depois aplicar /me
+  // Carregar config de entrega e depois aplicar seletor de endereço
   fetch('/api/loja/entrega/config')
     .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
     .then(function (data) {
@@ -623,17 +675,25 @@
       cfg.bairros = Array.isArray(data.bairros) ? data.bairros : [];
       // Popular select sem pré-seleção inicial
       popularSelectBairros(cfg.bairros, '');
-      // Depois que config carregou, aplicar pré-seleção do /me
+      // Depois que config carregou, aguardar /me e definir default do radio
       return promiseMe;
     })
     .then(function (me) {
-      if (me && me.neighborhood) {
-        popularSelectBairros(cfg.bairros, me.neighborhood);
+      if (temEnderecoCadastro(me)) {
+        radioAddrCadastro.checked = true;
+        usarCadastro(me);
+      } else {
+        radioAddrOutro.checked = true;
+        radioAddrCadastro.disabled = true;
+        var labelCadastro = radioAddrCadastro.closest('label');
+        if (labelCadastro) labelCadastro.style.opacity = '0.4';
+        usarOutro();
+        atualizarResumo();
       }
-      atualizarResumo();
     })
     .catch(function () {
-      // Config falhou; ainda tentar preencher e calcular resumo
+      // Config falhou; fallback a "outro" e calcular resumo
+      radioAddrOutro.checked = true;
       promiseMe.then(function () { atualizarResumo(); }).catch(function () { atualizarResumo(); });
     });
 
