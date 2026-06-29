@@ -32,6 +32,9 @@ async function register(req, res) {
   if (!consent) return res.status(400).json({ error: 'É necessário aceitar a Política de Privacidade.' });
   if (!cep || !address || !houseNumber || !neighborhood || !city)
     return res.status(400).json({ error: 'Preencha o endereço completo.' });
+  const cepDigits = String(cep || '').replace(/\D/g, '');
+  if (cepDigits.length !== 8)
+    return res.status(400).json({ error: 'CEP inválido.' });
   try {
     const [[dupE]] = await db.query('SELECT id FROM clients WHERE email = ?', [email]);
     if (dupE) return res.status(409).json({ error: 'Este e-mail já está cadastrado.' });
@@ -112,7 +115,7 @@ async function updateMe(req, res) {
   const { name, phone, address, houseNumber, neighborhood, birthdate, cep, city } = req.body;
   if (!name) return res.status(400).json({ error: 'O nome é obrigatório.' });
   try {
-    const cepDigits = cep ? String(cep).replace(/\D/g, '') : null;
+    const cepDigits = cep ? (String(cep).replace(/\D/g, '') || null) : null;
     await db.query(
       'UPDATE clients SET name=?, phone=?, cep=?, address=?, house_number=?, neighborhood=?, city=?, birthdate=? WHERE id=?',
       [name, phone || null, cepDigits, address || null, houseNumber || null, neighborhood || null, city || null, birthdate || null, req.customer.id]);
