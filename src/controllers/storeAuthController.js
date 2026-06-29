@@ -40,10 +40,11 @@ async function register(req, res) {
     const hash = await bcrypt.hash(password, 10);
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const cepDigits = String(cep || '').replace(/\D/g, '');
     await db.query(
       `INSERT INTO clients (name, email, cpf, birthdate, phone, cep, address, house_number, neighborhood, city, password_hash, email_verified, verification_token, verification_expires, lgpd_consent_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, NOW())`,
-      [name, email, cpfDigits, birthdate, phone || null, cep, address, houseNumber, neighborhood, city, hash, token, expires]
+      [name, email, cpfDigits, birthdate, phone || null, cepDigits, address, houseNumber, neighborhood, city, hash, token, expires]
     );
     await sendVerificationEmail(email, name, verifyLink(token));
     return res.status(201).json({ message: 'Cadastro criado! Enviamos um link de confirmação para o seu e-mail.' });
@@ -111,9 +112,10 @@ async function updateMe(req, res) {
   const { name, phone, address, houseNumber, neighborhood, birthdate, cep, city } = req.body;
   if (!name) return res.status(400).json({ error: 'O nome é obrigatório.' });
   try {
+    const cepDigits = cep ? String(cep).replace(/\D/g, '') : null;
     await db.query(
       'UPDATE clients SET name=?, phone=?, cep=?, address=?, house_number=?, neighborhood=?, city=?, birthdate=? WHERE id=?',
-      [name, phone || null, cep || null, address || null, houseNumber || null, neighborhood || null, city || null, birthdate || null, req.customer.id]);
+      [name, phone || null, cepDigits, address || null, houseNumber || null, neighborhood || null, city || null, birthdate || null, req.customer.id]);
     return res.json({ message: 'Dados atualizados.' });
   } catch (e) { console.error('Erro em updateMe:', e); return res.status(500).json({ error: 'Erro ao atualizar.' }); }
 }

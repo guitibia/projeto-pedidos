@@ -43,7 +43,7 @@ function effectiveAddress(client, body) {
   }
   return {
     address: client.address, house_number: client.house_number,
-    neighborhood: client.neighborhood, cep: client.cep,
+    neighborhood: client.neighborhood, cep: String(client.cep || '').replace(/\D/g, '') || null,
     city: client.city || DEFAULT_CITY,
   };
 }
