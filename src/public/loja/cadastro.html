@@ -118,6 +118,33 @@
           </div>
 
           <div class="field">
+            <label for="cep">CEP</label>
+            <input type="tel" id="cep" name="cep" placeholder="00000-000" maxlength="9" inputmode="numeric" autocomplete="postal-code" required>
+            <div class="field-error" id="cep-err">Informe um CEP válido.</div>
+            <span id="cep-hint" style="font-size:.81rem;color:var(--text-soft);display:none"></span>
+          </div>
+          <div class="field">
+            <label for="address">Endereço</label>
+            <input type="text" id="address" name="address" placeholder="Rua, Av., Travessa…" autocomplete="address-line1" required>
+            <div class="field-error" id="address-err">Informe o endereço.</div>
+          </div>
+          <div class="field">
+            <label for="houseNumber">Número</label>
+            <input type="text" id="houseNumber" name="houseNumber" placeholder="Ex.: 123" autocomplete="address-line2" required>
+            <div class="field-error" id="houseNumber-err">Informe o número.</div>
+          </div>
+          <div class="field">
+            <label for="neighborhood">Bairro</label>
+            <input type="text" id="neighborhood" name="neighborhood" placeholder="Seu bairro" autocomplete="address-level3" required>
+            <div class="field-error" id="neighborhood-err">Informe o bairro.</div>
+          </div>
+          <div class="field">
+            <label for="city">Cidade</label>
+            <input type="text" id="city" name="city" placeholder="Sua cidade" autocomplete="address-level2" required>
+            <div class="field-error" id="city-err">Informe a cidade.</div>
+          </div>
+
+          <div class="field">
             <label for="senha">Senha</label>
             <input type="password" id="senha" name="senha" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
             <div class="field-error" id="senha-err">A senha deve ter no mínimo 8 caracteres.</div>
@@ -235,6 +262,37 @@
         this.value = v;
       });
 
+      /* ---------- CEP / ViaCEP ---------- */
+      var inpCep = document.getElementById('cep');
+      async function buscarCep(cepRaw) {
+        var cep = String(cepRaw || '').replace(/\D/g, '');
+        if (cep.length !== 8) return null;
+        try {
+          var r = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+          if (!r.ok) return null;
+          var d = await r.json();
+          return d.erro ? null : d;
+        } catch (e) { return null; }
+      }
+      async function preencherCep() {
+        var digits = inpCep.value.replace(/\D/g, '');
+        var hint = document.getElementById('cep-hint');
+        if (digits.length !== 8) return;
+        hint.style.display = 'block'; hint.textContent = 'Buscando CEP…';
+        var d = await buscarCep(digits);
+        if (d) {
+          if (d.logradouro) document.getElementById('address').value = d.logradouro;
+          if (d.bairro)     document.getElementById('neighborhood').value = d.bairro;
+          if (d.localidade) document.getElementById('city').value = d.localidade;
+          hint.style.display = 'none';
+          document.getElementById('houseNumber').focus();
+        } else {
+          hint.textContent = 'CEP não encontrado — preencha manualmente.';
+        }
+      }
+      inpCep.addEventListener('input', preencherCep);
+      inpCep.addEventListener('blur', preencherCep);
+
       /* ---------- CPF validation ---------- */
       function validCPF(raw) {
         var digits = raw.replace(/\D/g, '');
@@ -296,11 +354,22 @@
         var confirmar = document.getElementById('confirmar').value;
         var consent = document.getElementById('consent').checked;
 
+        var cep = document.getElementById('cep').value.trim();
+        var address = document.getElementById('address').value.trim();
+        var houseNumber = document.getElementById('houseNumber').value.trim();
+        var neighborhood = document.getElementById('neighborhood').value.trim();
+        var city = document.getElementById('city').value.trim();
+
         var hasErr = false;
         hasErr = setErr('nome', 'nome-err', !name) || hasErr;
         hasErr = setErr('email', 'email-err', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) || hasErr;
         hasErr = setErr('cpf', 'cpf-err', !validCPF(cpf)) || hasErr;
         hasErr = setErr('birthdate', 'birthdate-err', !birthdate) || hasErr;
+        hasErr = setErr('cep', 'cep-err', cep.replace(/\D/g,'').length !== 8) || hasErr;
+        hasErr = setErr('address', 'address-err', !address) || hasErr;
+        hasErr = setErr('houseNumber', 'houseNumber-err', !houseNumber) || hasErr;
+        hasErr = setErr('neighborhood', 'neighborhood-err', !neighborhood) || hasErr;
+        hasErr = setErr('city', 'city-err', !city) || hasErr;
         hasErr = setErr('senha', 'senha-err', senha.length < 8) || hasErr;
         hasErr = setErr('confirmar', 'confirmar-err', senha !== confirmar) || hasErr;
 
@@ -320,7 +389,7 @@
         try {
           var res = await StoreAuth.api('/register', {
             method: 'POST',
-            body: JSON.stringify({ name: name, email: email, cpf: cpf, birthdate: birthdate, phone: phone, password: senha, consent: true })
+            body: JSON.stringify({ name: name, email: email, cpf: cpf, birthdate: birthdate, phone: phone, password: senha, consent: true, cep: cep, address: address, houseNumber: houseNumber, neighborhood: neighborhood, city: city })
           });
 
           var data = await res.json().catch(function () { return {}; });
