@@ -461,7 +461,7 @@
   }
 
   radioAddrCadastro.addEventListener('change', function () {
-    if (this.checked) usarCadastro(currentMe);
+    if (this.checked && currentMe) usarCadastro(currentMe);
   });
   radioAddrOutro.addEventListener('change', function () {
     if (this.checked) usarOutro();
@@ -688,7 +688,6 @@
         var labelCadastro = radioAddrCadastro.closest('label');
         if (labelCadastro) labelCadastro.style.opacity = '0.4';
         usarOutro();
-        atualizarResumo();
       }
     })
     .catch(function () {
