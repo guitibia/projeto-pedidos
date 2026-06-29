@@ -43,7 +43,6 @@ async function register(req, res) {
     const hash = await bcrypt.hash(password, 10);
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const cepDigits = String(cep || '').replace(/\D/g, '');
     await db.query(
       `INSERT INTO clients (name, email, cpf, birthdate, phone, cep, address, house_number, neighborhood, city, password_hash, email_verified, verification_token, verification_expires, lgpd_consent_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, NOW())`,
