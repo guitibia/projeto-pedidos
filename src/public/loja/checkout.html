@@ -32,12 +32,14 @@
     .field { margin-bottom: 1rem; }
     .field label { display: block; font-size: .88rem; font-weight: 700; margin-bottom: .3rem; color: var(--text); }
     .field input[type="text"],
-    .field input[type="tel"] {
+    .field input[type="tel"],
+    .field select {
       width: 100%; height: 44px; border: 1px solid var(--border); border-radius: 10px;
       padding: 0 .9rem; font: inherit; font-size: .95rem; color: var(--text);
       background: var(--bg); transition: border-color .18s, box-shadow .18s;
     }
-    .field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .field select { padding-right: 2rem; appearance: none; cursor: pointer; }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
     .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     @media (max-width: 560px) { .field-row { grid-template-columns: 1fr; } }
     .cep-hint { font-size: .81rem; margin-top: .25rem; display: none; }
@@ -135,7 +137,9 @@
           <div class="field-row">
             <div class="field">
               <label for="neighborhood">Bairro</label>
-              <input type="text" id="neighborhood" name="neighborhood" placeholder="Seu bairro" autocomplete="address-level3">
+              <select id="neighborhood" name="neighborhood">
+                <option value="">Selecione o bairro…</option>
+              </select>
             </div>
             <div class="field">
               <label for="city">Cidade</label>
@@ -288,13 +292,56 @@
     }).join('');
   }
 
+  /* ---------- Config de entrega ---------- */
+  var cfg = { cidade: '', fretePadrao: 0, bairros: [] };
+  var foraDeArea = false;
+
+  function cidadeOk(c) {
+    function norm(s) {
+      return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    }
+    return norm(c) === norm(cfg.cidade);
+  }
+
+  function popularSelectBairros(bairros, preSelecionar) {
+    var sel = inpNeighborhood;
+    // Preserva o placeholder inicial
+    sel.innerHTML = '<option value="">Selecione o bairro…</option>';
+    bairros.forEach(function (b) {
+      var opt = document.createElement('option');
+      opt.value = b.bairro;
+      opt.textContent = b.bairro;
+      sel.appendChild(opt);
+    });
+    var optOutro = document.createElement('option');
+    optOutro.value = '__outro__';
+    optOutro.textContent = 'Meu bairro não está na lista';
+    sel.appendChild(optOutro);
+
+    // Tentar pré-selecionar se veio um bairro do /me ou ViaCEP
+    if (preSelecionar) {
+      var found = false;
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === preSelecionar) {
+          sel.value = preSelecionar;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        sel.value = '__outro__';
+      }
+    }
+  }
+
   /* ---------- Helpers de endereço ---------- */
   function getAddressValues() {
+    var bairroVal = inpNeighborhood.value;
     return {
       cep:          inpCep.value.trim(),
       address:      inpAddress.value.trim(),
       houseNumber:  inpHouseNumber.value.trim(),
-      neighborhood: inpNeighborhood.value.trim(),
+      neighborhood: (bairroVal === '__outro__' ? '' : bairroVal),
       city:         inpCity.value.trim()
     };
   }
@@ -338,27 +385,40 @@
     setCepHint('loading', 'Buscando CEP…');
     var d = await buscarCep(digits);
     if (d) {
-      inpAddress.value      = d.logradouro  || inpAddress.value;
-      inpNeighborhood.value = d.bairro      || inpNeighborhood.value;
-      inpCity.value         = d.localidade  || inpCity.value;
-      setCepHint('', '');
+      inpAddress.value = d.logradouro || inpAddress.value;
+      inpCity.value    = d.localidade || inpCity.value;
+
+      // Tentar pré-selecionar bairro do ViaCEP no select
+      if (d.bairro) {
+        popularSelectBairros(cfg.bairros, d.bairro);
+      }
+
+      // Validar cidade
+      if (d.localidade && cfg.cidade && !cidadeOk(d.localidade)) {
+        setCepHint('error', 'Desculpe, entregamos apenas em ' + cfg.cidade + '.');
+        foraDeArea = true;
+        btnFinalizar.disabled = true;
+        btnFinalizar.title = 'Fora da área de entrega';
+      } else {
+        setCepHint('', '');
+        foraDeArea = false;
+        agendarResumo();
+      }
       inpHouseNumber.focus();
-      agendarResumo();
     } else {
       setCepHint('error', 'CEP não encontrado — preencha o endereço manualmente.');
     }
   }
 
   /* ---------- Pré-preencher endereço via /me ---------- */
-  StoreAuth.api('/me').then(function (me) {
-    if (!me) return;
-    if (me.cep          && !inpCep.value)          inpCep.value          = me.cep;
-    if (me.address      && !inpAddress.value)      inpAddress.value      = me.address;
-    if (me.house_number && !inpHouseNumber.value)  inpHouseNumber.value  = me.house_number;
-    if (me.neighborhood && !inpNeighborhood.value) inpNeighborhood.value = me.neighborhood;
-    if (me.city         && !inpCity.value)         inpCity.value         = me.city;
-    atualizarResumo();
-  }).catch(function () { /* silencia — campos ficam em branco */ });
+  var promiseMe = StoreAuth.api('/me').then(function (me) {
+    if (!me) return null;
+    if (me.cep          && !inpCep.value)         inpCep.value         = me.cep;
+    if (me.address      && !inpAddress.value)     inpAddress.value     = me.address;
+    if (me.house_number && !inpHouseNumber.value) inpHouseNumber.value = me.house_number;
+    if (me.city         && !inpCity.value)        inpCity.value        = me.city;
+    return me;
+  }).catch(function () { return null; });
 
   /* ---------- Resumo ---------- */
   function atualizarResumo() {
@@ -385,6 +445,17 @@
     .then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
     .then(function (res) {
       var d = res.data;
+
+      /* Bloquear se cidade fora da área */
+      if (res.status === 400 && d && d.foraDeArea) {
+        foraDeArea = true;
+        setCepHint('error', d.error || 'Fora da área de entrega.');
+        btnFinalizar.disabled = true;
+        btnFinalizar.title = d.error || 'Fora da área de entrega';
+        elSummary.innerHTML = '<span class="co-summary-loading">Entrega não disponível para esta cidade.</span>';
+        showAlert(d.error || 'Fora da área de entrega.');
+        return;
+      }
 
       /* Marcar itens indisponíveis */
       var todosOk = true;
@@ -450,9 +521,12 @@
   }
 
   /* Address fields blur atualiza resumo */
-  [inpAddress, inpHouseNumber, inpNeighborhood, inpCity].forEach(function (el) {
+  [inpAddress, inpHouseNumber, inpCity].forEach(function (el) {
     el.addEventListener('blur', agendarResumo);
   });
+
+  /* Select bairro change atualiza resumo */
+  inpNeighborhood.addEventListener('change', agendarResumo);
 
   /* ---------- Alertas ---------- */
   function showAlert(msg) {
@@ -466,11 +540,13 @@
 
   /* ---------- Finalizar e pagar ---------- */
   btnFinalizar.addEventListener('click', async function () {
+    if (foraDeArea) return;
     var metodo = (document.querySelector('input[name="metodo"]:checked') || {}).value || 'pix';
+    var addr = getAddressValues();
     var corpo = {
       items: Cart.getItems().map(function (i) { return { id: i.id, qty: i.qty }; }),
-      cep: inpCep.value, address: inpAddress.value, houseNumber: inpHouseNumber.value,
-      neighborhood: inpNeighborhood.value, city: inpCity.value
+      cep: addr.cep, address: addr.address, houseNumber: addr.houseNumber,
+      neighborhood: addr.neighborhood, city: addr.city
     };
 
     if (metodo === 'pix') {
@@ -535,7 +611,29 @@
 
   /* ---------- Boot ---------- */
   renderItens();
-  atualizarResumo();
+
+  // Carregar config de entrega e pré-preencher select, depois aplicar /me
+  fetch('/api/loja/entrega/config')
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (data) {
+      cfg.cidade = data.cidade || '';
+      cfg.fretePadrao = data.fretePadrao || 0;
+      cfg.bairros = Array.isArray(data.bairros) ? data.bairros : [];
+      // Popular select sem pré-seleção inicial
+      popularSelectBairros(cfg.bairros, '');
+      // Depois que config carregou, aplicar pré-seleção do /me
+      return promiseMe;
+    })
+    .then(function (me) {
+      if (me && me.neighborhood) {
+        popularSelectBairros(cfg.bairros, me.neighborhood);
+      }
+      atualizarResumo();
+    })
+    .catch(function () {
+      // Config falhou; ainda tentar preencher e calcular resumo
+      promiseMe.then(function () { atualizarResumo(); }).catch(function () { atualizarResumo(); });
+    });
 
 })();
   </script>
