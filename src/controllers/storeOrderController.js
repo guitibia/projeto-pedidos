@@ -1,5 +1,5 @@
 const db = require('../database/connection');
-const { deliveryFee, geocodeClient } = require('../utils/geo');
+const { freteDoBairro, cidadeAtende, getCidadeEntrega } = require('../utils/delivery');
 
 const DEFAULT_CITY = 'São João da Boa Vista';
 
@@ -48,19 +48,6 @@ function effectiveAddress(client, body) {
   };
 }
 
-// frete a partir do endereço efetivo; geocodifica se endereço mudou ou cliente sem coords
-async function geocodeFee(addr, client, addressChanged) {
-  let lat = client.lat, lng = client.lng;
-  if (addressChanged || !lat || !lng) {
-    if (addr.address) {
-      const coords = await geocodeClient(addr.address, addr.house_number || '', addr.neighborhood || '', addr.city || DEFAULT_CITY);
-      if (coords) { lat = coords.lat; lng = coords.lng; }
-    }
-  }
-  const fee = await deliveryFee(lat, lng);
-  return { fee, lat, lng };
-}
-
 // linhas com preço autoritativo + flags de validação (sem transação — só leitura)
 async function buildLines(items) {
   const lines = [];
@@ -94,7 +81,10 @@ async function resumo(req, res) {
     const lines = await buildLines(items);
     const subtotal = Number(lines.filter(l => l.ok).reduce((s, l) => s + l.lineTotal, 0).toFixed(2));
     const addr = effectiveAddress(client, req.body);
-    const { fee } = await geocodeFee(addr, client, hasAddress(req.body));
+    if (addr.city && !(await cidadeAtende(addr.city))) {
+      return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+    }
+    const fee = await freteDoBairro(addr.neighborhood);
     const total = Number((subtotal + fee).toFixed(2));
     return res.json({
       items: lines.map(l => ({
@@ -187,5 +177,5 @@ async function criarPedidoPago(conn, { clientId, lines, fee, total, paymentMetho
 
 module.exports = {
   resumo, listarPedidos, detalhePedido, criarPedidoPago,
-  parseItems, buildLines, getClient, effectiveAddress, geocodeFee, hasAddress,
+  parseItems, buildLines, getClient, effectiveAddress, hasAddress,
 };

@@ -1,4 +1,5 @@
 const db = require('../database/connection');
+const { getCidadeEntrega, getFretePadrao } = require('../utils/delivery');
 
 const SORTS = {
   recentes:   'p.created_at DESC',
@@ -43,4 +44,11 @@ async function listFranquias(req, res) {
   } catch (e) { console.error('Erro loja/franquias:', e); return res.status(500).json({ error: 'Erro ao buscar franquias.' }); }
 }
 
-module.exports = { listProdutos, getProduto, listFranquias };
+async function entregaConfig(req, res) {
+  try {
+    const [bairros] = await db.query('SELECT bairro, fee FROM delivery_zones WHERE active = 1 ORDER BY bairro');
+    return res.json({ cidade: await getCidadeEntrega(), fretePadrao: await getFretePadrao(), bairros });
+  } catch (e) { console.error('Erro entregaConfig:', e); return res.status(500).json({ error: 'Erro.' }); }
+}
+
+module.exports = { listProdutos, getProduto, listFranquias, entregaConfig };

@@ -1,5 +1,4 @@
 const db = require('../database/connection');
-const { deliveryFee, geocodeClient } = require('../utils/geo');
 
 const VALID_PAYMENT_METHODS = ['PIX', 'DINHEIRO', 'CARTÃO DE CRÉDITO', 'PARCELADO', 'PAGAMENTO COMBINADO'];
 
@@ -32,23 +31,7 @@ async function createOrder(req, res) {
     }
   }
 
-  // Calcular taxa de entrega antes de abrir transação
-  let fee = 0;
-  try {
-    const [[client]] = await db.query('SELECT lat, lng, address, house_number, neighborhood FROM clients WHERE id = ?', [clientId]);
-    if (client) {
-      let lat = client.lat, lng = client.lng;
-      // Se o cliente ainda não foi geocodificado, tenta agora e persiste
-      if (!lat || !lng) {
-        const coords = await geocodeClient(client.address, client.house_number, client.neighborhood);
-        if (coords) {
-          lat = coords.lat; lng = coords.lng;
-          await db.query('UPDATE clients SET lat=?, lng=? WHERE id=?', [lat, lng, clientId]);
-        }
-      }
-      fee = await deliveryFee(lat, lng);
-    }
-  } catch (_) {}
+  const fee = 0;
 
   const conn = await db.getConnection();
   try {
