@@ -402,6 +402,7 @@
       } else {
         setCepHint('', '');
         foraDeArea = false;
+        btnFinalizar.title = '';
         agendarResumo();
       }
       inpHouseNumber.focus();
@@ -502,6 +503,7 @@
         btnFinalizar.title = motivoBloqueio;
         showAlert(motivoBloqueio);
       } else {
+        foraDeArea = false;
         btnFinalizar.disabled = false;
         btnFinalizar.title = '';
         hideAlert();
