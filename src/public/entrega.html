@@ -247,7 +247,7 @@
                   <button class="btn-save-zone" onclick="saveZone(${z.id})">
                     <i class="bi bi-check-lg"></i> Salvar
                   </button>
-                  <button class="btn-del-zone" onclick="deleteZone(${z.id}, '${esc(z.bairro)}')">
+                  <button class="btn-del-zone" onclick="deleteZone(${z.id})">
                     <i class="bi bi-trash"></i>
                   </button>
                 </div>
@@ -337,10 +337,12 @@
   }
 
   // ── Remover zona ──
-  async function deleteZone(id, bairro) {
+  async function deleteZone(id) {
+    const z = zonesData.find(function (x) { return x.id === id; });
+    const nome = z ? z.bairro : '';
     const confirm = await Swal.fire({
       title: 'Remover bairro?',
-      text: `Deseja remover "${bairro}" da lista de zonas?`,
+      text: 'Deseja remover "' + nome + '" da lista de zonas?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sim, remover',
