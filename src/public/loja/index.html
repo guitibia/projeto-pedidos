@@ -46,6 +46,8 @@
   <main>
     <div class="container">
 
+      <div id="desconto-faixa" style="display:none; background:var(--accent); color:#fff; text-align:center; padding:.6rem 1rem; font-weight:600; border-radius:var(--radius); margin:1rem 0;"></div>
+
       <!-- HERO -->
       <section class="hero" aria-labelledby="hero-title">
         <h1 id="hero-title">Beleza para o seu dia</h1>
@@ -150,6 +152,14 @@
 
       /* ---- Footer year ---- */
       document.getElementById('ano').textContent = new Date().getFullYear();
+
+      /* ---- Faixa de desconto global ---- */
+      fetch('/api/loja/desconto-global').then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.ativo && d.percent > 0) {
+          var el = document.getElementById('desconto-faixa');
+          if (el) { el.textContent = '🏷️ ' + d.percent + '% OFF em toda a loja!'; el.style.display = 'block'; }
+        }
+      }).catch(function () {});
 
       /* ---- Intercala produtos por franquia (rodízio), preservando
               "mais novo primeiro" dentro de cada franquia ---- */
