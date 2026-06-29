@@ -15,6 +15,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^7.4.1",
+    "fast-xml-parser": "^5.9.3",
     "jsonwebtoken": "^9.0.2",
     "mercadopago": "^3.1.0",
     "multer": "^2.2.0",
