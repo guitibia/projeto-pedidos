@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendVerificationEmail } = require('../utils/mailer');
+const { garantirZonaBairro } = require('../utils/delivery');
 
 function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || '')); }
 function validCPF(cpf) {
@@ -49,6 +50,7 @@ async function register(req, res) {
       [name, email, cpfDigits, birthdate, phone || null, cepDigits, address, houseNumber, neighborhood, city, hash, token, expires]
     );
     await sendVerificationEmail(email, name, verifyLink(token));
+    await garantirZonaBairro(neighborhood, city); // best-effort: bairro novo da cidade vira zona (frete padrão)
     return res.status(201).json({ message: 'Cadastro criado! Enviamos um link de confirmação para o seu e-mail.' });
   } catch (e) { console.error('Erro no cadastro:', e); return res.status(500).json({ error: 'Erro ao cadastrar.' }); }
 }

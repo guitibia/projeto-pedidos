@@ -22,4 +22,19 @@ async function freteDoBairro(bairro) {
   }
   return getFretePadrao();
 }
-module.exports = { normalizar, getSetting, getCidadeEntrega, getFretePadrao, cidadeAtende, freteDoBairro };
+// Best-effort: ao cadastrar um cliente da cidade de entrega, garante que o
+// bairro dele exista nas zonas (com o frete padrão), pra você revisar depois.
+// Nunca lança — não pode quebrar o cadastro.
+async function garantirZonaBairro(bairro, cidade) {
+  try {
+    const n = normalizar(bairro);
+    if (!n) return;
+    if (!(await cidadeAtende(cidade))) return;
+    const [zonas] = await db.query('SELECT bairro FROM delivery_zones');
+    for (const z of zonas) { if (normalizar(z.bairro) === n) return; } // já existe (normalizado)
+    const fee = await getFretePadrao();
+    await db.query('INSERT INTO delivery_zones (bairro, fee) VALUES (?, ?)', [String(bairro).trim(), fee]);
+  } catch (_) { /* best-effort: nunca quebra o cadastro */ }
+}
+
+module.exports = { normalizar, getSetting, getCidadeEntrega, getFretePadrao, cidadeAtende, freteDoBairro, garantirZonaBairro };
