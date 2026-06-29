@@ -265,6 +265,36 @@
       </div>
     </div>
 
+    <!-- Desconto global -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">
+              <i class="bi bi-tag me-1" style="color:#58a6ff"></i>Desconto Global
+            </h6>
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="desc-global-ativo" role="switch">
+                <label class="form-check-label" for="desc-global-ativo" style="font-size:.85rem">Ativar desconto global</label>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <label for="desc-global-percent" style="font-size:.85rem;white-space:nowrap;margin-bottom:0">Percentual (%)</label>
+              <input type="number" class="form-control form-control-sm" id="desc-global-percent"
+                step="0.01" min="0" max="99.99" placeholder="0.00" style="max-width:100px">
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-primary btn-sm" id="desc-global-save">
+                <i class="bi bi-save me-1"></i>Salvar
+              </button>
+              <span id="desc-global-msg" style="font-size:.8rem"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Últimos pedidos -->
     <div class="row g-3">
       <div class="col-12">
@@ -577,6 +607,49 @@
     }
   }
 
+  // Desconto global
+  async function loadDesconto() {
+    try {
+      const res = await Auth.apiFetch('/api/descontos');
+      if (!res) return;
+      const d = await res.json();
+      document.getElementById('desc-global-ativo').checked = !!d.ativo;
+      document.getElementById('desc-global-percent').value = d.percent;
+    } catch (e) { console.error('Erro ao carregar desconto global:', e); }
+  }
+
+  document.getElementById('desc-global-save').addEventListener('click', async () => {
+    const btn = document.getElementById('desc-global-save');
+    const msg = document.getElementById('desc-global-msg');
+    const ativo = document.getElementById('desc-global-ativo').checked;
+    const percent = Number(document.getElementById('desc-global-percent').value);
+    btn.disabled = true;
+    msg.textContent = '';
+    try {
+      const res = await Auth.apiFetch('/api/descontos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ativo, percent })
+      });
+      if (!res) { msg.textContent = 'Erro de autenticação.'; msg.style.color = '#f85149'; return; }
+      const data = await res.json();
+      if (res.ok) {
+        msg.textContent = 'Salvo com sucesso!';
+        msg.style.color = '#3fb950';
+      } else {
+        msg.textContent = esc(data.error || 'Erro ao salvar.');
+        msg.style.color = '#f85149';
+      }
+    } catch (e) {
+      msg.textContent = 'Erro de rede.';
+      msg.style.color = '#f85149';
+    } finally {
+      btn.disabled = false;
+      setTimeout(() => { msg.textContent = ''; }, 3000);
+    }
+  });
+
+  loadDesconto();
   loadDashboard();
 </script>
 </body>
