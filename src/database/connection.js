@@ -177,6 +177,13 @@ pool.getConnection()
       `);
     } catch (_) {}
 
+    // Migração: notas fiscais de entrada
+    for (const sql of [
+      'CREATE TABLE IF NOT EXISTS nf_entradas (id INT AUTO_INCREMENT PRIMARY KEY, chave VARCHAR(44) NOT NULL UNIQUE, emitente_nome VARCHAR(160), emitente_cnpj VARCHAR(14), numero VARCHAR(20), serie VARCHAR(10), valor_total DECIMAL(12,2), data_emissao DATETIME NULL, xml LONGTEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)',
+      'CREATE TABLE IF NOT EXISTS nf_entrada_itens (id INT AUTO_INCREMENT PRIMARY KEY, nf_id INT NOT NULL, cprod VARCHAR(60), descricao VARCHAR(255), ncm VARCHAR(10), quantidade DECIMAL(12,3), valor_unit DECIMAL(12,4), valor_total DECIMAL(12,2), product_id INT NULL, INDEX (nf_id))',
+      'CREATE TABLE IF NOT EXISTS nf_item_vinculos (id INT AUTO_INCREMENT PRIMARY KEY, emitente_cnpj VARCHAR(14) NOT NULL, cprod VARCHAR(60) NOT NULL, product_id INT NOT NULL, UNIQUE KEY uq_vinc (emitente_cnpj, cprod))',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     conn.release();
   })
   .catch(err => {

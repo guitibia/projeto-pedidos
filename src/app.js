@@ -71,6 +71,8 @@ app.use('/api/promissorias', apiLimiter, auth, promissoriaRoutes);
 app.use('/api/estoque',     apiLimiter, auth, estoqueRoutes);
 app.use('/api/franchise-discounts', apiLimiter, auth, franchiseDiscountRoutes);
 app.use('/api/delivery-zones', apiLimiter, auth, deliveryZonesRoutes);
+const nfRoutes = require('./routes/nf');
+app.use('/api/nf', apiLimiter, auth, nfRoutes);
 app.use('/api/descontos', apiLimiter, auth, descontosRoutes);
 app.get('/api/dashboard', apiLimiter, auth, getDashboard);
 
