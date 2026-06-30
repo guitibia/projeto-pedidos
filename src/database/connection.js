@@ -188,8 +188,16 @@ pool.getConnection()
     for (const sql of [
       "ALTER TABLE estoque_movimentacoes ADD COLUMN origem ENUM('Manual','NF') NOT NULL DEFAULT 'Manual'",
       'ALTER TABLE estoque_movimentacoes ADD COLUMN nf_id INT NULL',
-      "UPDATE estoque_movimentacoes SET origem='NF' WHERE observacao LIKE 'NF %'",
     ]) { try { await conn.query(sql); } catch (_) {} }
+    // Backfill one-shot: marca as entradas antigas de NF (rodadas antes da coluna existir).
+    // Roda só uma vez pra não re-rotular, no futuro, uma movimentação manual cujo motivo comece com "NF ".
+    try {
+      const [[done]] = await conn.query("SELECT svalue FROM store_settings WHERE skey = 'nf_origem_backfill'");
+      if (!done) {
+        await conn.query("UPDATE estoque_movimentacoes SET origem='NF' WHERE observacao LIKE 'NF %'");
+        await conn.query("INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('nf_origem_backfill', '1')");
+      }
+    } catch (_) {}
 
     conn.release();
   })
