@@ -122,7 +122,7 @@ async function detalhe(req, res) {
     const [[nf]] = await db.query('SELECT id, chave, emitente_nome, emitente_cnpj, numero, serie, valor_total, data_emissao, created_at FROM nf_entradas WHERE id = ?', [id]);
     if (!nf) return res.status(404).json({ error: 'Nota não encontrada.' });
     const [itens] = await db.query(
-      `SELECT i.id, i.cprod, i.descricao, i.quantidade, i.valor_unit, i.valor_total, i.product_id, p.name AS produto_nome
+      `SELECT i.id, i.cprod, i.descricao, i.ncm, i.quantidade, i.valor_unit, i.valor_total, i.product_id, p.name AS produto_nome
        FROM nf_entrada_itens i LEFT JOIN products p ON p.id = i.product_id WHERE i.nf_id = ? ORDER BY i.id`, [id]);
     return res.json(Object.assign({}, nf, { itens }));
   } catch (e) { console.error('Erro detalhe NF:', e); return res.status(500).json({ error: 'Erro.' }); }

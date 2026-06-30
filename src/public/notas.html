@@ -524,8 +524,8 @@
               <td style="padding:.45rem .65rem;text-align:right">${Number(it.quantidade).toLocaleString('pt-BR')}</td>
               <td style="padding:.45rem .65rem;text-align:right">${fmt(it.valor_unit)}</td>
               <td style="padding:.45rem .65rem;text-align:right">${fmt(it.valor_total)}</td>
-              <td style="padding:.45rem .65rem;color:${it.product_name ? '#3fb950' : 'var(--text-muted)'}">
-                ${it.product_name ? esc(it.product_name) : '<span style="opacity:.5">—</span>'}
+              <td style="padding:.45rem .65rem;color:${it.produto_nome ? '#3fb950' : 'var(--text-muted)'}">
+                ${it.produto_nome ? esc(it.produto_nome) : '<span style="opacity:.5">—</span>'}
               </td>
             </tr>`).join('')}
           </tbody>
