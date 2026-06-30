@@ -596,7 +596,7 @@
       <div class="hist-row">
         <div>
           <div style="font-size:.82rem;font-weight:600;color:${r.tipo==='Entrada'?'#3fb950':'#f85149'}">
-            <i class="bi bi-${r.tipo==='Entrada'?'plus':'dash'}-circle"></i> ${r.tipo}
+            <i class="bi bi-${r.tipo==='Entrada'?'plus':'dash'}-circle"></i> ${esc(r.tipo)}
             ${origemBadge(r)}
           </div>
           <div style="font-size:.72rem;color:var(--text-muted)">${esc(r.observacao || '—')}</div>
