@@ -48,7 +48,7 @@ function importar(req, res) {
     try {
       await conn.beginTransaction();
       const [[dup]] = await conn.query('SELECT id FROM nf_entradas WHERE chave = ?', [nf.chave]);
-      if (dup) { await conn.rollback(); conn.release(); return res.status(409).json({ error: 'Esta nota já foi importada.' }); }
+      if (dup) { await conn.rollback(); return res.status(409).json({ error: 'Esta nota já foi importada.' }); }
 
       const [r] = await conn.query(
         'INSERT INTO nf_entradas (chave, emitente_nome, emitente_cnpj, numero, serie, valor_total, data_emissao, xml) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
