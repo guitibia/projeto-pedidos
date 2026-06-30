@@ -189,6 +189,11 @@
           </h6>
           <span style="font-size:.8rem;color:var(--text-muted)" id="log-count"></span>
         </div>
+        <div id="log-filtro" class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-outline-secondary active" onclick="window.__logOrigem='';document.querySelectorAll('#log-filtro button').forEach(b=>b.classList.remove('active'));this.classList.add('active');loadLog()">Todos</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="window.__logOrigem='NF';document.querySelectorAll('#log-filtro button').forEach(b=>b.classList.remove('active'));this.classList.add('active');loadLog()">📄 NF</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="window.__logOrigem='Manual';document.querySelectorAll('#log-filtro button').forEach(b=>b.classList.remove('active'));this.classList.add('active');loadLog()">✋ Manual</button>
+        </div>
         <div id="log-container">
           <div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>
         </div>
@@ -308,6 +313,14 @@
 
   function esc(v) {
     return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function origemBadge(r) {
+    if (r.origem === 'NF') {
+      var href = '/notas.html';
+      return '<a href="' + href + '" class="fr-badge badge-ok" title="Entrada via Nota Fiscal' + (r.nf_id ? ' #' + esc(String(r.nf_id)) : '') + '" style="text-decoration:none">📄 NF</a>';
+    }
+    return '<span class="fr-badge badge-low">✋ Manual</span>';
   }
 
   const LOW_STOCK = 5; // abaixo disso = baixo estoque
@@ -584,8 +597,9 @@
         <div>
           <div style="font-size:.82rem;font-weight:600;color:${r.tipo==='Entrada'?'#3fb950':'#f85149'}">
             <i class="bi bi-${r.tipo==='Entrada'?'plus':'dash'}-circle"></i> ${r.tipo}
+            ${origemBadge(r)}
           </div>
-          <div style="font-size:.72rem;color:var(--text-muted)">${r.observacao || '—'}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">${esc(r.observacao || '—')}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:.9rem;font-weight:700">${r.quantidade} un</div>
@@ -612,7 +626,9 @@
     const container = document.getElementById('log-container');
     container.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>';
     try {
-      const res  = await Auth.apiFetch('/api/estoque/log?limit=100');
+      var f = (window.__logOrigem || '');
+      var url = '/api/estoque/log?limit=100' + (f ? '&origem=' + f : '');
+      const res  = await Auth.apiFetch(url);
       const rows = await res.json();
       document.getElementById('log-count').textContent = `${rows.length} registros`;
       if (!rows.length) {
@@ -626,6 +642,7 @@
             <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Produto</th>
             <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Franquia</th>
             <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600">Tipo</th>
+            <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600">Origem</th>
             <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600">Qtd</th>
             <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Motivo</th>
           </tr>
@@ -643,6 +660,7 @@
             <td style="padding:.5rem .75rem;text-align:center">
               <span style="${r.tipo==='Entrada'?'background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3)':'background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3)'};font-size:.75rem;padding:.18rem .5rem;border-radius:5px;font-weight:700;white-space:nowrap"><i class="bi bi-${r.tipo==='Entrada'?'plus':'dash'}-circle" style="font-size:.7rem"></i> ${esc(r.tipo)}</span>
             </td>
+            <td style="padding:.5rem .75rem;text-align:center">${origemBadge(r)}</td>
             <td style="padding:.5rem .75rem;text-align:center;font-weight:700;color:var(--text-primary)">${r.quantidade}</td>
             <td style="padding:.5rem .75rem;color:var(--text-muted);font-size:.8rem">${esc(r.observacao || '—')}</td>
           </tr>`).join('')}
