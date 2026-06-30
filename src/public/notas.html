@@ -51,6 +51,10 @@
 
     .acao-extra { margin-top: .4rem; }
 
+    .acao-pills { display:flex; gap:.35rem; flex-wrap:wrap; margin-bottom:.4rem; }
+    .acao-pill { font-size:.8rem; border:1px solid var(--border-color); background:transparent; color:var(--text-muted); border-radius:8px; padding:.35rem .7rem; cursor:pointer; display:inline-flex; align-items:center; gap:.35rem; transition:background .15s,color .15s,border-color .15s; }
+    .acao-pill.active { background:var(--accent, #0d6efd); color:#fff; border-color:transparent; }
+
     .hist-row {
       display: flex; align-items: center; justify-content: space-between;
       padding: .6rem .25rem; border-bottom: 1px solid var(--border-color); gap: .5rem;
@@ -321,11 +325,12 @@
         <td style="text-align:right">${fmt(item.valorUnit)}</td>
         <td style="text-align:right">${fmt(item.valorTotal)}</td>
         <td>
-          <select class="form-select form-select-sm" id="acao-${idx}" onchange="onAcaoChange(${idx})">
-            <option value="vincular">Vincular</option>
-            <option value="criar">Criar produto</option>
-            <option value="ignorar">Ignorar</option>
-          </select>
+          <input type="hidden" id="acao-${idx}" value="vincular">
+          <div class="acao-pills" id="pills-${idx}">
+            <button type="button" class="acao-pill active" data-acao="vincular" onclick="selectAcao(${idx},'vincular')"><i class="bi bi-link-45deg"></i> Vincular</button>
+            <button type="button" class="acao-pill" data-acao="criar" onclick="selectAcao(${idx},'criar')"><i class="bi bi-plus-square"></i> Criar</button>
+            <button type="button" class="acao-pill" data-acao="ignorar" onclick="selectAcao(${idx},'ignorar')"><i class="bi bi-slash-circle"></i> Ignorar</button>
+          </div>
           <div class="acao-extra" id="extra-vincular-${idx}">
             <select class="form-select form-select-sm mt-1" id="prod-select-${idx}">
               <option value="">— selecione —</option>
@@ -357,6 +362,14 @@
     const acao = document.getElementById('acao-' + idx).value;
     document.getElementById('extra-vincular-' + idx).style.display = acao === 'vincular' ? '' : 'none';
     document.getElementById('extra-criar-' + idx).style.display    = acao === 'criar'    ? '' : 'none';
+  }
+
+  function selectAcao(idx, acao) {
+    document.getElementById('acao-' + idx).value = acao;
+    document.getElementById('pills-' + idx).querySelectorAll('.acao-pill').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.acao === acao);
+    });
+    onAcaoChange(idx);
   }
 
   // ── Importar nota: POST /api/nf/importar (fetch direto + FormData) ──
