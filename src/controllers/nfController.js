@@ -62,10 +62,15 @@ function importar(req, res) {
 
         if (d.acao === 'vincular' && d.product_id) {
           productId = parseInt(d.product_id, 10) || null;
+          if (productId) {
+            const [[existe]] = await conn.query('SELECT id FROM products WHERE id = ?', [productId]);
+            if (!existe) { await conn.rollback(); return res.status(400).json({ error: 'Produto vinculado inválido (item ' + it.cprod + ').' }); }
+          }
         } else if (d.acao === 'criar' && d.novo) {
           const [pr] = await conn.query(
             'INSERT INTO products (name, cost, sale_value, franchise, code, estoque) VALUES (?, ?, ?, ?, ?, 0)',
             [String(d.novo.name || it.descricao).slice(0, 200),
+             // custo = valor unitário REAL da nota de compra (proposital; difere do custo derivado do desconto de franquia)
              it.valorUnit,
              Number(d.novo.sale_value) || it.valorUnit,
              String(d.novo.franchise || 'Outros').slice(0, 60),
