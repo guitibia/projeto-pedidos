@@ -89,8 +89,8 @@ function importar(req, res) {
           if (qtd > 0) {
             await conn.query('UPDATE products SET estoque = estoque + ? WHERE id = ?', [qtd, productId]);
             await conn.query(
-              'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)',
-              [productId, 'Entrada', qtd, 'NF ' + nf.numero]
+              'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao, origem, nf_id) VALUES (?, ?, ?, ?, ?, ?)',
+              [productId, 'Entrada', qtd, 'NF ' + nf.numero, 'NF', nfId]
             );
           }
           await conn.query(

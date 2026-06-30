@@ -184,6 +184,13 @@ pool.getConnection()
       'CREATE TABLE IF NOT EXISTS nf_item_vinculos (id INT AUTO_INCREMENT PRIMARY KEY, emitente_cnpj VARCHAR(14) NOT NULL, cprod VARCHAR(60) NOT NULL, product_id INT NOT NULL, UNIQUE KEY uq_vinc (emitente_cnpj, cprod))',
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Migração: origem (NF/Manual) + nf_id nas movimentações de estoque
+    for (const sql of [
+      "ALTER TABLE estoque_movimentacoes ADD COLUMN origem ENUM('Manual','NF') NOT NULL DEFAULT 'Manual'",
+      'ALTER TABLE estoque_movimentacoes ADD COLUMN nf_id INT NULL',
+      "UPDATE estoque_movimentacoes SET origem='NF' WHERE observacao LIKE 'NF %'",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     conn.release();
   })
   .catch(err => {

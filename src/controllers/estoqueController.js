@@ -43,8 +43,8 @@ async function movimentar(req, res) {
     const delta = tipo === 'Entrada' ? qtd : -qtd;
     await conn.query('UPDATE products SET estoque = estoque + ? WHERE id = ?', [delta, id]);
     await conn.query(
-      'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)',
-      [id, tipo, qtd, observacao || null]
+      'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao, origem) VALUES (?, ?, ?, ?, ?)',
+      [id, tipo, qtd, observacao || null, 'Manual']
     );
 
     await conn.commit();
@@ -79,15 +79,20 @@ async function historico(req, res) {
 // GET /api/estoque/log
 async function logGeral(req, res) {
   const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  const origem = req.query.origem;
+  const filtra = (origem === 'NF' || origem === 'Manual');
+  const where = filtra ? 'WHERE m.origem = ?' : '';
+  const params = filtra ? [origem, limit] : [limit];
   try {
     const [rows] = await db.query(
       `SELECT m.id, p.name AS product_name, p.franchise, p.code,
-              m.tipo, m.quantidade, m.observacao, m.created_at
+              m.tipo, m.quantidade, m.observacao, m.origem, m.nf_id, m.created_at
        FROM estoque_movimentacoes m
        JOIN products p ON p.id = m.product_id
+       ${where}
        ORDER BY m.created_at DESC
        LIMIT ?`,
-      [limit]
+      params
     );
     return res.json(rows);
   } catch (err) {
