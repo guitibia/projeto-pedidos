@@ -138,4 +138,43 @@ async function detalhe(req, res) {
   } catch (e) { console.error('Erro detalhe NF:', e); return res.status(500).json({ error: 'Erro.' }); }
 }
 
-module.exports = { uploadXml, preview, importar, listar, detalhe };
+// DELETE /api/nf/:id  — apaga a nota e devolve o estoque que ela somou
+async function remover(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[nf]] = await conn.query('SELECT id FROM nf_entradas WHERE id = ?', [id]);
+    if (!nf) { await conn.rollback(); return res.status(404).json({ error: 'Nota não encontrada.' }); }
+
+    const [ret] = await conn.query(
+      "SELECT product_id, SUM(quantidade) q FROM estoque_movimentacoes WHERE origem='NF' AND nf_id = ? AND product_id IS NOT NULL GROUP BY product_id",
+      [id]);
+
+    let unidadesDevolvidas = 0;
+    let algumJaMovimentado = false;
+    for (const r of ret) {
+      const qtd = Number(r.q) || 0;
+      unidadesDevolvidas += qtd;
+      const [[p]] = await conn.query('SELECT estoque FROM products WHERE id = ?', [r.product_id]);
+      if (p && Number(p.estoque) < qtd) algumJaMovimentado = true;
+      await conn.query('UPDATE products SET estoque = GREATEST(0, estoque - ?) WHERE id = ?', [qtd, r.product_id]);
+    }
+
+    await conn.query("DELETE FROM estoque_movimentacoes WHERE origem='NF' AND nf_id = ?", [id]);
+    await conn.query('DELETE FROM nf_entrada_itens WHERE nf_id = ?', [id]);
+    await conn.query('DELETE FROM nf_entradas WHERE id = ?', [id]);
+
+    await conn.commit();
+    return res.json({ ok: true, produtosAfetados: ret.length, unidadesDevolvidas, algumJaMovimentado });
+  } catch (e) {
+    await conn.rollback();
+    console.error('Erro ao excluir NF:', e);
+    return res.status(500).json({ error: 'Erro ao excluir a nota.' });
+  } finally {
+    conn.release();
+  }
+}
+
+module.exports = { uploadXml, preview, importar, listar, detalhe, remover };
