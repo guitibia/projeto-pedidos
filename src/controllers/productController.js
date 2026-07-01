@@ -2,18 +2,10 @@ const db = require('../database/connection');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads', 'products');
-const MIME_EXT = { 'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    // extensão derivada do mimetype VALIDADO (nunca do nome do arquivo do cliente)
-    const ext = MIME_EXT[file.mimetype] || '.jpg';
-    cb(null, `p${req.params.id}_${Date.now()}${ext}`);
-  }
-});
+const { fetchImageBuffer, processAndSaveProductImage, UPLOAD_DIR } = require('../utils/imageProcessor');
+
 const uploadImage = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 4 * 1024 * 1024 },
   fileFilter: (req, file, cb) => cb(null, /image\/(jpe?g|png|webp|gif)/.test(file.mimetype))
 }).single('image');
@@ -184,42 +176,72 @@ async function updateProduct(req, res) {
   }
 }
 
-// POST /api/products/:id/image
+// Troca products.image por relPath e apaga a imagem local anterior.
+// Retorna false se o produto não existe.
+async function replaceProductImage(id, relPath) {
+  const [[old]] = await db.query('SELECT image FROM products WHERE id = ?', [id]);
+  const [r] = await db.query('UPDATE products SET image = ? WHERE id = ?', [relPath, id]);
+  if (r.affectedRows === 0) return false;
+  if (old && old.image) {
+    const oldAbs = path.resolve(__dirname, '..', 'public', '.' + old.image);
+    const uploadAbs = path.resolve(UPLOAD_DIR);
+    if (oldAbs.startsWith(uploadAbs + path.sep)) fs.unlink(oldAbs, () => {});
+  }
+  return true;
+}
+
+// remove o arquivo recém-criado quando o produto não existe (evita órfão)
+function unlinkRel(relPath) {
+  fs.unlink(path.resolve(__dirname, '..', 'public', '.' + relPath), () => {});
+}
+
+// POST /api/products/:id/image  (upload de arquivo)
 function setProductImage(req, res) {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id, 10);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
   uploadImage(req, res, async (err) => {
     if (err) return res.status(400).json({ error: 'Falha no upload (máx 4MB, imagem).' });
     if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada.' });
-    const rel = '/uploads/products/' + req.file.filename;
+    let rel;
     try {
-      const [[old]] = await db.query('SELECT image FROM products WHERE id = ?', [id]);
-      await db.query('UPDATE products SET image = ? WHERE id = ?', [rel, id]);
-      if (old && old.image) {
-        const oldAbs = path.resolve(__dirname, '..', 'public', '.' + old.image);
-        const uploadAbs = path.resolve(UPLOAD_DIR);
-        if (oldAbs.startsWith(uploadAbs + path.sep)) fs.unlink(oldAbs, () => {});
-      }
+      rel = await processAndSaveProductImage(req.file.buffer, id);
+    } catch (e) {
+      console.error('Erro ao processar imagem (upload):', e.message);
+      return res.status(400).json({ error: 'Arquivo não parece ser uma imagem válida.' });
+    }
+    try {
+      const found = await replaceProductImage(id, rel);
+      if (!found) { unlinkRel(rel); return res.status(404).json({ error: 'Produto não encontrado.' }); }
       return res.json({ message: 'Imagem atualizada.', image: rel });
     } catch (e) {
-      console.error('Erro ao salvar imagem:', e);
+      console.error('Erro ao salvar imagem (upload):', e);
       return res.status(500).json({ error: 'Erro ao salvar imagem.' });
     }
   });
 }
 
-// PUT /api/products/:id/image-url
+// PUT /api/products/:id/image-url  (colar URL)
 async function setProductImageUrl(req, res) {
   const id = parseInt(req.params.id, 10);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
   const url = String(req.body.url || '').trim();
   if (!/^https?:\/\/.+/i.test(url)) return res.status(400).json({ error: 'Informe uma URL de imagem válida (http/https).' });
-  const stored = url.slice(0, 255); // coluna image é VARCHAR(255)
+  let rel;
   try {
-    const [r] = await db.query('UPDATE products SET image=? WHERE id=?', [stored, id]);
-    if (r.affectedRows === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
-    return res.json({ message: 'Imagem atualizada.', image: stored });
-  } catch (e) { console.error('Erro ao definir imagem por URL:', e); return res.status(500).json({ error: 'Erro ao salvar imagem.' }); }
+    const buffer = await fetchImageBuffer(url);
+    rel = await processAndSaveProductImage(buffer, id);
+  } catch (e) {
+    console.error('Erro ao baixar/processar imagem por URL:', e.message);
+    return res.status(422).json({ error: 'Não consegui baixar essa imagem. Verifique o link ou tente outro.' });
+  }
+  try {
+    const found = await replaceProductImage(id, rel);
+    if (!found) { unlinkRel(rel); return res.status(404).json({ error: 'Produto não encontrado.' }); }
+    return res.json({ message: 'Imagem atualizada.', image: rel });
+  } catch (e) {
+    console.error('Erro ao gravar imagem por URL:', e);
+    return res.status(500).json({ error: 'Erro ao salvar imagem.' });
+  }
 }
 
 // DELETE /api/products/:id
