@@ -38,6 +38,7 @@
     .fr-name   { font-size: .9rem; font-weight: 700; }
     .fr-count  { font-size: .72rem; color: var(--text-muted); }
     .fr-badge  { font-size: .72rem; border-radius: 6px; padding: .18rem .55rem; font-weight: 600; }
+    .origem-badge { display: inline-flex; align-items: center; gap: .28rem; white-space: nowrap; line-height: 1; text-decoration: none; }
     .badge-ok    { background: rgba(63,185,80,.1);   border: 1px solid rgba(63,185,80,.2);   color: #3fb950; }
     .badge-low   { background: rgba(210,153,34,.1);  border: 1px solid rgba(210,153,34,.25); color: #d29922; }
     .badge-zero  { background: rgba(248,81,73,.1);   border: 1px solid rgba(248,81,73,.25);  color: #f85149; }
@@ -318,9 +319,9 @@
   function origemBadge(r) {
     if (r.origem === 'NF') {
       var href = '/notas.html';
-      return '<a href="' + href + '" class="fr-badge badge-ok" title="Entrada via Nota Fiscal' + (r.nf_id ? ' #' + esc(String(r.nf_id)) : '') + '" style="text-decoration:none">📄 NF</a>';
+      return '<a href="' + href + '" class="fr-badge badge-ok origem-badge" title="Entrada via Nota Fiscal' + (r.nf_id ? ' #' + esc(String(r.nf_id)) : '') + '">📄 NF</a>';
     }
-    return '<span class="fr-badge badge-low">✋ Manual</span>';
+    return '<span class="fr-badge badge-low origem-badge">✋ Manual</span>';
   }
 
   const LOW_STOCK = 5; // abaixo disso = baixo estoque
