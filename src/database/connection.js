@@ -205,6 +205,23 @@ pool.getConnection()
       'ALTER TABLE nf_entrada_itens ADD COLUMN ean VARCHAR(14) NULL',
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Backfill one-shot: nomes de produto "gritando" (CAIXA ALTA) viram Title Case.
+    // Só mexe nos 100% maiúsculos; nomes já formatados ficam intactos.
+    try {
+      const [[done]] = await conn.query("SELECT svalue FROM store_settings WHERE skey = 'produtos_titlecase_backfill'");
+      if (!done) {
+        const { titleCasePtBr, isShoutingName } = require('../utils/textcase');
+        const [rows] = await conn.query('SELECT id, name FROM products');
+        for (const r of rows) {
+          if (isShoutingName(r.name)) {
+            const novo = titleCasePtBr(r.name).slice(0, 200);
+            if (novo !== r.name) await conn.query('UPDATE products SET name = ? WHERE id = ?', [novo, r.id]);
+          }
+        }
+        await conn.query("INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('produtos_titlecase_backfill', '1')");
+      }
+    } catch (_) {}
+
     conn.release();
   })
   .catch(err => {

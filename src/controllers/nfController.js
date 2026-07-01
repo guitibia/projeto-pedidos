@@ -1,6 +1,7 @@
 const db = require('../database/connection');
 const multer = require('multer');
 const { parseNfeXml } = require('../utils/nfe');
+const { titleCasePtBr } = require('../utils/textcase');
 
 const uploadXml = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } }).single('xml');
 
@@ -69,7 +70,7 @@ function importar(req, res) {
         } else if (d.acao === 'criar' && d.novo) {
           const [pr] = await conn.query(
             'INSERT INTO products (name, cost, sale_value, franchise, code, ean, estoque) VALUES (?, ?, ?, ?, ?, ?, 0)',
-            [String(d.novo.name || it.descricao).slice(0, 200),
+            [titleCasePtBr(String(d.novo.name || it.nomeSugerido || it.descricao)).slice(0, 200),
              // custo = valor unitário REAL da nota de compra (proposital; difere do custo derivado do desconto de franquia)
              it.valorUnit,
              Number(d.novo.sale_value) || it.valorUnit,
