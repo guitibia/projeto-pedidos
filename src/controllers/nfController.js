@@ -68,20 +68,21 @@ function importar(req, res) {
           }
         } else if (d.acao === 'criar' && d.novo) {
           const [pr] = await conn.query(
-            'INSERT INTO products (name, cost, sale_value, franchise, code, estoque) VALUES (?, ?, ?, ?, ?, 0)',
+            'INSERT INTO products (name, cost, sale_value, franchise, code, ean, estoque) VALUES (?, ?, ?, ?, ?, ?, 0)',
             [String(d.novo.name || it.descricao).slice(0, 200),
              // custo = valor unitário REAL da nota de compra (proposital; difere do custo derivado do desconto de franquia)
              it.valorUnit,
              Number(d.novo.sale_value) || it.valorUnit,
              String(d.novo.franchise || 'Outros').slice(0, 60),
-             String(d.novo.code || it.cprod).slice(0, 60)]
+             String(d.novo.code || it.cprod).slice(0, 60),
+             it.ean || null]
           );
           productId = pr.insertId;
         }
 
         await conn.query(
-          'INSERT INTO nf_entrada_itens (nf_id, cprod, descricao, ncm, quantidade, valor_unit, valor_total, product_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [nfId, it.cprod, it.descricao, it.ncm, it.quantidade, it.valorUnit, it.valorTotal, productId]
+          'INSERT INTO nf_entrada_itens (nf_id, cprod, descricao, ncm, ean, quantidade, valor_unit, valor_total, product_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [nfId, it.cprod, it.descricao, it.ncm, it.ean || null, it.quantidade, it.valorUnit, it.valorTotal, productId]
         );
 
         if (productId) {
@@ -97,6 +98,9 @@ function importar(req, res) {
             'INSERT INTO nf_item_vinculos (emitente_cnpj, cprod, product_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE product_id = VALUES(product_id)',
             [nf.emitente.cnpj, it.cprod, productId]
           );
+          if (it.ean) {
+            await conn.query("UPDATE products SET ean=? WHERE id=? AND (ean IS NULL OR ean='')", [it.ean, productId]);
+          }
         }
       }
 

@@ -111,7 +111,7 @@ async function getProductById(req, res) {
     const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
     const p = rows[0];
-    return res.json({ id: p.id, name: p.name, cost: p.cost, sale_value: p.sale_value, franchise: p.franchise, code: p.code, promotion_price: p.promotion_price ?? null, description: p.description ?? null, image: p.image ?? null });
+    return res.json({ id: p.id, name: p.name, cost: p.cost, sale_value: p.sale_value, franchise: p.franchise, code: p.code, promotion_price: p.promotion_price ?? null, description: p.description ?? null, image: p.image ?? null, ean: p.ean ?? null });
   } catch (err) {
     console.error('Erro ao buscar produto:', err);
     return res.status(500).json({ error: 'Erro ao buscar produto.' });
@@ -145,7 +145,7 @@ async function updateProduct(req, res) {
   const id = parseInt(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
 
-  const { name, sale_value, franchise, code, promotion_price, description } = req.body;
+  const { name, sale_value, franchise, code, promotion_price, description, ean } = req.body;
   if (!name || sale_value == null || !franchise || !code) {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
   }
@@ -165,8 +165,8 @@ async function updateProduct(req, res) {
     const cost = await calcCost(conn, franchise, sv);
 
     const [result] = await conn.query(
-      'UPDATE products SET name=?, cost=?, sale_value=?, franchise=?, code=?, promotion_price=?, description=? WHERE id=?',
-      [name, cost, sv, franchise, code, promoVal, description ?? null, id]
+      'UPDATE products SET name=?, cost=?, sale_value=?, franchise=?, code=?, promotion_price=?, description=?, ean=? WHERE id=?',
+      [name, cost, sv, franchise, code, promoVal, description ?? null, (ean && String(ean).trim()) ? String(ean).trim().slice(0,14) : null, id]
     );
     if (result.affectedRows === 0) {
       await conn.rollback();
@@ -208,6 +208,19 @@ function setProductImage(req, res) {
   });
 }
 
+// PUT /api/products/:id/image-url
+async function setProductImageUrl(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  const url = String(req.body.url || '').trim();
+  if (!/^https?:\/\/.+/i.test(url)) return res.status(400).json({ error: 'Informe uma URL de imagem válida (http/https).' });
+  try {
+    const [r] = await db.query('UPDATE products SET image=? WHERE id=?', [url.slice(0, 500), id]);
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
+    return res.json({ message: 'Imagem atualizada.', image: url });
+  } catch (e) { console.error('Erro ao definir imagem por URL:', e); return res.status(500).json({ error: 'Erro ao salvar imagem.' }); }
+}
+
 // DELETE /api/products/:id
 async function deleteProduct(req, res) {
   const id = parseInt(req.params.id);
@@ -223,4 +236,4 @@ async function deleteProduct(req, res) {
   }
 }
 
-module.exports = { createProduct, listProducts, listAllProducts, searchProductByCode, getProductById, listFranchises, updateProduct, deleteProduct, setProductImage };
+module.exports = { createProduct, listProducts, listAllProducts, searchProductByCode, getProductById, listFranchises, updateProduct, deleteProduct, setProductImage, setProductImageUrl };

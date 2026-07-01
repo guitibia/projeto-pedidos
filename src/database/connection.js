@@ -199,6 +199,12 @@ pool.getConnection()
       }
     } catch (_) {}
 
+    // Migração: EAN nos produtos e itens de NF
+    for (const sql of [
+      'ALTER TABLE products ADD COLUMN ean VARCHAR(14) NULL',
+      'ALTER TABLE nf_entrada_itens ADD COLUMN ean VARCHAR(14) NULL',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     conn.release();
   })
   .catch(err => {
