@@ -630,7 +630,7 @@
             <div class="acao-extra" id="extra-criar-${idx}" style="display:none">
               <div class="row g-2 mt-0">
                 <div class="col-12 col-sm-6">
-                  <input type="text" class="form-control form-control-sm" id="criar-nome-${idx}" placeholder="Nome do produto" value="${esc(item.descricao)}">
+                  <input type="text" class="form-control form-control-sm" id="criar-nome-${idx}" placeholder="Nome do produto" value="${esc(item.nomeSugerido || item.descricao)}">
                 </div>
                 <div class="col-6 col-sm-3">
                   <input type="text" class="form-control form-control-sm" id="criar-codigo-${idx}" placeholder="Código" value="${esc(item.cprod)}">

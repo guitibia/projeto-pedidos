@@ -1,4 +1,5 @@
 const { XMLParser } = require('fast-xml-parser');
+const { titleCasePtBr } = require('./textcase');
 
 // Lê o XML de uma NF-e (procNFe ou NFe) e devolve os campos relevantes.
 // Lança Error se não for uma NF-e válida.
@@ -26,6 +27,7 @@ function parseNfeXml(xml) {
     return {
       cprod: String(p.cProd != null ? p.cProd : ''),
       descricao: String(p.xProd != null ? p.xProd : ''),
+      nomeSugerido: titleCasePtBr(String(p.xProd != null ? p.xProd : '')),
       ncm: String(p.NCM != null ? p.NCM : ''),
       ean: /^\d{8,14}$/.test(eanRaw) ? eanRaw : '',
       quantidade: Number(p.qCom) || 0,
