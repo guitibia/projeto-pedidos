@@ -98,6 +98,9 @@
     .resumo-label { font-size: .7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
     .resumo-val   { font-size: 1.4rem; font-weight: 700; margin-top: .1rem; }
 
+    .aba-btn { font-size:.85rem; border:1px solid var(--border-color,#30363d); background:transparent; color:var(--text-muted,#8b949e); border-radius:8px; padding:.4rem .9rem; cursor:pointer; display:inline-flex; align-items:center; gap:.4rem; }
+    .aba-btn.active { background:var(--accent,#3fb950); color:#fff; border-color:transparent; }
+
     .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
     .empty-state i { font-size: 2.8rem; opacity: .3; display: block; margin-bottom: .6rem; }
 
@@ -216,6 +219,16 @@
           <div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>
         </div>
       </div>
+    </div>
+
+    <!-- Abas de origem -->
+    <div id="estoque-abas" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem">
+      <button type="button" class="aba-btn active" data-aba="geral"><i class="bi bi-boxes"></i> Geral</button>
+      <button type="button" class="aba-btn" data-aba="nf"><i class="bi bi-receipt"></i> NF</button>
+      <button type="button" class="aba-btn" data-aba="manual"><i class="bi bi-hand-index"></i> Manual</button>
+    </div>
+    <div id="estoque-legenda" style="display:none;font-size:.76rem;color:var(--text-muted,#8b949e);margin:-.4rem 0 .8rem">
+      "Entrou" é exato (soma das entradas dessa origem). "Atual (est.)" é uma estimativa — as vendas saem do estoque único.
     </div>
 
     <!-- Resumo -->
@@ -356,9 +369,19 @@
   }
 
   let allEstoque = [];
+  let estoqueAba = 'geral';
   let openFr = new Set();
   let sortEstField = 'name';
   let sortEstDir   = 'asc';
+
+  document.querySelectorAll('#estoque-abas .aba-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#estoque-abas .aba-btn').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      estoqueAba = b.dataset.aba;
+      render(allEstoque); // re-renderiza sem refetch
+    });
+  });
 
   function setEstSort(field) {
     if (sortEstField === field) {
@@ -397,6 +420,13 @@
 
   function render(items) {
     const container = document.getElementById('estoque-container');
+    // filtro por aba (origem)
+    let lista = items;
+    if (estoqueAba === 'nf')     lista = items.filter(p => Number(p.entradasNF) > 0);
+    if (estoqueAba === 'manual') lista = items.filter(p => Number(p.entradasManual) > 0);
+    const legenda = document.getElementById('estoque-legenda');
+    if (legenda) legenda.style.display = (estoqueAba === 'geral') ? 'none' : '';
+    items = lista; // o resto do render usa `items`
     if (!items.length) {
       container.innerHTML = `<div class="empty-rich">
         <i class="bi bi-archive empty-rich-icon"></i>
@@ -481,11 +511,24 @@
                 cmp = av < bv ? -1 : av > bv ? 1 : 0;
               }
               return sortEstDir === 'asc' ? cmp : -cmp;
-            }).map(p => `
+            }).map(p => {
+              const eNF = Number(p.entradasNF) || 0, eMan = Number(p.entradasManual) || 0;
+              const totalEnt = eNF + eMan;
+              const estAtualNF = totalEnt > 0 ? Math.round(p.estoque * eNF / totalEnt) : 0;
+              const estAtualManual = p.estoque - estAtualNF;
+              const ent = estoqueAba === 'nf' ? eNF : eMan;
+              const estAtual = estoqueAba === 'nf' ? estAtualNF : estAtualManual;
+              const origemInfo = (estoqueAba === 'geral') ? '' :
+                `<div style="font-size:.72rem;color:var(--text-muted,#8b949e);margin-top:2px">
+                   Entrou por ${estoqueAba === 'nf' ? 'NF' : 'Manual'}: <strong>${ent}</strong> un ·
+                   Atual (est.): <strong>~${estAtual}</strong> un
+                 </div>`;
+              return `
             <div class="produto-row">
               <div>
                 <div class="produto-nome">${esc(p.name)}</div>
                 <div class="produto-code">${esc(p.code)}</div>
+                ${origemInfo}
               </div>
               <div class="estoque-badge ${nivelClass(p.estoque)}">${p.estoque} un</div>
               <div class="produto-valor">
@@ -498,7 +541,8 @@
               <button class="btn-hist" data-id="${p.id}" data-nome="${esc(p.name)}" onclick="abrirHistBtn(this)">
                 <i class="bi bi-clock-history"></i>
               </button>
-            </div>`).join('')}
+            </div>`;
+            }).join('')}
           </div>
         </div>
       </div>`;
