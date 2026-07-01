@@ -468,7 +468,9 @@
   });
 
   /* ---------- Carregar dados do cliente (/me) ---------- */
-  var promiseMe = StoreAuth.api('/me').then(function (me) {
+  var promiseMe = StoreAuth.api('/me').then(function (r) {
+    return r && r.ok ? r.json() : null;
+  }).then(function (me) {
     currentMe = me || null;
     return currentMe;
   }).catch(function () { currentMe = null; return null; });
