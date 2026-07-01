@@ -120,6 +120,7 @@ async function updateMe(req, res) {
     await db.query(
       'UPDATE clients SET name=?, phone=?, cep=?, address=?, house_number=?, neighborhood=?, city=?, birthdate=? WHERE id=?',
       [name, phone || null, cepDigits, address || null, houseNumber || null, neighborhood || null, city || null, birthdate || null, req.customer.id]);
+    await garantirZonaBairro(neighborhood, city); // best-effort: bairro novo da cidade vira zona (frete padrão)
     return res.json({ message: 'Dados atualizados.' });
   } catch (e) { console.error('Erro em updateMe:', e); return res.status(500).json({ error: 'Erro ao atualizar.' }); }
 }
