@@ -6,7 +6,9 @@ async function listEstoque(req, res) {
     const [rows] = await db.query(`
       SELECT p.id, p.name, p.code, p.franchise, p.cost, p.estoque,
              IFNULL(SUM(CASE WHEN m.tipo='Entrada' THEN m.quantidade ELSE 0 END), 0) AS totalEntradas,
-             IFNULL(SUM(CASE WHEN m.tipo='Saída'   THEN m.quantidade ELSE 0 END), 0) AS totalSaidas
+             IFNULL(SUM(CASE WHEN m.tipo='Saída'   THEN m.quantidade ELSE 0 END), 0) AS totalSaidas,
+             IFNULL(SUM(CASE WHEN m.tipo='Entrada' AND m.origem='NF'     THEN m.quantidade ELSE 0 END), 0) AS entradasNF,
+             IFNULL(SUM(CASE WHEN m.tipo='Entrada' AND m.origem='Manual' THEN m.quantidade ELSE 0 END), 0) AS entradasManual
       FROM products p
       LEFT JOIN estoque_movimentacoes m ON m.product_id = p.id
       GROUP BY p.id
