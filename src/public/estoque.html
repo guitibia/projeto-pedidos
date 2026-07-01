@@ -426,7 +426,7 @@
     if (estoqueAba === 'manual') lista = items.filter(p => Number(p.entradasManual) > 0);
     const legenda = document.getElementById('estoque-legenda');
     if (legenda) legenda.style.display = (estoqueAba === 'geral') ? 'none' : '';
-    items = lista; // o resto do render usa `items`
+    // O RESUMO é sempre global (usa `items` = loja toda); só a LISTA de produtos filtra (`lista`).
     if (!items.length) {
       container.innerHTML = `<div class="empty-rich">
         <i class="bi bi-archive empty-rich-icon"></i>
@@ -464,9 +464,18 @@
         <div class="resumo-val" style="color:#3fb950;font-size:1.6rem">${fmt(valorTotal)}</div>
       </div>`;
 
+    // Lista de produtos filtrada pela aba (o resumo acima já é global)
+    if (!lista.length) {
+      container.innerHTML = `<div class="empty-rich">
+        <i class="bi bi-inbox empty-rich-icon"></i>
+        <div class="empty-rich-title">Nenhum produto nesta origem</div>
+        <div class="empty-rich-sub">Nenhum produto recebeu estoque por ${estoqueAba === 'nf' ? 'Nota Fiscal' : 'entrada manual'} ainda.</div></div>`;
+      return;
+    }
+
     // Agrupa por franquia
     const grupos = {};
-    items.forEach(p => {
+    lista.forEach(p => {
       if (!grupos[p.franchise]) grupos[p.franchise] = [];
       grupos[p.franchise].push(p);
     });
