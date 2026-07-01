@@ -214,10 +214,11 @@ async function setProductImageUrl(req, res) {
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
   const url = String(req.body.url || '').trim();
   if (!/^https?:\/\/.+/i.test(url)) return res.status(400).json({ error: 'Informe uma URL de imagem válida (http/https).' });
+  const stored = url.slice(0, 255); // coluna image é VARCHAR(255)
   try {
-    const [r] = await db.query('UPDATE products SET image=? WHERE id=?', [url.slice(0, 500), id]);
+    const [r] = await db.query('UPDATE products SET image=? WHERE id=?', [stored, id]);
     if (r.affectedRows === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
-    return res.json({ message: 'Imagem atualizada.', image: url });
+    return res.json({ message: 'Imagem atualizada.', image: stored });
   } catch (e) { console.error('Erro ao definir imagem por URL:', e); return res.status(500).json({ error: 'Erro ao salvar imagem.' }); }
 }
 
