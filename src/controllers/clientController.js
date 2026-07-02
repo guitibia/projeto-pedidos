@@ -66,4 +66,33 @@ async function listClientOrders(req, res) {
   }
 }
 
-module.exports = { createClient, listClients, listClientOrders };
+// DELETE /api/clients/:id  — exclui cliente sem pedidos (limpa favoritos)
+async function deleteClient(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[cli]] = await conn.query('SELECT id, name FROM clients WHERE id = ?', [id]);
+    if (!cli) { await conn.rollback(); return res.status(404).json({ error: 'Cliente não encontrado.' }); }
+
+    const [[{ c }]] = await conn.query('SELECT COUNT(*) c FROM orders WHERE client_id = ?', [id]);
+    if (c > 0) {
+      await conn.rollback();
+      return res.status(409).json({ error: 'Este cliente tem ' + c + ' pedido(s) e não pode ser excluído.' });
+    }
+
+    await conn.query('DELETE FROM favorites WHERE client_id = ?', [id]);
+    await conn.query('DELETE FROM clients WHERE id = ?', [id]);
+    await conn.commit();
+    return res.json({ ok: true, nome: cli.name });
+  } catch (e) {
+    await conn.rollback();
+    console.error('Erro ao excluir cliente:', e);
+    return res.status(500).json({ error: 'Erro ao excluir o cliente.' });
+  } finally {
+    conn.release();
+  }
+}
+
+module.exports = { createClient, listClients, listClientOrders, deleteClient };
