@@ -206,6 +206,23 @@
     .product-results-item:hover, .product-results-item.active { background:var(--bg-hover); }
     .product-results-item .prod-cod { font-size:.72rem; color:var(--text-muted); white-space:nowrap; }
     .product-results-empty { padding:.6rem .65rem; font-size:.83rem; color:var(--text-muted); }
+
+    /* ── Checkout moderno (2 colunas) ── */
+    .field-group { border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,.045); padding:1.15rem 1.15rem .85rem; }
+    .field-group-title { font-size:.86rem; text-transform:none; letter-spacing:0; font-weight:700; color:var(--text-color); gap:.55rem; margin-bottom:1rem; }
+    .field-group-title > i { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.95rem; color:#8957e5; background:rgba(137,87,229,.14); }
+    .checkout-grid { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:1.1rem; align-items:start; }
+    .checkout-summary { position:sticky; top:1rem; }
+    .summary-card { background:var(--card-bg); border:1px solid var(--border-color); border-radius:16px; padding:1.15rem; box-shadow:0 8px 26px rgba(0,0,0,.07); }
+    .summary-title { display:flex; align-items:center; gap:.55rem; font-weight:800; font-size:1.02rem; }
+    .summary-title .ic { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1rem; background:linear-gradient(135deg,#8957e5,#bc8cff); box-shadow:0 4px 12px rgba(137,87,229,.4); }
+    .summary-sub { font-size:.74rem; color:var(--text-muted); margin:.15rem 0 .9rem; }
+    .summary-empty { text-align:center; color:var(--text-muted); font-size:.82rem; padding:1.5rem .5rem; border:1.5px dashed var(--border-color); border-radius:12px; margin-bottom:.85rem; }
+    .summary-empty i { display:block; font-size:1.7rem; opacity:.4; margin-bottom:.35rem; }
+    #productList:not(:empty) + .summary-empty { display:none; }
+    .summary-card .total-chip { margin:.2rem 0 .9rem; }
+    .summary-card .btn-submit-form { margin-top:0; }
+    @media (max-width:860px) { .checkout-grid { grid-template-columns:1fr; } .checkout-summary { position:static; } }
   </style>
 </head>
 <body>
@@ -262,8 +279,10 @@
 
     <!-- ── PAINEL: CRIAR PEDIDO ── -->
     <div class="tab-panel active" id="panel-criar">
-      <div style="max-width:640px">
+      <div style="max-width:1000px">
         <form id="orderForm">
+          <div class="checkout-grid">
+          <div class="checkout-main">
 
           <!-- Cliente -->
           <div class="field-group">
@@ -334,14 +353,6 @@
             <button type="button" id="addProductBtn" class="btn-add-product">
               <i class="bi bi-plus-circle"></i> Adicionar Produto à Lista
             </button>
-
-            <ul id="productList"></ul>
-
-            <div id="totalChip" class="total-chip" style="display:none">
-              <span class="total-chip-label"><i class="bi bi-receipt"></i> Total da compra</span>
-              <span class="total-chip-value" id="totalValueDisplay">R$ 0,00</span>
-              <input type="hidden" id="totalValue">
-            </div>
           </div>
 
           <!-- Pagamento -->
@@ -397,11 +408,26 @@
               </div>
             </div>
           </div>
+          </div><!-- /checkout-main -->
 
-          <button type="submit" class="btn-submit-form">
-            <i class="bi bi-bag-check-fill"></i> Criar Pedido
-          </button>
+          <aside class="checkout-summary">
+            <div class="summary-card">
+              <div class="summary-title"><span class="ic"><i class="bi bi-receipt"></i></span> Seu pedido</div>
+              <div class="summary-sub">Itens adicionados ao pedido</div>
+              <ul id="productList"></ul>
+              <div class="summary-empty" id="summaryEmpty"><i class="bi bi-cart"></i>Nenhum item ainda.<br>Adicione produtos ao pedido.</div>
+              <div id="totalChip" class="total-chip" style="display:none">
+                <span class="total-chip-label"><i class="bi bi-receipt"></i> Total da compra</span>
+                <span class="total-chip-value" id="totalValueDisplay">R$ 0,00</span>
+                <input type="hidden" id="totalValue">
+              </div>
+              <button type="submit" class="btn-submit-form">
+                <i class="bi bi-bag-check-fill"></i> Criar Pedido
+              </button>
+            </div>
+          </aside>
 
+          </div><!-- /checkout-grid -->
         </form>
       </div>
     </div>
