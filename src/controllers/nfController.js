@@ -145,7 +145,9 @@ async function remover(req, res) {
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
-    const [[nf]] = await conn.query('SELECT id FROM nf_entradas WHERE id = ?', [id]);
+    // FOR UPDATE: bloqueia a linha da NF para que dois DELETE concorrentes
+    // (duplo-clique/2 abas) não devolvam o estoque em dobro — o 2º espera e cai no 404.
+    const [[nf]] = await conn.query('SELECT id FROM nf_entradas WHERE id = ? FOR UPDATE', [id]);
     if (!nf) { await conn.rollback(); return res.status(404).json({ error: 'Nota não encontrada.' }); }
 
     const [ret] = await conn.query(
