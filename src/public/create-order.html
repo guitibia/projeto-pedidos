@@ -456,8 +456,14 @@
     if (!f) return;
     const res  = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
     const data = await res.json();
-    data.forEach(p => ps.insertAdjacentHTML('beforeend',
-      `<option value="${p.id}" data-cost="${p.cost}">${p.name} — COD ${p.code}</option>`));
+    // Só mostra produtos com estoque disponível (facilita achar o que ainda tem)
+    const comEstoque = (Array.isArray(data) ? data : []).filter(p => Number(p.estoque) > 0);
+    if (!comEstoque.length) {
+      ps.insertAdjacentHTML('beforeend', '<option value="" disabled>Nenhum produto em estoque</option>');
+      return;
+    }
+    comEstoque.forEach(p => ps.insertAdjacentHTML('beforeend',
+      `<option value="${p.id}" data-cost="${p.cost}">${p.name} — COD ${p.code} (${Number(p.estoque)} em estoque)</option>`));
   });
 
   document.getElementById('products').addEventListener('change', (e) => {
