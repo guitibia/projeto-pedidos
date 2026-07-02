@@ -46,6 +46,8 @@
   <main>
     <div class="container">
 
+      <div id="desconto-faixa" style="display:none; background:var(--accent); color:#fff; text-align:center; padding:.6rem 1rem; font-weight:600; border-radius:var(--radius); margin:1rem 0;"></div>
+
       <!-- HERO -->
       <section class="hero" aria-labelledby="hero-title">
         <h1 id="hero-title">Beleza para o seu dia</h1>
@@ -151,6 +153,33 @@
       /* ---- Footer year ---- */
       document.getElementById('ano').textContent = new Date().getFullYear();
 
+      /* ---- Faixa de desconto global ---- */
+      fetch('/api/loja/desconto-global').then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.ativo && d.percent > 0) {
+          var el = document.getElementById('desconto-faixa');
+          if (el) { el.textContent = '🏷️ ' + d.percent + '% OFF em toda a loja!'; el.style.display = 'block'; }
+        }
+      }).catch(function () {});
+
+      /* ---- Intercala produtos por franquia (rodízio), preservando
+              "mais novo primeiro" dentro de cada franquia ---- */
+      function intercalarPorFranquia(items) {
+        var grupos = {}, ordem = [];
+        (items || []).forEach(function (p) {
+          var f = (p.franchise || '');
+          if (!grupos[f]) { grupos[f] = []; ordem.push(f); }
+          grupos[f].push(p);
+        });
+        var resultado = [], resta = true;
+        while (resta) {
+          resta = false;
+          ordem.forEach(function (f) {
+            if (grupos[f].length) { resultado.push(grupos[f].shift()); resta = true; }
+          });
+        }
+        return resultado;
+      }
+
       /* ---- Render grids ---- */
       function renderGrid(containerId, emptyId, items) {
         const el = document.getElementById(containerId);
@@ -200,8 +229,8 @@
       /* Ofertas — todos os produtos, filtrar client-side por promotion_price */
       fetchJSON('/api/loja/produtos')
         .then(function (data) {
-          const ofertas = data
-            .filter(function (p) { return p.promotion_price != null && Number(p.promotion_price) > 0; })
+          const ofertas = intercalarPorFranquia(data
+            .filter(function (p) { return p.promotion_price != null && Number(p.promotion_price) > 0; }))
             .slice(0, 8);
           renderGrid('grid-ofertas', 'ofertas-empty', ofertas);
         })
@@ -213,7 +242,7 @@
       /* Novidades */
       fetchJSON('/api/loja/produtos?sort=recentes')
         .then(function (data) {
-          renderGrid('grid-novidades', 'novidades-empty', data.slice(0, 8));
+          renderGrid('grid-novidades', 'novidades-empty', intercalarPorFranquia(data).slice(0, 8));
         })
         .catch(function (err) {
           console.warn('[loja/index] novidades:', err);

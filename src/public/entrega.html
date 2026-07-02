@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zonas de Entrega</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/theme.js"></script>
+  <style>
+    .page-hero-icon {
+      width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+      background: linear-gradient(135deg, #0d6efd 0%, #6f42c1 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff;
+      box-shadow: 0 4px 14px rgba(13,110,253,.3);
+    }
+    .page-hero-title { font-size: 1.3rem; font-weight: 700; margin: 0; }
+    .page-hero-sub   { font-size: .8rem; color: var(--text-muted); margin: 0; }
+
+    .section-card {
+      background: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 14px; padding: 1.25rem; margin-bottom: 1.5rem;
+    }
+    .section-title {
+      font-size: .95rem; font-weight: 700; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: .5rem;
+      color: var(--text-color);
+    }
+    .section-title i { color: #58a6ff; }
+
+    /* Table */
+    .zone-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .zone-table th {
+      text-align: left; padding: .55rem .75rem;
+      border-bottom: 2px solid var(--border-color);
+      color: var(--text-muted); font-weight: 600; font-size: .78rem;
+      text-transform: uppercase; letter-spacing: .3px;
+    }
+    .zone-table td { padding: .55rem .75rem; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+    .zone-table tr:last-child td { border-bottom: none; }
+    .zone-table tr:hover td { background: var(--hover-tint); }
+
+    .fee-input {
+      width: 110px; padding: .3rem .5rem; border-radius: 7px;
+      border: 1px solid var(--border-color); background: var(--card-bg);
+      color: var(--text-color); font-size: .85rem; text-align: right;
+    }
+    .fee-input:focus { outline: none; border-color: rgba(13,110,253,.5); }
+
+    .btn-save-zone {
+      padding: .28rem .65rem; border-radius: 7px; font-size: .78rem; font-weight: 600;
+      border: 1px solid rgba(63,185,80,.4); background: rgba(63,185,80,.1);
+      color: #3fb950; cursor: pointer; transition: background .15s; white-space: nowrap;
+    }
+    .btn-save-zone:hover { background: rgba(63,185,80,.2); }
+
+    .btn-del-zone {
+      padding: .28rem .55rem; border-radius: 7px; font-size: .8rem;
+      border: 1px solid rgba(248,81,73,.3); background: rgba(248,81,73,.07);
+      color: #f85149; cursor: pointer; transition: background .15s;
+    }
+    .btn-del-zone:hover { background: rgba(248,81,73,.18); }
+
+    .toggle-badge {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .22rem .7rem; border-radius: 20px; font-size: .75rem; font-weight: 600;
+      cursor: pointer; border: none; transition: background .15s;
+    }
+    .toggle-on  { background: rgba(63,185,80,.12);  border: 1px solid rgba(63,185,80,.3);  color: #3fb950; }
+    .toggle-off { background: rgba(248,81,73,.1);   border: 1px solid rgba(248,81,73,.3);  color: #f85149; }
+
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); }
+    .empty-state i { font-size: 2.5rem; opacity: .3; display: block; margin-bottom: .5rem; }
+  </style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-link" href="/painel.html"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
+    <a class="nav-link" href="/produtos.html"><i class="bi bi-box-seam"></i> Produtos</a>
+    <a class="nav-link" href="/pedidos.html"><i class="bi bi-bag-check"></i> Pedidos</a>
+    <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link" href="/notas.html"><i class="bi bi-receipt-cutoff"></i> Notas</a>
+    <a class="nav-link active" href="/entrega.html"><i class="bi bi-truck"></i> Entrega</a>
+    <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
+    <a class="nav-link" href="#" onclick="window.CommandPalette && CommandPalette.openHelp(); return false;"><i class="bi bi-keyboard"></i> Atalhos</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()" style="margin-bottom:.5rem"><i class="bi bi-sun"></i> Tema claro</button>
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="container-fluid py-3" style="max-width:860px">
+
+    <!-- Hero -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div class="page-hero-icon"><i class="bi bi-truck"></i></div>
+      <div>
+        <div class="page-hero-title">Zonas de Entrega</div>
+        <div class="page-hero-sub" id="entrega-sub">Bairros e frete por zona</div>
+      </div>
+    </div>
+
+    <!-- Configuração geral -->
+    <div class="section-card">
+      <div class="section-title"><i class="bi bi-gear-fill"></i> Configuração Geral</div>
+      <form id="formSettings" class="row g-3 align-items-end">
+        <div class="col-sm-6">
+          <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Cidade de entrega</label>
+          <input type="text" class="form-control" id="settingCidade" placeholder="Ex: São Paulo">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Frete padrão (R$)</label>
+          <input type="number" class="form-control" id="settingFrete" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="col-sm-2">
+          <button type="submit" class="btn btn-primary w-100" style="font-weight:600">
+            <i class="bi bi-check-lg me-1"></i> Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Adicionar zona -->
+    <div class="section-card">
+      <div class="section-title"><i class="bi bi-plus-circle-fill"></i> Adicionar Bairro / Zona</div>
+      <form id="formAddZone" class="row g-3 align-items-end">
+        <div class="col-sm-6">
+          <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Bairro</label>
+          <input type="text" class="form-control" id="newBairro" placeholder="Nome do bairro" required>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Valor do frete (R$)</label>
+          <input type="number" class="form-control" id="newFee" min="0" step="0.01" placeholder="0.00" required>
+        </div>
+        <div class="col-sm-2">
+          <button type="submit" class="btn btn-success w-100" style="font-weight:600">
+            <i class="bi bi-plus-lg me-1"></i> Adicionar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Lista de zonas -->
+    <div class="section-card">
+      <div class="section-title"><i class="bi bi-map-fill"></i> Bairros Cadastrados</div>
+      <div id="zones-container">
+        <div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="text-center py-3 mt-4">
+  <small>&copy; <span id="footer-year"></span> Sistema de Pedidos</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  Auth.requireAuth();
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+  Auth.initSidebar();
+  document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+  function esc(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  let zonesData = [];
+
+  async function loadZones() {
+    const container = document.getElementById('zones-container');
+    container.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>';
+    try {
+      const res  = await Auth.apiFetch('/api/delivery-zones');
+      const data = await res.json();
+      zonesData = data.zones || [];
+
+      // Pre-fill settings form
+      document.getElementById('settingCidade').value = data.cidade || '';
+      document.getElementById('settingFrete').value  = data.fretePadrao != null ? data.fretePadrao : '';
+
+      const sub = zonesData.length
+        ? `${zonesData.length} bairro${zonesData.length !== 1 ? 's' : ''} cadastrado${zonesData.length !== 1 ? 's' : ''}`
+        : 'Nenhum bairro cadastrado';
+      document.getElementById('entrega-sub').textContent = sub;
+
+      renderZones(zonesData);
+    } catch (e) {
+      container.innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-circle"></i>Erro ao carregar zonas.</div>';
+    }
+  }
+
+  function renderZones(zones) {
+    const container = document.getElementById('zones-container');
+    if (!zones.length) {
+      container.innerHTML = '<div class="empty-state"><i class="bi bi-map"></i>Nenhum bairro cadastrado ainda.</div>';
+      return;
+    }
+    container.innerHTML = `
+      <div style="overflow-x:auto">
+        <table class="zone-table">
+          <thead>
+            <tr>
+              <th>Bairro</th>
+              <th style="text-align:right">Valor do frete</th>
+              <th style="text-align:center">Status</th>
+              <th style="text-align:center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${zones.map(z => `
+            <tr id="zone-row-${z.id}">
+              <td style="font-weight:500">${esc(z.bairro)}</td>
+              <td style="text-align:right">
+                <input type="number" class="fee-input" id="fee-${z.id}" value="${Number(z.fee).toFixed(2)}" min="0" step="0.01">
+              </td>
+              <td style="text-align:center">
+                <button class="toggle-badge ${z.active ? 'toggle-on' : 'toggle-off'}" id="toggle-${z.id}" onclick="toggleZone(${z.id}, ${z.active ? 0 : 1})">
+                  <i class="bi bi-${z.active ? 'check-circle' : 'x-circle'}"></i>
+                  ${z.active ? 'Ativo' : 'Inativo'}
+                </button>
+              </td>
+              <td style="text-align:center">
+                <div style="display:inline-flex;gap:.4rem">
+                  <button class="btn-save-zone" onclick="saveZone(${z.id})">
+                    <i class="bi bi-check-lg"></i> Salvar
+                  </button>
+                  <button class="btn-del-zone" onclick="deleteZone(${z.id})">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── Salvar configuração geral ──
+  document.getElementById('formSettings').addEventListener('submit', async e => {
+    e.preventDefault();
+    const cidade      = document.getElementById('settingCidade').value.trim();
+    const fretePadrao = parseFloat(document.getElementById('settingFrete').value);
+    if (!cidade) return Swal.fire('Atenção', 'Informe a cidade de entrega.', 'warning');
+    if (isNaN(fretePadrao) || fretePadrao < 0) return Swal.fire('Atenção', 'Informe um frete padrão válido.', 'warning');
+
+    const res  = await Auth.apiFetch('/api/delivery-zones/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cidade, fretePadrao })
+    });
+    const data = await res.json();
+    if (!res.ok) return Swal.fire('Erro', data.error || 'Não foi possível salvar.', 'error');
+    Swal.fire({ icon: 'success', title: 'Configuração salva!', timer: 1800, showConfirmButton: false });
+  });
+
+  // ── Adicionar zona ──
+  document.getElementById('formAddZone').addEventListener('submit', async e => {
+    e.preventDefault();
+    const bairro = document.getElementById('newBairro').value.trim();
+    const fee    = parseFloat(document.getElementById('newFee').value);
+    if (!bairro) return Swal.fire('Atenção', 'Informe o nome do bairro.', 'warning');
+    if (isNaN(fee) || fee < 0) return Swal.fire('Atenção', 'Informe um valor de frete válido.', 'warning');
+
+    const res  = await Auth.apiFetch('/api/delivery-zones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bairro, fee })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = res.status === 409 ? 'Bairro já cadastrado.' : (data.error || 'Não foi possível adicionar.');
+      return Swal.fire('Erro', msg, 'error');
+    }
+    document.getElementById('newBairro').value = '';
+    document.getElementById('newFee').value    = '';
+    Swal.fire({ icon: 'success', title: 'Bairro adicionado!', timer: 1600, showConfirmButton: false });
+    await loadZones();
+  });
+
+  // ── Salvar valor do frete de uma zona ──
+  async function saveZone(id) {
+    const zone    = zonesData.find(z => z.id === id);
+    if (!zone) return;
+    const feeInput = document.getElementById('fee-' + id);
+    const fee      = parseFloat(feeInput.value);
+    if (isNaN(fee) || fee < 0) return Swal.fire('Atenção', 'Informe um valor válido.', 'warning');
+
+    const res  = await Auth.apiFetch(`/api/delivery-zones/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bairro: zone.bairro, fee, active: zone.active })
+    });
+    const data = await res.json();
+    if (!res.ok) return Swal.fire('Erro', data.error || 'Não foi possível salvar.', 'error');
+    Swal.fire({ icon: 'success', title: 'Frete atualizado!', timer: 1600, showConfirmButton: false });
+    await loadZones();
+  }
+
+  // ── Toggle ativo/inativo ──
+  async function toggleZone(id, newActive) {
+    const zone = zonesData.find(z => z.id === id);
+    if (!zone) return;
+    const feeInput = document.getElementById('fee-' + id);
+    const fee      = feeInput ? parseFloat(feeInput.value) : zone.fee;
+
+    const res  = await Auth.apiFetch(`/api/delivery-zones/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bairro: zone.bairro, fee: isNaN(fee) ? zone.fee : fee, active: newActive })
+    });
+    const data = await res.json();
+    if (!res.ok) return Swal.fire('Erro', data.error || 'Não foi possível atualizar.', 'error');
+    await loadZones();
+  }
+
+  // ── Remover zona ──
+  async function deleteZone(id) {
+    const z = zonesData.find(function (x) { return x.id === id; });
+    const nome = z ? z.bairro : '';
+    const confirm = await Swal.fire({
+      title: 'Remover bairro?',
+      text: 'Deseja remover "' + nome + '" da lista de zonas?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, remover',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f85149'
+    });
+    if (!confirm.isConfirmed) return;
+
+    const res  = await Auth.apiFetch(`/api/delivery-zones/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) return Swal.fire('Erro', data.error || 'Não foi possível remover.', 'error');
+    Swal.fire({ icon: 'success', title: 'Bairro removido!', timer: 1500, showConfirmButton: false });
+    await loadZones();
+  }
+
+  loadZones();
+</script>
+</body>
+</html>

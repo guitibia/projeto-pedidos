@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   createProduct, listProducts, listAllProducts, searchProductByCode,
-  getProductById, listFranchises, updateProduct, deleteProduct, setProductImage
+  getProductById, listFranchises, updateProduct, deleteProduct, setProductImage, setProductImageUrl
 } = require('../controllers/productController');
 
 router.post('/', createProduct);
@@ -10,6 +10,7 @@ router.get('/franchises', listFranchises);
 router.get('/search', searchProductByCode);
 router.get('/all', listAllProducts);
 router.get('/', listProducts);
+router.put('/:id/image-url', setProductImageUrl);
 router.put('/:id', updateProduct);
 router.delete('/:id', deleteProduct);
 router.post('/:id/image', setProductImage);

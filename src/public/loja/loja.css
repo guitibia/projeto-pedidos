@@ -149,3 +149,24 @@ img{max-width:100%;display:block}
   opacity:0;transition:opacity .25s, transform .25s;pointer-events:none;max-width:90vw}
 .loja-toast a{color:#ffd9df;font-weight:700;margin-left:.3rem;pointer-events:auto}
 .loja-toast--show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+
+/* Menu rápido da conta (header) */
+.account-menu-wrap { position: relative; display: inline-flex; }
+.account-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 220px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 8px 28px rgba(60,40,35,.16); padding: .4rem; z-index: 1200;
+  display: none; flex-direction: column;
+}
+.account-menu-wrap.open .account-menu { display: flex; }
+.account-menu__head { padding: .5rem .6rem .6rem; border-bottom: 1px solid var(--border); margin-bottom: .3rem; }
+.account-menu__head strong { display: block; font-size: .92rem; color: var(--text); }
+.account-menu__head span { font-size: .8rem; color: var(--text-soft); word-break: break-all; }
+.account-menu a, .account-menu__logout {
+  display: flex; align-items: center; gap: .55rem; padding: .6rem .6rem; border-radius: 8px;
+  color: var(--text); text-decoration: none; font-size: .92rem; background: none; border: none;
+  width: 100%; text-align: left; cursor: pointer;
+}
+.account-menu a:hover, .account-menu__logout:hover { background: rgba(0,0,0,.05); }
+.account-menu__logout { color: var(--danger); }
+@media (max-width: 480px) { .account-menu { right: -8px; min-width: 200px; } }

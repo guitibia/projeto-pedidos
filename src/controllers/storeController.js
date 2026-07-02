@@ -1,4 +1,6 @@
 const db = require('../database/connection');
+const { getCidadeEntrega, getFretePadrao } = require('../utils/delivery');
+const { getDescontoGlobal, precoEfetivo } = require('../utils/pricing');
 
 const SORTS = {
   recentes:   'p.created_at DESC',
@@ -18,7 +20,15 @@ async function listProdutos(req, res) {
                ORDER BY ${sort}`;
   try {
     const [rows] = await db.query(sql, params);
-    return res.json(rows);
+    const global = await getDescontoGlobal();
+    const out = rows.map(function (p) {
+      var temPromo = p.promotion_price != null && Number(p.promotion_price) > 0;
+      if (global.ativo && global.percent > 0 && !temPromo) {
+        return Object.assign({}, p, { promotion_price: precoEfetivo(p.sale_value, null, global) });
+      }
+      return p;
+    });
+    return res.json(out);
   } catch (e) { console.error('Erro loja/produtos:', e); return res.status(500).json({ error: 'Erro ao buscar produtos.' }); }
 }
 
@@ -32,7 +42,15 @@ async function getProduto(req, res) {
     const [relacionados] = await db.query(
       `SELECT id, name, franchise, sale_value, promotion_price, image, estoque
        FROM products WHERE franchise = ? AND id <> ? ORDER BY RAND() LIMIT 4`, [p.franchise, id]);
-    return res.json({ ...p, relacionados });
+    const global = await getDescontoGlobal();
+    function comGlobal(prod) {
+      var temPromo = prod.promotion_price != null && Number(prod.promotion_price) > 0;
+      if (global.ativo && global.percent > 0 && !temPromo) {
+        return Object.assign({}, prod, { promotion_price: precoEfetivo(prod.sale_value, null, global) });
+      }
+      return prod;
+    }
+    return res.json(Object.assign({}, comGlobal(p), { relacionados: relacionados.map(comGlobal) }));
   } catch (e) { console.error('Erro loja/produto:', e); return res.status(500).json({ error: 'Erro ao buscar produto.' }); }
 }
 
@@ -43,4 +61,16 @@ async function listFranquias(req, res) {
   } catch (e) { console.error('Erro loja/franquias:', e); return res.status(500).json({ error: 'Erro ao buscar franquias.' }); }
 }
 
-module.exports = { listProdutos, getProduto, listFranquias };
+async function entregaConfig(req, res) {
+  try {
+    const [bairros] = await db.query('SELECT bairro, fee FROM delivery_zones WHERE active = 1 ORDER BY bairro');
+    return res.json({ cidade: await getCidadeEntrega(), fretePadrao: await getFretePadrao(), bairros });
+  } catch (e) { console.error('Erro entregaConfig:', e); return res.status(500).json({ error: 'Erro.' }); }
+}
+
+async function descontoGlobal(req, res) {
+  var g = await getDescontoGlobal();
+  return res.json({ ativo: g.ativo, percent: g.percent });
+}
+
+module.exports = { listProdutos, getProduto, listFranquias, entregaConfig, descontoGlobal };

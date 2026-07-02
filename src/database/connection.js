@@ -134,6 +134,20 @@ pool.getConnection()
         )`);
     } catch (_) {}
 
+    // Migração: frete por zona + settings da loja
+    for (const sql of [
+      'CREATE TABLE IF NOT EXISTS delivery_zones (id INT AUTO_INCREMENT PRIMARY KEY, bairro VARCHAR(120) NOT NULL, fee DECIMAL(6,2) NOT NULL DEFAULT 0, active TINYINT(1) NOT NULL DEFAULT 1, UNIQUE KEY uq_bairro (bairro))',
+      'CREATE TABLE IF NOT EXISTS store_settings (skey VARCHAR(60) PRIMARY KEY, svalue VARCHAR(255))',
+      "INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('cidade_entrega', 'São João da Boa Vista')",
+      "INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('frete_padrao', '15.00')",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
+    // Seeds: desconto global
+    for (const sql of [
+      "INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('desconto_global_ativo', '0')",
+      "INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('desconto_global_percent', '0')",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Migração: tabela de percentuais de desconto por franquia
     try {
       await conn.query(`
@@ -161,6 +175,51 @@ pool.getConnection()
         SET p.sale_value = ROUND(p.cost / (1 - COALESCE(fd.percent, 0) / 100), 2)
         WHERE p.sale_value IS NULL
       `);
+    } catch (_) {}
+
+    // Migração: notas fiscais de entrada
+    for (const sql of [
+      'CREATE TABLE IF NOT EXISTS nf_entradas (id INT AUTO_INCREMENT PRIMARY KEY, chave VARCHAR(44) NOT NULL UNIQUE, emitente_nome VARCHAR(160), emitente_cnpj VARCHAR(14), numero VARCHAR(20), serie VARCHAR(10), valor_total DECIMAL(12,2), data_emissao DATETIME NULL, xml LONGTEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)',
+      'CREATE TABLE IF NOT EXISTS nf_entrada_itens (id INT AUTO_INCREMENT PRIMARY KEY, nf_id INT NOT NULL, cprod VARCHAR(60), descricao VARCHAR(255), ncm VARCHAR(10), quantidade DECIMAL(12,3), valor_unit DECIMAL(12,4), valor_total DECIMAL(12,2), product_id INT NULL, INDEX (nf_id))',
+      'CREATE TABLE IF NOT EXISTS nf_item_vinculos (id INT AUTO_INCREMENT PRIMARY KEY, emitente_cnpj VARCHAR(14) NOT NULL, cprod VARCHAR(60) NOT NULL, product_id INT NOT NULL, UNIQUE KEY uq_vinc (emitente_cnpj, cprod))',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
+    // Migração: origem (NF/Manual) + nf_id nas movimentações de estoque
+    for (const sql of [
+      "ALTER TABLE estoque_movimentacoes ADD COLUMN origem ENUM('Manual','NF') NOT NULL DEFAULT 'Manual'",
+      'ALTER TABLE estoque_movimentacoes ADD COLUMN nf_id INT NULL',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+    // Backfill one-shot: marca as entradas antigas de NF (rodadas antes da coluna existir).
+    // Roda só uma vez pra não re-rotular, no futuro, uma movimentação manual cujo motivo comece com "NF ".
+    try {
+      const [[done]] = await conn.query("SELECT svalue FROM store_settings WHERE skey = 'nf_origem_backfill'");
+      if (!done) {
+        await conn.query("UPDATE estoque_movimentacoes SET origem='NF' WHERE observacao LIKE 'NF %'");
+        await conn.query("INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('nf_origem_backfill', '1')");
+      }
+    } catch (_) {}
+
+    // Migração: EAN nos produtos e itens de NF
+    for (const sql of [
+      'ALTER TABLE products ADD COLUMN ean VARCHAR(14) NULL',
+      'ALTER TABLE nf_entrada_itens ADD COLUMN ean VARCHAR(14) NULL',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
+    // Backfill one-shot: nomes de produto "gritando" (CAIXA ALTA) viram Title Case.
+    // Só mexe nos 100% maiúsculos; nomes já formatados ficam intactos.
+    try {
+      const [[done]] = await conn.query("SELECT svalue FROM store_settings WHERE skey = 'produtos_titlecase_backfill'");
+      if (!done) {
+        const { titleCasePtBr, isShoutingName } = require('../utils/textcase');
+        const [rows] = await conn.query('SELECT id, name FROM products');
+        for (const r of rows) {
+          if (isShoutingName(r.name)) {
+            const novo = titleCasePtBr(r.name).slice(0, 200);
+            if (novo !== r.name) await conn.query('UPDATE products SET name = ? WHERE id = ?', [novo, r.id]);
+          }
+        }
+        await conn.query("INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('produtos_titlecase_backfill', '1')");
+      }
     } catch (_) {}
 
     conn.release();

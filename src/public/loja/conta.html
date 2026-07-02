@@ -9,9 +9,10 @@
   <link rel="stylesheet" href="/loja/loja.css">
   <style>
     .conta-wrap { max-width: 680px; margin: 2rem auto 3.5rem; padding: 0 20px; }
-    .conta-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
-    .conta-header h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 2rem; margin: 0; color: var(--text); }
-    .conta-header .user-greeting { color: var(--text-soft); font-size: .95rem; margin-top: .2rem; }
+    .conta-profile { display:flex; align-items:center; gap:1rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.2rem 1.4rem; margin-bottom:1.4rem; box-shadow:0 2px 16px rgba(60,40,35,.06); }
+    .conta-avatar { width:56px; height:56px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1.3rem; flex:0 0 auto; }
+    .conta-profile h1 { margin:0; font-size:1.4rem; font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; color:var(--text); }
+    #user-email-sub { color:var(--text-soft); font-size:.9rem; }
     .conta-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.8rem 1.6rem; margin-bottom: 1.4rem; box-shadow: 0 2px 12px rgba(60,40,35,.06); }
     .conta-section h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 1.35rem; margin: 0 0 1.3rem; color: var(--text); display: flex; align-items: center; gap: .5rem; }
     .field { margin-bottom: 1rem; }
@@ -76,7 +77,7 @@
           <i class="bi bi-heart" aria-hidden="true"></i>
           <span id="fav-count" class="cart-count" aria-live="polite" aria-atomic="true"></span>
         </a>
-        <a href="conta.html" title="Minha conta" aria-label="Minha conta">
+        <a id="account-link" href="conta.html" title="Minha conta" aria-label="Minha conta">
           <i class="bi bi-person-fill" aria-hidden="true"></i>
         </a>
         <a href="carrinho.html" title="Carrinho de compras" aria-label="Carrinho de compras" style="position:relative">
@@ -91,10 +92,12 @@
   <main>
     <div class="conta-wrap">
 
-      <div class="conta-header">
+      <!-- ===== PERFIL HEADER ===== -->
+      <div class="conta-profile">
+        <div class="conta-avatar" id="conta-avatar"></div>
         <div>
-          <h1><i class="bi bi-person-circle" aria-hidden="true"></i> Minha conta</h1>
-          <p class="user-greeting" id="user-greeting"></p>
+          <h1 id="user-greeting">Minha conta</h1>
+          <div id="user-email-sub"></div>
         </div>
       </div>
 
@@ -130,6 +133,16 @@
               <label for="birthdate">Data de nascimento</label>
               <input type="date" id="birthdate" name="birthdate" autocomplete="bday">
             </div>
+          </div>
+
+          <div class="field">
+            <label for="cep">CEP</label>
+            <input type="tel" id="cep" name="cep" placeholder="00000-000" maxlength="9" inputmode="numeric" autocomplete="postal-code">
+            <span id="cep-hint" style="font-size:.81rem;color:var(--text-soft);display:none"></span>
+          </div>
+          <div class="field">
+            <label for="city">Cidade</label>
+            <input type="text" id="city" name="city" autocomplete="address-level2" placeholder="Sua cidade">
           </div>
 
           <div class="field">
@@ -191,6 +204,15 @@
         <div class="logout-row">
           <p style="margin:0;color:var(--text-soft);font-size:.93rem">Consulte o histórico e status dos seus pedidos.</p>
           <a href="meus-pedidos.html" class="btn section-btn"><i class="bi bi-bag-check" aria-hidden="true"></i> Meus pedidos</a>
+        </div>
+      </section>
+
+      <!-- ===== FAVORITOS ===== -->
+      <section class="conta-section" aria-labelledby="favoritos-title">
+        <h2 id="favoritos-title"><i class="bi bi-heart-fill" aria-hidden="true"></i> Favoritos</h2>
+        <div class="logout-row">
+          <p style="margin:0;color:var(--text-soft);font-size:.93rem">Veja os produtos que você salvou como favoritos.</p>
+          <a href="favoritos.html" class="btn section-btn"><i class="bi bi-heart" aria-hidden="true"></i> Meus favoritos</a>
         </div>
       </section>
 
@@ -350,6 +372,12 @@
           var greeting = document.getElementById('user-greeting');
           greeting.textContent = 'Olá, ' + (data.name || 'cliente') + '!';
 
+          /* Avatar initials */
+          var nome = (data.name || '').trim();
+          var ini = nome ? nome.trim().split(/\s+/).map(function(p){return p[0];}).slice(0,2).join('').toUpperCase() : (data.email || '?')[0].toUpperCase();
+          var av = document.getElementById('conta-avatar'); if (av) av.textContent = ini;
+          var sub = document.getElementById('user-email-sub'); if (sub) sub.textContent = data.email || '';
+
           /* Read-only fields */
           document.getElementById('email-ro').value = data.email || '';
           document.getElementById('cpf-ro').value = data.cpf || '';
@@ -357,8 +385,10 @@
           /* Editable fields */
           document.getElementById('nome').value = data.name || '';
           document.getElementById('phone').value = data.phone || '';
+          document.getElementById('cep').value = data.cep || '';
+          document.getElementById('city').value = data.city || '';
           document.getElementById('address').value = data.address || '';
-          document.getElementById('houseNumber').value = data.houseNumber || '';
+          document.getElementById('houseNumber').value = data.house_number || '';
           document.getElementById('neighborhood').value = data.neighborhood || '';
           if (data.birthdate) {
             /* birthdate may come as ISO date string e.g. 2000-05-20 or with time */
@@ -371,6 +401,30 @@
 
       loadMe();
 
+      /* ---- ViaCEP ---- */
+      var inpCep = document.getElementById('cep');
+      async function buscarCep(cepRaw) {
+        var cep = String(cepRaw || '').replace(/\D/g, '');
+        if (cep.length !== 8) return null;
+        try { var r = await fetch('https://viacep.com.br/ws/' + cep + '/json/'); if (!r.ok) return null; var d = await r.json(); return d.erro ? null : d; }
+        catch (e) { return null; }
+      }
+      async function preencherCep() {
+        var digits = inpCep.value.replace(/\D/g, '');
+        var hint = document.getElementById('cep-hint');
+        if (digits.length !== 8) { if (hint) hint.style.display = 'none'; return; }
+        if (hint) { hint.style.display = 'block'; hint.textContent = 'Buscando CEP…'; }
+        var d = await buscarCep(digits);
+        if (d) {
+          if (d.logradouro) document.getElementById('address').value = d.logradouro;
+          if (d.bairro)     document.getElementById('neighborhood').value = d.bairro;
+          if (d.localidade) document.getElementById('city').value = d.localidade;
+          if (hint) hint.style.display = 'none';
+          document.getElementById('houseNumber').focus();
+        } else if (hint) { hint.textContent = 'CEP não encontrado — preencha manualmente.'; }
+      }
+      if (inpCep) { inpCep.addEventListener('input', preencherCep); inpCep.addEventListener('blur', preencherCep); }
+
       /* ---- Meus dados form ---- */
       var dadosForm = document.getElementById('dados-form');
       var dadosBtn = document.getElementById('dados-btn');
@@ -382,6 +436,8 @@
         var payload = {
           name: document.getElementById('nome').value.trim(),
           phone: document.getElementById('phone').value.trim(),
+          cep: document.getElementById('cep').value.replace(/\D/g, ''),
+          city: document.getElementById('city').value.trim(),
           address: document.getElementById('address').value.trim(),
           houseNumber: document.getElementById('houseNumber').value.trim(),
           neighborhood: document.getElementById('neighborhood').value.trim(),

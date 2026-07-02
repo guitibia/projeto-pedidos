@@ -38,6 +38,7 @@
     .fr-name   { font-size: .9rem; font-weight: 700; }
     .fr-count  { font-size: .72rem; color: var(--text-muted); }
     .fr-badge  { font-size: .72rem; border-radius: 6px; padding: .18rem .55rem; font-weight: 600; }
+    .origem-badge { display: inline-flex; align-items: center; gap: .28rem; white-space: nowrap; line-height: 1; text-decoration: none; }
     .badge-ok    { background: rgba(63,185,80,.1);   border: 1px solid rgba(63,185,80,.2);   color: #3fb950; }
     .badge-low   { background: rgba(210,153,34,.1);  border: 1px solid rgba(210,153,34,.25); color: #d29922; }
     .badge-zero  { background: rgba(248,81,73,.1);   border: 1px solid rgba(248,81,73,.25);  color: #f85149; }
@@ -97,6 +98,9 @@
     .resumo-label { font-size: .7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
     .resumo-val   { font-size: 1.4rem; font-weight: 700; margin-top: .1rem; }
 
+    .aba-btn { font-size:.85rem; border:1px solid var(--border-color,#30363d); background:transparent; color:var(--text-muted,#8b949e); border-radius:8px; padding:.4rem .9rem; cursor:pointer; display:inline-flex; align-items:center; gap:.4rem; }
+    .aba-btn.active { background:var(--accent,#3fb950); color:#fff; border-color:transparent; }
+
     .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
     .empty-state i { font-size: 2.8rem; opacity: .3; display: block; margin-bottom: .6rem; }
 
@@ -143,6 +147,8 @@
     <a class="nav-link" href="/produtos.html"><i class="bi bi-box-seam"></i> Produtos</a>
     <a class="nav-link" href="/pedidos.html"><i class="bi bi-bag-check"></i> Pedidos</a>
     <a class="nav-link active" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link" href="/notas.html"><i class="bi bi-receipt-cutoff"></i> Notas</a>
+    <a class="nav-link" href="/entrega.html"><i class="bi bi-truck"></i> Entrega</a>
     <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
     <a class="nav-link" href="#" onclick="window.CommandPalette && CommandPalette.openHelp(); return false;"><i class="bi bi-keyboard"></i> Atalhos</a>
   </nav>
@@ -187,6 +193,11 @@
           </h6>
           <span style="font-size:.8rem;color:var(--text-muted)" id="log-count"></span>
         </div>
+        <div id="log-filtro" class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-outline-secondary active" onclick="window.__logOrigem='';document.querySelectorAll('#log-filtro button').forEach(b=>b.classList.remove('active'));this.classList.add('active');loadLog()">Todos</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="window.__logOrigem='NF';document.querySelectorAll('#log-filtro button').forEach(b=>b.classList.remove('active'));this.classList.add('active');loadLog()">📄 NF</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="window.__logOrigem='Manual';document.querySelectorAll('#log-filtro button').forEach(b=>b.classList.remove('active'));this.classList.add('active');loadLog()">✋ Manual</button>
+        </div>
         <div id="log-container">
           <div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>
         </div>
@@ -208,6 +219,16 @@
           <div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>
         </div>
       </div>
+    </div>
+
+    <!-- Abas de origem -->
+    <div id="estoque-abas" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem">
+      <button type="button" class="aba-btn active" data-aba="geral"><i class="bi bi-boxes"></i> Geral</button>
+      <button type="button" class="aba-btn" data-aba="nf"><i class="bi bi-receipt"></i> NF</button>
+      <button type="button" class="aba-btn" data-aba="manual"><i class="bi bi-hand-index"></i> Manual</button>
+    </div>
+    <div id="estoque-legenda" style="display:none;font-size:.76rem;color:var(--text-muted,#8b949e);margin:-.4rem 0 .8rem">
+      "Entrou" é exato (soma das entradas dessa origem). "Atual (est.)" é uma estimativa — as vendas saem do estoque único.
     </div>
 
     <!-- Resumo -->
@@ -308,6 +329,14 @@
     return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
+  function origemBadge(r) {
+    if (r.origem === 'NF') {
+      var href = '/notas.html';
+      return '<a href="' + href + '" class="fr-badge badge-ok origem-badge" title="Entrada via Nota Fiscal' + (r.nf_id ? ' #' + esc(String(r.nf_id)) : '') + '">📄 NF</a>';
+    }
+    return '<span class="fr-badge badge-low origem-badge">✋ Manual</span>';
+  }
+
   const LOW_STOCK = 5; // abaixo disso = baixo estoque
 
   const franchiseMap = {
@@ -340,9 +369,19 @@
   }
 
   let allEstoque = [];
+  let estoqueAba = 'geral';
   let openFr = new Set();
   let sortEstField = 'name';
   let sortEstDir   = 'asc';
+
+  document.querySelectorAll('#estoque-abas .aba-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#estoque-abas .aba-btn').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      estoqueAba = b.dataset.aba;
+      render(allEstoque); // re-renderiza sem refetch
+    });
+  });
 
   function setEstSort(field) {
     if (sortEstField === field) {
@@ -381,6 +420,13 @@
 
   function render(items) {
     const container = document.getElementById('estoque-container');
+    // filtro por aba (origem)
+    let lista = items;
+    if (estoqueAba === 'nf')     lista = items.filter(p => Number(p.entradasNF) > 0);
+    if (estoqueAba === 'manual') lista = items.filter(p => Number(p.entradasManual) > 0);
+    const legenda = document.getElementById('estoque-legenda');
+    if (legenda) legenda.style.display = (estoqueAba === 'geral') ? 'none' : '';
+    // O RESUMO é sempre global (usa `items` = loja toda); só a LISTA de produtos filtra (`lista`).
     if (!items.length) {
       container.innerHTML = `<div class="empty-rich">
         <i class="bi bi-archive empty-rich-icon"></i>
@@ -418,9 +464,18 @@
         <div class="resumo-val" style="color:#3fb950;font-size:1.6rem">${fmt(valorTotal)}</div>
       </div>`;
 
+    // Lista de produtos filtrada pela aba (o resumo acima já é global)
+    if (!lista.length) {
+      container.innerHTML = `<div class="empty-rich">
+        <i class="bi bi-inbox empty-rich-icon"></i>
+        <div class="empty-rich-title">Nenhum produto nesta origem</div>
+        <div class="empty-rich-sub">Nenhum produto recebeu estoque por ${estoqueAba === 'nf' ? 'Nota Fiscal' : 'entrada manual'} ainda.</div></div>`;
+      return;
+    }
+
     // Agrupa por franquia
     const grupos = {};
-    items.forEach(p => {
+    lista.forEach(p => {
       if (!grupos[p.franchise]) grupos[p.franchise] = [];
       grupos[p.franchise].push(p);
     });
@@ -465,11 +520,24 @@
                 cmp = av < bv ? -1 : av > bv ? 1 : 0;
               }
               return sortEstDir === 'asc' ? cmp : -cmp;
-            }).map(p => `
+            }).map(p => {
+              const eNF = Number(p.entradasNF) || 0, eMan = Number(p.entradasManual) || 0;
+              const totalEnt = eNF + eMan;
+              const estAtualNF = totalEnt > 0 ? Math.round(p.estoque * eNF / totalEnt) : 0;
+              const estAtualManual = p.estoque - estAtualNF;
+              const ent = estoqueAba === 'nf' ? eNF : eMan;
+              const estAtual = estoqueAba === 'nf' ? estAtualNF : estAtualManual;
+              const origemInfo = (estoqueAba === 'geral') ? '' :
+                `<div style="font-size:.72rem;color:var(--text-muted,#8b949e);margin-top:2px">
+                   Entrou por ${estoqueAba === 'nf' ? 'NF' : 'Manual'}: <strong>${ent}</strong> un ·
+                   Atual (est.): <strong>~${estAtual}</strong> un
+                 </div>`;
+              return `
             <div class="produto-row">
               <div>
                 <div class="produto-nome">${esc(p.name)}</div>
                 <div class="produto-code">${esc(p.code)}</div>
+                ${origemInfo}
               </div>
               <div class="estoque-badge ${nivelClass(p.estoque)}">${p.estoque} un</div>
               <div class="produto-valor">
@@ -482,7 +550,8 @@
               <button class="btn-hist" data-id="${p.id}" data-nome="${esc(p.name)}" onclick="abrirHistBtn(this)">
                 <i class="bi bi-clock-history"></i>
               </button>
-            </div>`).join('')}
+            </div>`;
+            }).join('')}
           </div>
         </div>
       </div>`;
@@ -581,9 +650,10 @@
       <div class="hist-row">
         <div>
           <div style="font-size:.82rem;font-weight:600;color:${r.tipo==='Entrada'?'#3fb950':'#f85149'}">
-            <i class="bi bi-${r.tipo==='Entrada'?'plus':'dash'}-circle"></i> ${r.tipo}
+            <i class="bi bi-${r.tipo==='Entrada'?'plus':'dash'}-circle"></i> ${esc(r.tipo)}
+            ${origemBadge(r)}
           </div>
-          <div style="font-size:.72rem;color:var(--text-muted)">${r.observacao || '—'}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">${esc(r.observacao || '—')}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:.9rem;font-weight:700">${r.quantidade} un</div>
@@ -610,7 +680,9 @@
     const container = document.getElementById('log-container');
     container.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass-split"></i>Carregando...</div>';
     try {
-      const res  = await Auth.apiFetch('/api/estoque/log?limit=100');
+      var f = (window.__logOrigem || '');
+      var url = '/api/estoque/log?limit=100' + (f ? '&origem=' + f : '');
+      const res  = await Auth.apiFetch(url);
       const rows = await res.json();
       document.getElementById('log-count').textContent = `${rows.length} registros`;
       if (!rows.length) {
@@ -624,6 +696,7 @@
             <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Produto</th>
             <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Franquia</th>
             <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600">Tipo</th>
+            <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600">Origem</th>
             <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600">Qtd</th>
             <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Motivo</th>
           </tr>
@@ -641,6 +714,7 @@
             <td style="padding:.5rem .75rem;text-align:center">
               <span style="${r.tipo==='Entrada'?'background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3)':'background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3)'};font-size:.75rem;padding:.18rem .5rem;border-radius:5px;font-weight:700;white-space:nowrap"><i class="bi bi-${r.tipo==='Entrada'?'plus':'dash'}-circle" style="font-size:.7rem"></i> ${esc(r.tipo)}</span>
             </td>
+            <td style="padding:.5rem .75rem;text-align:center">${origemBadge(r)}</td>
             <td style="padding:.5rem .75rem;text-align:center;font-weight:700;color:var(--text-primary)">${r.quantidade}</td>
             <td style="padding:.5rem .75rem;color:var(--text-muted);font-size:.8rem">${esc(r.observacao || '—')}</td>
           </tr>`).join('')}

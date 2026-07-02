@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notas Fiscais</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/theme.js"></script>
+  <style>
+    /* ── Hero ── */
+    .page-hero-icon {
+      width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+      background: linear-gradient(135deg, #0d6efd 0%, #6f42c1 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff;
+      box-shadow: 0 4px 14px rgba(13,110,253,.3);
+    }
+    .page-hero-title { font-size: 1.3rem; font-weight: 700; margin: 0; }
+    .page-hero-sub   { font-size: .8rem; color: var(--text-muted); margin: 0; }
+
+    /* ── Section cards ── */
+    .card-section {
+      background: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem;
+    }
+    .section-title {
+      font-size: .9rem; font-weight: 700; color: var(--text-color);
+      margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem;
+    }
+
+    /* ── Dropzone ── */
+    .dropzone {
+      border: 2px dashed var(--border-color);
+      border-radius: 12px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: var(--hover-tint);
+      outline: none;
+    }
+    .dropzone:hover, .dropzone.dz-over {
+      border-color: #0d6efd;
+      background: rgba(13,110,253,.06);
+    }
+    .dropzone:focus {
+      border-color: #0d6efd;
+      box-shadow: 0 0 0 3px rgba(13,110,253,.25);
+    }
+    .dropzone-icon {
+      font-size: 2.4rem;
+      background: linear-gradient(135deg,#0d6efd,#6f42c1);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block; margin-bottom: .6rem;
+    }
+    .dropzone-label {
+      font-size: .92rem; font-weight: 600; color: var(--text-color);
+      margin-bottom: .25rem;
+    }
+    .dropzone-hint { font-size: .78rem; color: var(--text-muted); }
+    .dropzone-filename {
+      display: none; margin-top: .75rem;
+      background: rgba(13,110,253,.1); border: 1px solid rgba(13,110,253,.25);
+      border-radius: 8px; padding: .4rem .8rem;
+      font-size: .82rem; font-weight: 600; color: #0d6efd;
+      align-items: center; gap: .4rem;
+    }
+    .dropzone-filename.has-file { display: inline-flex; }
+
+    /* ── NF info grid ── */
+    .nf-info-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: .65rem;
+      margin-bottom: 1rem;
+    }
+    .nf-info-card {
+      background: var(--hover-tint); border: 1px solid var(--border-color);
+      border-radius: 10px; padding: .65rem .9rem;
+    }
+    .nf-info-label { font-size: .7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+    .nf-info-val   { font-size: .95rem; font-weight: 700; margin-top: .1rem; }
+
+    /* ── Supplier badge ── */
+    .supplier-badge {
+      display: inline-flex; align-items: center; gap: .45rem;
+      background: rgba(111,66,193,.1); border: 1px solid rgba(111,66,193,.25);
+      color: #9f6ef5; border-radius: 20px; padding: .3rem .85rem;
+      font-size: .8rem; font-weight: 700; margin-bottom: 1rem;
+    }
+
+    /* ── Bulk action toolbar ── */
+    .bulk-toolbar {
+      display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+      padding: .7rem .9rem; background: var(--hover-tint);
+      border: 1px solid var(--border-color); border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+    .bulk-toolbar-label {
+      font-size: .75rem; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .4px; margin-right: .25rem;
+    }
+    .bulk-btn {
+      font-size: .78rem; font-weight: 600; border-radius: 8px;
+      padding: .32rem .75rem; cursor: pointer; border: 1px solid;
+      transition: background .15s, color .15s;
+    }
+    .bulk-btn-sugestoes {
+      border-color: rgba(13,110,253,.4); color: #58a6ff;
+      background: rgba(13,110,253,.08);
+    }
+    .bulk-btn-sugestoes:hover { background: rgba(13,110,253,.18); }
+    .bulk-btn-ignorar {
+      border-color: rgba(156,163,175,.4); color: var(--text-muted);
+      background: transparent;
+    }
+    .bulk-btn-ignorar:hover { background: var(--hover-tint); }
+    .bulk-btn-criar {
+      border-color: rgba(34,197,94,.4); color: #3fb950;
+      background: rgba(34,197,94,.08);
+    }
+    .bulk-btn-criar:hover { background: rgba(34,197,94,.18); }
+
+    /* ── Item cards ── */
+    .item-card {
+      border: 1px solid var(--border-color); border-radius: 12px;
+      padding: 1rem; margin-bottom: .75rem; background: var(--card-bg);
+      transition: border-color .15s;
+    }
+    .item-card:last-child { margin-bottom: 0; }
+    .item-card-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: .75rem; margin-bottom: .75rem;
+    }
+    .item-desc { font-size: .88rem; font-weight: 600; line-height: 1.4; }
+    .item-code { font-size: .75rem; color: var(--text-muted); margin-top: .15rem; }
+    .item-nums {
+      display: flex; gap: .75rem; flex-shrink: 0; text-align: right;
+      flex-wrap: wrap; justify-content: flex-end;
+    }
+    .item-num-block { min-width: 52px; }
+    .item-num-label { font-size: .67rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+    .item-num-val   { font-size: .85rem; font-weight: 700; }
+    .item-num-val.total { color: #3fb950; }
+
+    /* ── Action pills ── */
+    .acao-pills { display:flex; gap:.35rem; flex-wrap:wrap; margin-bottom:.4rem; }
+    .acao-pill {
+      font-size:.78rem; border:1px solid var(--border-color);
+      background:transparent; color:var(--text-muted); border-radius:8px;
+      padding:.32rem .65rem; cursor:pointer;
+      display:inline-flex; align-items:center; gap:.3rem;
+      transition:background .15s,color .15s,border-color .15s;
+    }
+    .acao-pill:focus { outline: 2px solid #0d6efd; outline-offset: 2px; }
+    .acao-pill.active[data-acao="vincular"] { background:#0d6efd; color:#fff; border-color:transparent; }
+    .acao-pill.active[data-acao="criar"]    { background:#22c55e; color:#fff; border-color:transparent; }
+    .acao-pill.active[data-acao="ignorar"]  { background:#6c757d; color:#fff; border-color:transparent; }
+
+    .acao-extra { margin-top: .4rem; }
+
+    /* ── Live summary ── */
+    .resumo-bar {
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+      padding: .65rem .9rem; background: var(--hover-tint);
+      border: 1px solid var(--border-color); border-radius: 10px;
+      margin-bottom: 1rem; font-size: .82rem;
+    }
+    .resumo-chip {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-weight: 700;
+    }
+    .resumo-chip.vincular { color: #58a6ff; }
+    .resumo-chip.criar    { color: #3fb950; }
+    .resumo-chip.ignorar  { color: var(--text-muted); }
+    .resumo-chip.estoque  { color: #f59e0b; }
+    .resumo-chip.total    { color: var(--text-color); }
+    .resumo-sep { color: var(--border-color); }
+
+    /* ── Already imported alert ── */
+    .alert-ja-importada {
+      background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.35);
+      color: #d29922; border-radius: 10px; padding: .7rem 1rem;
+      font-size: .85rem; font-weight: 600; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+
+    /* ── Historico ── */
+    .hist-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .6rem .25rem; border-bottom: 1px solid var(--border-color); gap: .5rem;
+    }
+    .hist-row:last-child { border-bottom: none; }
+
+    /* ── Empty/loading states ── */
+    .empty-state {
+      text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);
+    }
+    .empty-state i {
+      font-size: 2.4rem; opacity: .3; display: block; margin-bottom: .5rem;
+    }
+    .empty-state p { margin: 0; font-size: .85rem; }
+  </style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-link" href="/painel.html"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a>
+    <a class="nav-link" href="/produtos.html"><i class="bi bi-box-seam"></i> Produtos</a>
+    <a class="nav-link" href="/pedidos.html"><i class="bi bi-bag-check"></i> Pedidos</a>
+    <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link active" href="/notas.html"><i class="bi bi-receipt-cutoff"></i> Notas</a>
+    <a class="nav-link" href="/entrega.html"><i class="bi bi-truck"></i> Entrega</a>
+    <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
+    <a class="nav-link" href="#" onclick="window.CommandPalette && CommandPalette.openHelp(); return false;"><i class="bi bi-keyboard"></i> Atalhos</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()" style="margin-bottom:.5rem"><i class="bi bi-sun"></i> Tema claro</button>
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="container-fluid py-3" style="max-width:960px">
+
+    <!-- Hero -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div class="page-hero-icon"><i class="bi bi-receipt-cutoff"></i></div>
+      <div>
+        <div class="page-hero-title">Notas Fiscais de Entrada</div>
+        <div class="page-hero-sub">Importe XML de NF-e para atualizar o estoque</div>
+      </div>
+    </div>
+
+    <!-- Upload / Dropzone -->
+    <div class="card-section">
+      <div class="section-title"><i class="bi bi-upload" style="color:#0d6efd"></i> Importar Nota Fiscal</div>
+
+      <!-- Hidden real file input -->
+      <input type="file" id="nf-file" accept=".xml" hidden>
+
+      <div
+        id="dropzone"
+        class="dropzone"
+        role="button"
+        tabindex="0"
+        aria-label="Área de upload: arraste o XML aqui ou pressione Enter para selecionar"
+      >
+        <i class="bi bi-cloud-upload dropzone-icon"></i>
+        <div class="dropzone-label">Arraste o XML aqui ou clique para selecionar</div>
+        <div class="dropzone-hint">Somente arquivos .xml de NF-e</div>
+        <div class="dropzone-filename" id="dz-filename" aria-live="polite">
+          <i class="bi bi-file-earmark-check"></i>
+          <span id="dz-filename-text"></span>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end mt-3">
+        <button id="btn-ler" onclick="lerNota()"
+          style="padding:.55rem 1.4rem;border-radius:10px;border:none;background:linear-gradient(135deg,#0d6efd,#6f42c1);color:#fff;font-size:.88rem;font-weight:600;cursor:pointer;white-space:nowrap">
+          <i class="bi bi-eye me-1"></i> Ler nota
+        </button>
+      </div>
+    </div>
+
+    <!-- Prévia -->
+    <div id="previa-section" style="display:none">
+      <div class="card-section">
+        <div class="section-title"><i class="bi bi-file-earmark-text" style="color:#22c55e"></i> Prévia da Nota</div>
+
+        <div id="aviso-ja-importada" class="alert-ja-importada" style="display:none">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          Esta nota já foi importada anteriormente.
+        </div>
+
+        <!-- Supplier badge -->
+        <div id="supplier-badge" class="supplier-badge" style="display:none">
+          <i class="bi bi-building"></i>
+          <span id="supplier-badge-text"></span>
+        </div>
+
+        <!-- Info cards -->
+        <div class="nf-info-grid" id="nf-info-grid"></div>
+
+        <!-- Bulk action toolbar (shown only when items exist) -->
+        <div class="bulk-toolbar" id="bulk-toolbar" style="display:none">
+          <span class="bulk-toolbar-label">Ações em massa</span>
+          <button type="button" class="bulk-btn bulk-btn-sugestoes" onclick="aceitarSugestoes()">
+            <i class="bi bi-magic me-1"></i> Aceitar sugestões
+          </button>
+          <button type="button" class="bulk-btn bulk-btn-criar" onclick="criarRestantes()">
+            <i class="bi bi-plus-square me-1"></i> Criar os restantes
+          </button>
+          <button type="button" class="bulk-btn bulk-btn-ignorar" onclick="ignorarTodos()">
+            <i class="bi bi-slash-circle me-1"></i> Ignorar todos
+          </button>
+        </div>
+
+        <!-- Items list (cards) -->
+        <div id="itens-list"></div>
+
+        <!-- Live summary -->
+        <div class="resumo-bar" id="resumo-bar" style="display:none">
+          <span class="resumo-chip vincular"><i class="bi bi-link-45deg"></i> <span id="resumo-vincular">0</span> vincular</span>
+          <span class="resumo-sep">·</span>
+          <span class="resumo-chip criar"><i class="bi bi-plus-square"></i> <span id="resumo-criar">0</span> criar</span>
+          <span class="resumo-sep">·</span>
+          <span class="resumo-chip ignorar"><i class="bi bi-slash-circle"></i> <span id="resumo-ignorar">0</span> ignorar</span>
+          <span class="resumo-sep">·</span>
+          <span class="resumo-chip estoque"><i class="bi bi-box-seam"></i> +<span id="resumo-unidades">0</span> un ao estoque</span>
+          <span class="resumo-sep">·</span>
+          <span class="resumo-chip total"><i class="bi bi-currency-dollar"></i> <span id="resumo-total">R$ 0,00</span></span>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end">
+          <button id="btn-importar" onclick="importarNota()"
+            style="padding:.6rem 1.6rem;border-radius:10px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.9rem;font-weight:700;cursor:pointer">
+            <i class="bi bi-check2-circle me-1"></i> Importar nota
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Histórico -->
+    <div class="card-section">
+      <div class="section-title"><i class="bi bi-clock-history" style="color:#6f42c1"></i> Histórico de Notas Importadas</div>
+      <div id="historico-container">
+        <div class="empty-state"><i class="bi bi-hourglass-split"></i><p>Carregando...</p></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal ver itens da nota -->
+<div class="modal fade" id="nfModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#0d6efd,#6f42c1);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-receipt-cutoff me-2"></i><span id="nf-modal-title">Detalhes da Nota</span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3" id="nf-modal-body">
+        <div class="empty-state"><i class="bi bi-hourglass-split"></i><p>Carregando...</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center py-3 mt-4">
+  <small>&copy; <span id="footer-year"></span> Sistema de Pedidos</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/command-palette.js"></script>
+<script>
+  Auth.requireAuth();
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+  Auth.initSidebar();
+  document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+  const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtDt = d => {
+    if (!d) return '—';
+    const dt = new Date(d);
+    if (isNaN(dt)) return d;
+    return dt.toLocaleDateString('pt-BR');
+  };
+  const fmtDtHr = d => {
+    if (!d) return '—';
+    const dt = new Date(d);
+    if (isNaN(dt)) return d;
+    return dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+  };
+
+  function esc(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // ── State ──
+  let previaData = null;   // resposta do /api/nf/preview
+  let allProducts = [];    // lista de /api/products
+
+  // ── Dropzone setup ──
+  (function initDropzone() {
+    const dz       = document.getElementById('dropzone');
+    const nfFile   = document.getElementById('nf-file');
+    const fnBox    = document.getElementById('dz-filename');
+    const fnText   = document.getElementById('dz-filename-text');
+
+    function setFile(file) {
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.xml')) {
+        Swal.fire('Atenção', 'Selecione um arquivo .xml de NF-e.', 'warning');
+        return;
+      }
+      // Assign to real input so lerNota/importarNota keep reading #nf-file.files[0]
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      nfFile.files = dt.files;
+      // Show filename
+      fnText.textContent = file.name;
+      fnBox.classList.add('has-file');
+    }
+
+    // Click / keyboard to open picker
+    dz.addEventListener('click', () => nfFile.click());
+    dz.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nfFile.click(); }
+    });
+
+    // Drag events
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dz-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('dz-over'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault();
+      dz.classList.remove('dz-over');
+      const file = e.dataTransfer.files[0];
+      setFile(file);
+    });
+
+    // Input change
+    nfFile.addEventListener('change', () => {
+      if (nfFile.files.length) setFile(nfFile.files[0]);
+    });
+  })();
+
+  // ── Carregar produtos para o select de vínculo ──
+  async function loadProducts() {
+    try {
+      const res = await Auth.apiFetch('/api/products/all');
+      allProducts = res.ok ? await res.json() : [];
+    } catch (e) {
+      allProducts = [];
+    }
+  }
+
+  // ── Ler nota: POST /api/nf/preview (fetch direto + FormData) ──
+  async function lerNota() {
+    const fileInput = document.getElementById('nf-file');
+    if (!fileInput.files.length) {
+      return Swal.fire('Atenção', 'Selecione um arquivo XML primeiro.', 'warning');
+    }
+    const btn = document.getElementById('btn-ler');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Lendo...';
+
+    try {
+      const fd = new FormData();
+      fd.append('xml', fileInput.files[0]);
+
+      const res = await fetch('/api/nf/preview', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + Auth.getToken() },
+        body: fd
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        Swal.fire('Erro', data.error || 'Não foi possível ler o XML.', 'error');
+        return;
+      }
+
+      previaData = data;
+      await loadProducts();
+      renderPrevia(data);
+    } catch (e) {
+      Swal.fire('Erro', 'Falha ao enviar o arquivo.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-eye me-1"></i> Ler nota';
+    }
+  }
+
+  // ── Live summary ──
+  function atualizarResumo() {
+    if (!previaData) return;
+    const itens = previaData.itens || [];
+    let nVincular = 0, nCriar = 0, nIgnorar = 0, unidades = 0;
+    const totalNota = previaData.valorTotal || 0;
+
+    itens.forEach((item, idx) => {
+      const acaoEl = document.getElementById('acao-' + idx);
+      if (!acaoEl) return;
+      const acao = acaoEl.value;
+      if (acao === 'vincular') {
+        nVincular++;
+        unidades += Math.round(Number(item.quantidade) || 0);
+      } else if (acao === 'criar') {
+        nCriar++;
+        unidades += Math.round(Number(item.quantidade) || 0);
+      } else {
+        nIgnorar++;
+      }
+    });
+
+    document.getElementById('resumo-vincular').textContent = nVincular;
+    document.getElementById('resumo-criar').textContent    = nCriar;
+    document.getElementById('resumo-ignorar').textContent  = nIgnorar;
+    document.getElementById('resumo-unidades').textContent = unidades;
+    document.getElementById('resumo-total').textContent    = fmt(totalNota);
+    document.getElementById('resumo-bar').style.display    = itens.length ? '' : 'none';
+  }
+
+  // ── Renderizar prévia ──
+  function renderPrevia(d) {
+    // Já importada
+    document.getElementById('aviso-ja-importada').style.display = d.jaImportada ? '' : 'none';
+    const btnImportar = document.getElementById('btn-importar');
+    if (d.jaImportada) {
+      btnImportar.disabled = true;
+      btnImportar.innerHTML = '<i class="bi bi-x-circle me-1"></i> Nota já importada';
+    } else {
+      btnImportar.disabled = false;
+      btnImportar.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Importar nota';
+    }
+
+    // Supplier badge
+    const badge = document.getElementById('supplier-badge');
+    const badgeText = document.getElementById('supplier-badge-text');
+    if (d.emitente && d.emitente.nome) {
+      badgeText.textContent = d.emitente.nome;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+
+    // Info cards
+    document.getElementById('nf-info-grid').innerHTML = `
+      <div class="nf-info-card">
+        <div class="nf-info-label">Fornecedor</div>
+        <div class="nf-info-val" style="font-size:.85rem">${esc(d.emitente?.nome || '—')}</div>
+      </div>
+      <div class="nf-info-card">
+        <div class="nf-info-label">CNPJ</div>
+        <div class="nf-info-val">${esc(d.emitente?.cnpj || '—')}</div>
+      </div>
+      <div class="nf-info-card">
+        <div class="nf-info-label">Número / Série</div>
+        <div class="nf-info-val">${esc(d.numero || '—')} / ${esc(d.serie || '—')}</div>
+      </div>
+      <div class="nf-info-card">
+        <div class="nf-info-label">Data Emissão</div>
+        <div class="nf-info-val">${esc(fmtDt(d.dataEmissao))}</div>
+      </div>
+      <div class="nf-info-card">
+        <div class="nf-info-label">Valor Total</div>
+        <div class="nf-info-val" style="color:#3fb950">${fmt(d.valorTotal || 0)}</div>
+      </div>
+      <div class="nf-info-card">
+        <div class="nf-info-label">Itens</div>
+        <div class="nf-info-val">${(d.itens || []).length}</div>
+      </div>
+    `;
+
+    // Items as cards
+    const list = document.getElementById('itens-list');
+    const itens = d.itens || [];
+    if (!itens.length) {
+      list.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><p>Nenhum item encontrado na nota.</p></div>';
+      document.getElementById('bulk-toolbar').style.display = 'none';
+    } else {
+      document.getElementById('bulk-toolbar').style.display = '';
+      list.innerHTML = itens.map((item, idx) => {
+        const prodSelectOpts = allProducts.map(p =>
+          `<option value="${esc(p.id)}" ${p.id == item.sugestaoProductId ? 'selected' : ''}>${esc(p.name)} (${esc(p.code)})</option>`
+        ).join('');
+
+        return `
+          <div class="item-card">
+            <div class="item-card-header">
+              <div style="flex:1;min-width:0">
+                <div class="item-desc">${esc(item.descricao)}</div>
+                <div class="item-code"><i class="bi bi-upc-scan me-1"></i>${esc(item.cprod)}</div>
+              </div>
+              <div class="item-nums">
+                <div class="item-num-block">
+                  <div class="item-num-label">Qtd</div>
+                  <div class="item-num-val">${Number(item.quantidade).toLocaleString('pt-BR')}</div>
+                </div>
+                <div class="item-num-block">
+                  <div class="item-num-label">Val.Unit</div>
+                  <div class="item-num-val">${fmt(item.valorUnit)}</div>
+                </div>
+                <div class="item-num-block">
+                  <div class="item-num-label">Total</div>
+                  <div class="item-num-val total">${fmt(item.valorTotal)}</div>
+                </div>
+              </div>
+            </div>
+
+            <input type="hidden" id="acao-${idx}" value="vincular">
+
+            <div class="acao-pills" id="pills-${idx}">
+              <button type="button" class="acao-pill active" data-acao="vincular" onclick="selectAcao(${idx},'vincular')">
+                <i class="bi bi-link-45deg"></i> Vincular
+              </button>
+              <button type="button" class="acao-pill" data-acao="criar" onclick="selectAcao(${idx},'criar')">
+                <i class="bi bi-plus-square"></i> Criar
+              </button>
+              <button type="button" class="acao-pill" data-acao="ignorar" onclick="selectAcao(${idx},'ignorar')">
+                <i class="bi bi-slash-circle"></i> Ignorar
+              </button>
+            </div>
+
+            <div class="acao-extra" id="extra-vincular-${idx}">
+              <select class="form-select form-select-sm mt-1" id="prod-select-${idx}" onchange="atualizarResumo()">
+                <option value="">— selecione o produto —</option>
+                ${prodSelectOpts}
+              </select>
+            </div>
+
+            <div class="acao-extra" id="extra-criar-${idx}" style="display:none">
+              <div class="row g-2 mt-0">
+                <div class="col-12 col-sm-6">
+                  <input type="text" class="form-control form-control-sm" id="criar-nome-${idx}" placeholder="Nome do produto" value="${esc(item.nomeSugerido || item.descricao)}">
+                </div>
+                <div class="col-6 col-sm-3">
+                  <input type="text" class="form-control form-control-sm" id="criar-codigo-${idx}" placeholder="Código" value="${esc(item.cprod)}">
+                </div>
+                <div class="col-6 col-sm-3">
+                  <input type="number" class="form-control form-control-sm" id="criar-preco-${idx}" placeholder="Preço (R$)" step="0.01" min="0">
+                </div>
+                <div class="col-12 col-sm-6">
+                  <select class="form-select form-select-sm" id="criar-franquia-${idx}">
+                    <option value="Boticário">Boticário</option>
+                    <option value="Natura">Natura</option>
+                    <option value="Abelha Rainha">Abelha Rainha</option>
+                    <option value="Eudora">Eudora</option>
+                    <option value="Avon">Avon</option>
+                    <option value="Outros" selected>Outros</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('previa-section').style.display = '';
+    document.getElementById('previa-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    atualizarResumo();
+  }
+
+  function onAcaoChange(idx) {
+    const acao = document.getElementById('acao-' + idx).value;
+    document.getElementById('extra-vincular-' + idx).style.display = acao === 'vincular' ? '' : 'none';
+    document.getElementById('extra-criar-' + idx).style.display    = acao === 'criar'    ? '' : 'none';
+  }
+
+  function selectAcao(idx, acao) {
+    document.getElementById('acao-' + idx).value = acao;
+    document.getElementById('pills-' + idx).querySelectorAll('.acao-pill').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.acao === acao);
+    });
+    onAcaoChange(idx);
+    atualizarResumo();
+  }
+
+  // ── Bulk actions ──
+  function aceitarSugestoes() {
+    if (!previaData) return;
+    previaData.itens.forEach((item, idx) => {
+      if (item.sugestaoProductId) {
+        selectAcao(idx, 'vincular');
+        document.getElementById('prod-select-' + idx).value = item.sugestaoProductId;
+      }
+    });
+    atualizarResumo();
+  }
+
+  function ignorarTodos() {
+    if (!previaData) return;
+    previaData.itens.forEach((item, idx) => selectAcao(idx, 'ignorar'));
+    atualizarResumo();
+  }
+
+  function criarRestantes() {
+    if (!previaData) return;
+    previaData.itens.forEach((item, idx) => {
+      if (!item.sugestaoProductId) selectAcao(idx, 'criar');
+    });
+    atualizarResumo();
+  }
+
+  // ── Importar nota: POST /api/nf/importar (fetch direto + FormData) ──
+  async function importarNota() {
+    if (!previaData) return;
+    const fileInput = document.getElementById('nf-file');
+    if (!fileInput.files.length) {
+      return Swal.fire('Atenção', 'Arquivo perdido. Selecione o XML novamente.', 'warning');
+    }
+
+    // Montar decisoes
+    const itens = previaData.itens || [];
+    const decisoes = {};
+    for (let idx = 0; idx < itens.length; idx++) {
+      const item = itens[idx];
+      const acao = document.getElementById('acao-' + idx).value;
+      const dec = { acao };
+      if (acao === 'vincular') {
+        const prodId = document.getElementById('prod-select-' + idx).value;
+        if (!prodId) {
+          return Swal.fire('Atenção', `Selecione um produto para vincular o item "${item.descricao}".`, 'warning');
+        }
+        dec.product_id = parseInt(prodId);
+      } else if (acao === 'criar') {
+        const nome   = document.getElementById('criar-nome-' + idx).value.trim();
+        const codigo = document.getElementById('criar-codigo-' + idx).value.trim();
+        const franq  = document.getElementById('criar-franquia-' + idx).value;
+        const preco  = parseFloat(document.getElementById('criar-preco-' + idx).value);
+        if (!nome) return Swal.fire('Atenção', `Informe o nome do produto para o item "${item.descricao}".`, 'warning');
+        if (!preco || preco <= 0) return Swal.fire('Atenção', `Informe o preço de venda do item "${item.descricao}".`, 'warning');
+        dec.novo = { name: nome, franchise: franq, sale_value: preco, code: codigo };
+      }
+      decisoes[item.cprod] = dec;
+    }
+
+    const btn = document.getElementById('btn-importar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Importando...';
+
+    try {
+      const fd = new FormData();
+      fd.append('xml', fileInput.files[0]);
+      fd.append('decisoes', JSON.stringify(decisoes));
+
+      const res = await fetch('/api/nf/importar', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + Auth.getToken() },
+        body: fd
+      });
+
+      const data = await res.json();
+
+      if (res.status === 409) {
+        Swal.fire('Nota já importada', data.error || 'Esta nota já foi importada anteriormente.', 'warning');
+        return;
+      }
+      if (res.status === 400) {
+        Swal.fire('XML inválido', data.error || 'O arquivo XML não é uma NF-e válida.', 'error');
+        return;
+      }
+      if (!res.ok) {
+        Swal.fire('Erro', data.error || 'Não foi possível importar a nota.', 'error');
+        return;
+      }
+
+      Swal.fire({ icon: 'success', title: 'Nota importada!', text: 'O estoque foi atualizado com sucesso.', timer: 2500, showConfirmButton: false });
+      limparPrevia();
+      loadHistorico();
+    } catch (e) {
+      Swal.fire('Erro', 'Falha ao enviar a nota.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Importar nota';
+    }
+  }
+
+  function limparPrevia() {
+    previaData = null;
+    document.getElementById('previa-section').style.display = 'none';
+    document.getElementById('nf-file').value = '';
+    document.getElementById('nf-info-grid').innerHTML = '';
+    document.getElementById('itens-list').innerHTML = '';
+    document.getElementById('resumo-bar').style.display = 'none';
+    document.getElementById('bulk-toolbar').style.display = 'none';
+    document.getElementById('supplier-badge').style.display = 'none';
+    // Reset dropzone filename
+    document.getElementById('dz-filename').classList.remove('has-file');
+    document.getElementById('dz-filename-text').textContent = '';
+  }
+
+  // ── Histórico: GET /api/nf ──
+  async function loadHistorico() {
+    const container = document.getElementById('historico-container');
+    container.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass-split"></i><p>Carregando...</p></div>';
+    try {
+      const res  = await Auth.apiFetch('/api/nf');
+      const list = await res.json();
+
+      if (!list.length) {
+        container.innerHTML = '<div class="empty-state"><i class="bi bi-receipt-cutoff"></i><p>Nenhuma nota importada ainda.</p></div>';
+        return;
+      }
+
+      container.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.84rem">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border-color)">
+            <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Fornecedor</th>
+            <th style="padding:.5rem .75rem;text-align:left;color:var(--text-muted);font-weight:600">Nº / Série</th>
+            <th style="padding:.5rem .75rem;text-align:right;color:var(--text-muted);font-weight:600">Total</th>
+            <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600">Data</th>
+            <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600">Itens</th>
+            <th style="padding:.5rem .75rem;text-align:center;color:var(--text-muted);font-weight:600"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(nf => `<tr style="border-bottom:1px solid var(--border-color)">
+            <td style="padding:.55rem .75rem;font-weight:600;color:var(--text-color)">${esc(nf.emitente_nome || '—')}</td>
+            <td style="padding:.55rem .75rem;color:var(--text-muted)">${esc(nf.numero || '—')} / ${esc(nf.serie || '—')}</td>
+            <td style="padding:.55rem .75rem;text-align:right;color:#3fb950;font-weight:600">${fmt(nf.valor_total || 0)}</td>
+            <td style="padding:.55rem .75rem;text-align:center;color:var(--text-muted);white-space:nowrap">${esc(fmtDt(nf.data_emissao))}</td>
+            <td style="padding:.55rem .75rem;text-align:center">${esc(nf.qtd_itens ?? '—')}</td>
+            <td style="padding:.55rem .75rem;text-align:center">
+              <button onclick="verNota(${esc(nf.id)})"
+                style="padding:.28rem .7rem;border-radius:7px;font-size:.78rem;font-weight:600;border:1px solid rgba(13,110,253,.35);background:rgba(13,110,253,.08);color:#58a6ff;cursor:pointer">
+                <i class="bi bi-eye"></i> Ver
+              </button>
+              <button onclick="excluirNota(${esc(nf.id)})"
+                style="padding:.28rem .7rem;border-radius:7px;font-size:.78rem;font-weight:600;border:1px solid rgba(248,81,73,.35);background:rgba(248,81,73,.08);color:#f85149;cursor:pointer;margin-left:.35rem">
+                <i class="bi bi-trash"></i> Excluir
+              </button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>`;
+    } catch (e) {
+      container.innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-circle"></i><p>Erro ao carregar histórico.</p></div>';
+    }
+  }
+
+  // ── Ver detalhe de uma nota: GET /api/nf/:id ──
+  async function verNota(id) {
+    document.getElementById('nf-modal-title').textContent = 'Carregando...';
+    document.getElementById('nf-modal-body').innerHTML = '<div class="empty-state"><i class="bi bi-hourglass-split"></i><p>Carregando...</p></div>';
+    new bootstrap.Modal(document.getElementById('nfModal')).show();
+
+    try {
+      const res  = await Auth.apiFetch('/api/nf/' + id);
+      const data = await res.json();
+
+      document.getElementById('nf-modal-title').textContent =
+        'NF ' + (data.numero || id) + ' — ' + (data.emitente_nome || '');
+
+      const itens = data.itens || [];
+      document.getElementById('nf-modal-body').innerHTML = `
+        <div class="nf-info-grid mb-3" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.55rem">
+          <div class="nf-info-card"><div class="nf-info-label">Fornecedor</div><div class="nf-info-val" style="font-size:.82rem">${esc(data.emitente_nome || '—')}</div></div>
+          <div class="nf-info-card"><div class="nf-info-label">CNPJ</div><div class="nf-info-val">${esc(data.emitente_cnpj || '—')}</div></div>
+          <div class="nf-info-card"><div class="nf-info-label">Número / Série</div><div class="nf-info-val">${esc(data.numero || '—')} / ${esc(data.serie || '—')}</div></div>
+          <div class="nf-info-card"><div class="nf-info-label">Emissão</div><div class="nf-info-val">${esc(fmtDt(data.data_emissao))}</div></div>
+          <div class="nf-info-card"><div class="nf-info-label">Total</div><div class="nf-info-val" style="color:#3fb950">${fmt(data.valor_total || 0)}</div></div>
+        </div>
+        ${itens.length ? `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">
+          <thead><tr style="border-bottom:2px solid var(--border-color)">
+            <th style="padding:.4rem .65rem;color:var(--text-muted);font-weight:600;text-align:left">Descrição</th>
+            <th style="padding:.4rem .65rem;color:var(--text-muted);font-weight:600;text-align:left">NCM</th>
+            <th style="padding:.4rem .65rem;color:var(--text-muted);font-weight:600;text-align:right">Qtd</th>
+            <th style="padding:.4rem .65rem;color:var(--text-muted);font-weight:600;text-align:right">Val.Unit</th>
+            <th style="padding:.4rem .65rem;color:var(--text-muted);font-weight:600;text-align:right">Total</th>
+            <th style="padding:.4rem .65rem;color:var(--text-muted);font-weight:600;text-align:left">Produto vinculado</th>
+          </tr></thead>
+          <tbody>
+            ${itens.map(it => `<tr style="border-bottom:1px solid var(--border-color)">
+              <td style="padding:.45rem .65rem;font-weight:500">${esc(it.descricao)}</td>
+              <td style="padding:.45rem .65rem;color:var(--text-muted)">${esc(it.ncm || '—')}</td>
+              <td style="padding:.45rem .65rem;text-align:right">${Number(it.quantidade).toLocaleString('pt-BR')}</td>
+              <td style="padding:.45rem .65rem;text-align:right">${fmt(it.valor_unit)}</td>
+              <td style="padding:.45rem .65rem;text-align:right">${fmt(it.valor_total)}</td>
+              <td style="padding:.45rem .65rem;color:${it.produto_nome ? '#3fb950' : 'var(--text-muted)'}">
+                ${it.produto_nome ? esc(it.produto_nome) : '<span style="opacity:.5">—</span>'}
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table></div>` : '<div class="empty-state"><i class="bi bi-inbox"></i><p>Sem itens.</p></div>'}
+        <div style="text-align:right;margin-top:1rem">
+          <button onclick="excluirNota(${esc(id)}, true)"
+            style="padding:.4rem .9rem;border-radius:8px;font-size:.82rem;font-weight:600;border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.1);color:#f85149;cursor:pointer">
+            <i class="bi bi-trash"></i> Excluir esta nota
+          </button>
+        </div>
+      `;
+    } catch (e) {
+      document.getElementById('nf-modal-body').innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-circle"></i><p>Erro ao carregar nota.</p></div>';
+    }
+  }
+
+  // Excluir NF: DELETE /api/nf/:id (devolve estoque)
+  async function excluirNota(id, fromModal) {
+    const r = await Swal.fire({
+      title: 'Excluir esta nota?',
+      html: 'As quantidades desta NF serão <b>devolvidas ao estoque</b>.<br>Os produtos e os vínculos continuam. Não dá pra desfazer.',
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Sim, excluir', cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545'
+    });
+    if (!r.isConfirmed) return;
+    try {
+      const res = await Auth.apiFetch('/api/nf/' + id, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return Swal.fire('Erro', data.error || 'Não foi possível excluir a nota.', 'error');
+      let msg = 'Devolvidas ' + (data.unidadesDevolvidas || 0) + ' un. a ' + (data.produtosAfetados || 0) + ' produtos.';
+      if (data.algumJaMovimentado) msg += ' (Parte do estoque já havia sido movimentada.)';
+      if (fromModal) { const m = bootstrap.Modal.getInstance(document.getElementById('nfModal')); if (m) m.hide(); }
+      await Swal.fire({ icon: 'success', title: 'NF excluída!', text: msg, timer: 2600, showConfirmButton: false });
+      loadHistorico();
+    } catch (e) {
+      Swal.fire('Erro', 'Falha ao excluir a nota.', 'error');
+    }
+  }
+
+  loadHistorico();
+</script>
+</body>
+</html>

@@ -143,6 +143,8 @@
       </div>
     </div>
     <a class="nav-link" href="/estoque.html"><i class="bi bi-archive"></i> Estoque</a>
+    <a class="nav-link" href="/notas.html"><i class="bi bi-receipt-cutoff"></i> Notas</a>
+    <a class="nav-link" href="/entrega.html"><i class="bi bi-truck"></i> Entrega</a>
     <a class="nav-link" href="/promissorias.html"><i class="bi bi-receipt"></i> Promissórias</a>
   </nav>
   <div class="sidebar-footer">
@@ -206,6 +208,39 @@
               <option>Boticário</option><option>Natura</option><option>Abelha Rainha</option>
               <option>Eudora</option><option>Avon</option><option>Outros</option>
             </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Preço de venda (R$)</label>
+            <input type="text" class="form-control" id="edit-sale-ro" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Desconto (atalho)</label>
+            <div class="input-group">
+              <input type="number" step="0.01" min="0" class="form-control" id="edit-desc-valor" placeholder="0">
+              <select class="form-select" id="edit-desc-tipo" style="max-width:90px"><option value="pct">%</option><option value="brl">R$</option></select>
+              <button type="button" class="btn btn-outline-secondary" id="edit-desc-aplicar">Aplicar</button>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Preço promocional (R$) — deixe em branco para remover</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="edit-promo">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">EAN (código de barras)</label>
+            <input type="text" class="form-control" id="edit-ean" inputmode="numeric" placeholder="Ex.: 7891033473649">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Imagem do produto</label>
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <img id="edit-img-preview" src="" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);background:var(--hover-tint)" onerror="this.style.visibility='hidden'">
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="edit-buscar-img"><i class="bi bi-search me-1"></i>Buscar imagem</button>
+            </div>
+            <input type="file" class="form-control form-control-sm mb-2" id="edit-img-file" accept="image/*">
+            <div class="input-group input-group-sm">
+              <input type="url" class="form-control" id="edit-img-url" placeholder="ou cole a URL da imagem (https://…)">
+              <button type="button" class="btn btn-outline-secondary" id="edit-img-url-btn">Usar</button>
+            </div>
+            <div style="font-size:.72rem;color:var(--text-muted);margin-top:.2rem">Link externo pode quebrar; para durar, prefira o upload do arquivo.</div>
           </div>
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-check-lg me-1"></i>Salvar alterações</button>
@@ -324,21 +359,40 @@
     document.getElementById('edit-code').value      = p.code;
     document.getElementById('edit-cost').value      = p.cost;
     document.getElementById('edit-franchise').value = p.franchise;
-    document.getElementById('edit-form').dataset.promotionPrice = p.promotion_price ?? '';
+    document.getElementById('edit-sale-ro').value = (p.sale_value != null ? Number(p.sale_value).toFixed(2) : '');
+    document.getElementById('edit-promo').value = (p.promotion_price != null && Number(p.promotion_price) > 0) ? Number(p.promotion_price).toFixed(2) : '';
+    document.getElementById('edit-desc-valor').value = '';
+    document.getElementById('edit-ean').value = p.ean || '';
+    var img = document.getElementById('edit-img-preview');
+    img.src = p.image || ''; img.style.visibility = p.image ? 'visible' : 'hidden';
+    document.getElementById('edit-img-url').value = '';
+    document.getElementById('edit-img-file').value = '';
+    document.getElementById('edit-form').dataset.pid = p.id;
+    document.getElementById('edit-form').dataset.pname = p.name;
+    document.getElementById('edit-form').dataset.pfranq = p.franchise;
     editModal.show();
   }
+
+  document.getElementById('edit-desc-aplicar').addEventListener('click', function () {
+    var sale = parseFloat(document.getElementById('edit-sale-ro').value);
+    var v = parseFloat(document.getElementById('edit-desc-valor').value);
+    if (!(sale > 0) || isNaN(v) || v < 0) return;
+    var tipo = document.getElementById('edit-desc-tipo').value;
+    var promo = tipo === 'pct' ? sale * (1 - v / 100) : sale - v;
+    promo = Math.max(0, Math.round((promo + Number.EPSILON) * 100) / 100);
+    document.getElementById('edit-promo').value = promo.toFixed(2);
+  });
 
   document.getElementById('edit-form').addEventListener('submit', async e => {
     e.preventDefault();
     const id = document.getElementById('edit-id').value;
-    const form = document.getElementById('edit-form');
-    const rawPromo = form.dataset.promotionPrice;
     const payload = {
       name:            document.getElementById('edit-name').value.trim(),
       code:            document.getElementById('edit-code').value.trim(),
       cost:            parseFloat(document.getElementById('edit-cost').value),
       franchise:       document.getElementById('edit-franchise').value,
-      promotion_price: rawPromo !== '' ? parseFloat(rawPromo) : null
+      promotion_price: (function () { var x = document.getElementById('edit-promo').value.trim(); return x !== '' ? parseFloat(x) : null; })(),
+      ean:             document.getElementById('edit-ean').value.trim()
     };
     const res  = await Auth.apiFetch(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
     const data = await res.json();
@@ -388,6 +442,30 @@
   function esc(v) {
     return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
+
+  document.getElementById('edit-buscar-img').addEventListener('click', function () {
+    var form = document.getElementById('edit-form');
+    var q = ((form.dataset.pname || '') + ' ' + (form.dataset.pfranq || '')).trim();
+    window.open('https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(q), '_blank', 'noopener');
+  });
+  document.getElementById('edit-img-file').addEventListener('change', async function () {
+    var id = document.getElementById('edit-form').dataset.pid; if (!id || !this.files.length) return;
+    var fd = new FormData(); fd.append('image', this.files[0]);
+    var res = await fetch('/api/products/' + id + '/image', { method:'POST', headers:{ Authorization:'Bearer ' + Auth.getToken() }, body: fd });
+    var data = await res.json();
+    if (!res.ok) return Swal.fire('Erro', data.error || 'Falha no upload.', 'error');
+    var img = document.getElementById('edit-img-preview'); img.src = data.image || img.src; img.style.visibility='visible';
+    Swal.fire({ icon:'success', title:'Imagem enviada!', timer:1000, showConfirmButton:false }); loadProducts();
+  });
+  document.getElementById('edit-img-url-btn').addEventListener('click', async function () {
+    var id = document.getElementById('edit-form').dataset.pid; var url = document.getElementById('edit-img-url').value.trim();
+    if (!id || !url) return;
+    var res = await Auth.apiFetch('/api/products/' + id + '/image-url', { method:'PUT', body: JSON.stringify({ url }) });
+    var data = await res.json();
+    if (!res.ok) return Swal.fire('Erro', data.error || 'URL inválida.', 'error');
+    var img = document.getElementById('edit-img-preview'); img.src = url; img.style.visibility='visible';
+    Swal.fire({ icon:'success', title:'Imagem definida!', timer:1000, showConfirmButton:false }); loadProducts();
+  });
 
   loadProducts();
 </script>

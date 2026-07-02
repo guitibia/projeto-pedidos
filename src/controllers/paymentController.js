@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const db = require('../database/connection');
 const mp = require('../services/mercadopago');
 const store = require('../controllers/storeOrderController');
+const { freteDoBairro, cidadeAtende, getCidadeEntrega } = require('../utils/delivery');
 
 // POST /api/loja/pagamentos — valida carrinho, grava intenção, cria preferência MP
 async function criarPagamento(req, res) {
@@ -19,15 +20,18 @@ async function criarPagamento(req, res) {
     const subtotal = Number(linhas.reduce((s, l) => s + l.lineTotal, 0).toFixed(2));
     const addr = store.effectiveAddress(client, req.body);
     const addressChanged = store.hasAddress(req.body);
-    const { fee, lat, lng } = await store.geocodeFee(addr, client, addressChanged);
+    if (addr.city && !(await cidadeAtende(addr.city))) {
+      return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+    }
+    const fee = await freteDoBairro(addr.neighborhood);
     const total = Number((subtotal + fee).toFixed(2));
     if (total <= 0) return res.status(400).json({ error: 'Total inválido.' });
 
     // Persiste o endereço no cadastro (mesma decisão do sub-3) se foi editado
     if (addressChanged) {
       await db.query(
-        'UPDATE clients SET address=?, house_number=?, neighborhood=?, cep=?, city=?, lat=?, lng=? WHERE id=?',
-        [addr.address, addr.house_number, addr.neighborhood, addr.cep, addr.city, lat, lng, client.id]
+        'UPDATE clients SET address=?, house_number=?, neighborhood=?, cep=?, city=? WHERE id=?',
+        [addr.address, addr.house_number, addr.neighborhood, addr.cep, addr.city, client.id]
       );
     }
 
@@ -198,14 +202,17 @@ async function criarPix(req, res) {
     const subtotal = Number(linhas.reduce((s, l) => s + l.lineTotal, 0).toFixed(2));
     const addr = store.effectiveAddress(client, req.body);
     const addressChanged = store.hasAddress(req.body);
-    const { fee, lat, lng } = await store.geocodeFee(addr, client, addressChanged);
+    if (addr.city && !(await cidadeAtende(addr.city))) {
+      return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+    }
+    const fee = await freteDoBairro(addr.neighborhood);
     const total = Number((subtotal + fee).toFixed(2));
     if (total <= 0) return res.status(400).json({ error: 'Total inválido.' });
 
     if (addressChanged) {
       await db.query(
-        'UPDATE clients SET address=?, house_number=?, neighborhood=?, cep=?, city=?, lat=?, lng=? WHERE id=?',
-        [addr.address, addr.house_number, addr.neighborhood, addr.cep, addr.city, lat, lng, client.id]
+        'UPDATE clients SET address=?, house_number=?, neighborhood=?, cep=?, city=? WHERE id=?',
+        [addr.address, addr.house_number, addr.neighborhood, addr.cep, addr.city, client.id]
       );
     }
 

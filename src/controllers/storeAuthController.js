@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendVerificationEmail } = require('../utils/mailer');
+const { garantirZonaBairro } = require('../utils/delivery');
 
 function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || '')); }
 function validCPF(cpf) {
@@ -23,13 +24,18 @@ function verifyLink(token) {
 
 // POST /api/loja/auth/register
 async function register(req, res) {
-  const { name, email, cpf, birthdate, phone, password, consent } = req.body;
+  const { name, email, cpf, birthdate, phone, password, consent, cep, address, houseNumber, neighborhood, city } = req.body;
   if (!name || !email || !cpf || !birthdate || !password) return res.status(400).json({ error: 'Preencha todos os campos obrigatórios.' });
   if (!validEmail(email)) return res.status(400).json({ error: 'E-mail inválido.' });
   const cpfDigits = String(cpf).replace(/\D/g, '');
   if (!validCPF(cpfDigits)) return res.status(400).json({ error: 'CPF inválido.' });
   if (String(password).length < 8) return res.status(400).json({ error: 'A senha deve ter ao menos 8 caracteres.' });
   if (!consent) return res.status(400).json({ error: 'É necessário aceitar a Política de Privacidade.' });
+  if (!cep || !address || !houseNumber || !neighborhood || !city)
+    return res.status(400).json({ error: 'Preencha o endereço completo.' });
+  const cepDigits = String(cep || '').replace(/\D/g, '');
+  if (cepDigits.length !== 8)
+    return res.status(400).json({ error: 'CEP inválido.' });
   try {
     const [[dupE]] = await db.query('SELECT id FROM clients WHERE email = ?', [email]);
     if (dupE) return res.status(409).json({ error: 'Este e-mail já está cadastrado.' });
@@ -39,11 +45,12 @@ async function register(req, res) {
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await db.query(
-      `INSERT INTO clients (name, email, cpf, birthdate, phone, password_hash, email_verified, verification_token, verification_expires, lgpd_consent_at)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, NOW())`,
-      [name, email, cpfDigits, birthdate, phone || null, hash, token, expires]
+      `INSERT INTO clients (name, email, cpf, birthdate, phone, cep, address, house_number, neighborhood, city, password_hash, email_verified, verification_token, verification_expires, lgpd_consent_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, NOW())`,
+      [name, email, cpfDigits, birthdate, phone || null, cepDigits, address, houseNumber, neighborhood, city, hash, token, expires]
     );
     await sendVerificationEmail(email, name, verifyLink(token));
+    await garantirZonaBairro(neighborhood, city); // best-effort: bairro novo da cidade vira zona (frete padrão)
     return res.status(201).json({ message: 'Cadastro criado! Enviamos um link de confirmação para o seu e-mail.' });
   } catch (e) { console.error('Erro no cadastro:', e); return res.status(500).json({ error: 'Erro ao cadastrar.' }); }
 }
@@ -97,7 +104,7 @@ async function login(req, res) {
 async function me(req, res) {
   try {
     const [[c]] = await db.query(
-      'SELECT id, name, email, cpf, birthdate, phone, address, house_number, neighborhood FROM clients WHERE id = ?',
+      'SELECT id, name, email, cpf, birthdate, phone, cep, address, house_number, neighborhood, city FROM clients WHERE id = ?',
       [req.customer.id]);
     if (!c) return res.status(404).json({ error: 'Conta não encontrada.' });
     return res.json(c);
@@ -106,12 +113,14 @@ async function me(req, res) {
 
 // PUT /api/loja/auth/me
 async function updateMe(req, res) {
-  const { name, phone, address, houseNumber, neighborhood, birthdate } = req.body;
+  const { name, phone, address, houseNumber, neighborhood, birthdate, cep, city } = req.body;
   if (!name) return res.status(400).json({ error: 'O nome é obrigatório.' });
   try {
+    const cepDigits = cep ? (String(cep).replace(/\D/g, '') || null) : null;
     await db.query(
-      'UPDATE clients SET name=?, phone=?, address=?, house_number=?, neighborhood=?, birthdate=? WHERE id=?',
-      [name, phone || null, address || null, houseNumber || null, neighborhood || null, birthdate || null, req.customer.id]);
+      'UPDATE clients SET name=?, phone=?, cep=?, address=?, house_number=?, neighborhood=?, city=?, birthdate=? WHERE id=?',
+      [name, phone || null, cepDigits, address || null, houseNumber || null, neighborhood || null, city || null, birthdate || null, req.customer.id]);
+    await garantirZonaBairro(neighborhood, city); // best-effort: bairro novo da cidade vira zona (frete padrão)
     return res.json({ message: 'Dados atualizados.' });
   } catch (e) { console.error('Erro em updateMe:', e); return res.status(500).json({ error: 'Erro ao atualizar.' }); }
 }
