@@ -825,6 +825,10 @@
                 style="padding:.28rem .7rem;border-radius:7px;font-size:.78rem;font-weight:600;border:1px solid rgba(13,110,253,.35);background:rgba(13,110,253,.08);color:#58a6ff;cursor:pointer">
                 <i class="bi bi-eye"></i> Ver
               </button>
+              <button onclick="excluirNota(${esc(nf.id)})"
+                style="padding:.28rem .7rem;border-radius:7px;font-size:.78rem;font-weight:600;border:1px solid rgba(248,81,73,.35);background:rgba(248,81,73,.08);color:#f85149;cursor:pointer;margin-left:.35rem">
+                <i class="bi bi-trash"></i> Excluir
+              </button>
             </td>
           </tr>`).join('')}
         </tbody>
@@ -878,9 +882,39 @@
             </tr>`).join('')}
           </tbody>
         </table></div>` : '<div class="empty-state"><i class="bi bi-inbox"></i><p>Sem itens.</p></div>'}
+        <div style="text-align:right;margin-top:1rem">
+          <button onclick="excluirNota(${esc(id)}, true)"
+            style="padding:.4rem .9rem;border-radius:8px;font-size:.82rem;font-weight:600;border:1px solid rgba(248,81,73,.4);background:rgba(248,81,73,.1);color:#f85149;cursor:pointer">
+            <i class="bi bi-trash"></i> Excluir esta nota
+          </button>
+        </div>
       `;
     } catch (e) {
       document.getElementById('nf-modal-body').innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-circle"></i><p>Erro ao carregar nota.</p></div>';
+    }
+  }
+
+  // Excluir NF: DELETE /api/nf/:id (devolve estoque)
+  async function excluirNota(id, fromModal) {
+    const r = await Swal.fire({
+      title: 'Excluir esta nota?',
+      html: 'As quantidades desta NF serão <b>devolvidas ao estoque</b>.<br>Os produtos e os vínculos continuam. Não dá pra desfazer.',
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Sim, excluir', cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545'
+    });
+    if (!r.isConfirmed) return;
+    try {
+      const res = await Auth.apiFetch('/api/nf/' + id, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return Swal.fire('Erro', data.error || 'Não foi possível excluir a nota.', 'error');
+      let msg = 'Devolvidas ' + (data.unidadesDevolvidas || 0) + ' un. a ' + (data.produtosAfetados || 0) + ' produtos.';
+      if (data.algumJaMovimentado) msg += ' (Parte do estoque já havia sido movimentada.)';
+      if (fromModal) { const m = bootstrap.Modal.getInstance(document.getElementById('nfModal')); if (m) m.hide(); }
+      await Swal.fire({ icon: 'success', title: 'NF excluída!', text: msg, timer: 2600, showConfirmButton: false });
+      loadHistorico();
+    } catch (e) {
+      Swal.fire('Erro', 'Falha ao excluir a nota.', 'error');
     }
   }
 
