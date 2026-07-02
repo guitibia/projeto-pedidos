@@ -571,9 +571,13 @@
       return;
     }
     const res = await Auth.apiFetch(`/api/products?franchise=${encodeURIComponent(f)}`);
-    currentProducts = await res.json();
+    const todos = await res.json();
+    // Só produtos com estoque disponível (facilita achar o que ainda tem)
+    currentProducts = (Array.isArray(todos) ? todos : []).filter(p => Number(p.estoque) > 0);
     searchEl.disabled = false;
-    searchEl.placeholder = 'Buscar produto por nome ou código';
+    searchEl.placeholder = currentProducts.length
+      ? 'Buscar produto por nome ou código'
+      : 'Nenhum produto em estoque nesta franquia';
   });
 
   function renderProductResults(query) {
@@ -591,7 +595,7 @@
     box.innerHTML = list.map(p =>
       `<div class="product-results-item" data-id="${p.id}">
          <span>${esc(p.name)}</span>
-         <span class="prod-cod">COD ${esc(String(p.code))}</span>
+         <span class="prod-cod">COD ${esc(String(p.code))} · ${Number(p.estoque)} em estoque</span>
        </div>`).join('');
     box.style.display = '';
     box.querySelectorAll('.product-results-item').forEach(el => {
