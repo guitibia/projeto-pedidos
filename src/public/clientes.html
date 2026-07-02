@@ -193,6 +193,12 @@
           </div>
         </div>
         <div class="field-wrap" style="flex:0 0 auto">
+          <label>&nbsp;</label>
+          <button type="button" class="btn btn-outline-danger" onclick="excluirCliente()" style="white-space:nowrap">
+            <i class="bi bi-trash me-1"></i>Excluir cliente
+          </button>
+        </div>
+        <div class="field-wrap" style="flex:0 0 auto">
           <label><i class="bi bi-funnel me-1"></i>Status</label>
           <div class="filter-pills">
             <button class="filter-pill active" data-status="Todos" onclick="setFilter(this)">Todos</button>
@@ -361,6 +367,32 @@
     const sel = document.getElementById('clientSelect');
     sel.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
     clients.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name}</option>`));
+  }
+
+  async function excluirCliente() {
+    const sel = document.getElementById('clientSelect');
+    const id  = sel.value;
+    if (!id) { Swal.fire('Selecione um cliente', 'Escolha um cliente no campo acima primeiro.', 'info'); return; }
+    const nome = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : 'este cliente';
+    const r = await Swal.fire({
+      title: 'Excluir cliente?',
+      html: 'Excluir <b>' + esc(nome) + '</b>? Os favoritos dele também serão removidos.<br>Não dá pra desfazer.',
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Sim, excluir', cancelButtonText: 'Cancelar', confirmButtonColor: '#dc3545'
+    });
+    if (!r.isConfirmed) return;
+    try {
+      const res  = await Auth.apiFetch('/api/clients/' + id, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409) return Swal.fire('Não é possível excluir', data.error || 'Cliente tem pedidos.', 'warning');
+      if (!res.ok) return Swal.fire('Erro', data.error || 'Falha ao excluir.', 'error');
+      await loadClients();
+      sel.value = '';
+      loadClientOrders();
+      Swal.fire({ icon: 'success', title: 'Cliente excluído!', timer: 1600, showConfirmButton: false });
+    } catch (e) {
+      Swal.fire('Erro', 'Falha ao excluir o cliente.', 'error');
+    }
   }
 
   async function loadClientOrders() {
