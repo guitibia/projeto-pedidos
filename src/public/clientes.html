@@ -209,6 +209,8 @@
         </div>
       </div>
 
+      <div id="client-profile" style="display:none;margin-bottom:1rem"></div>
+
       <div class="list-card">
         <table class="table table-hover mb-0">
           <thead>
@@ -395,8 +397,63 @@
     }
   }
 
+  async function loadClientSummary(clientId) {
+    const box = document.getElementById('client-profile');
+    if (!clientId) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    try {
+      const res = await Auth.apiFetch('/api/clients/' + clientId + '/summary');
+      if (!res.ok) { box.style.display = 'none'; box.innerHTML = ''; return; }
+      const d = await res.json();
+      const c = d.client, s = d.stats;
+      const dt   = v => v ? new Date(v).toLocaleDateString('pt-BR') : '—';
+      const mesAno = v => v ? new Date(v).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : '—';
+      const origemTop = (s.porOrigem && s.porOrigem.length)
+        ? s.porOrigem.slice().sort((a, b) => b.n - a.n)[0].origin : null;
+      const statusChips = (s.porStatus || [])
+        .map(r => `<span style="display:inline-block;padding:.15rem .5rem;border-radius:20px;background:var(--hover-tint);border:1px solid var(--border);font-size:.72rem;margin:.1rem">${esc(r.status)}: <b>${r.n}</b></span>`).join('');
+      const top = (d.topProdutos || [])
+        .map((p, i) => `<div style="display:flex;justify-content:space-between;gap:.5rem;font-size:.8rem;padding:.2rem 0"><span>${i + 1}. ${esc(p.name)}</span><span style="color:var(--text-muted);white-space:nowrap">${p.qtd}un · ${fmt(p.total)}</span></div>`).join('') || '<span style="color:var(--text-muted);font-size:.8rem">Sem produtos.</span>';
+      const kpi = (label, val) => `<div style="flex:1;min-width:120px;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:10px;padding:.6rem .8rem"><div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">${label}</div><div style="font-size:1.15rem;font-weight:700">${val}</div></div>`;
+
+      box.innerHTML = `
+        <div style="border:1px solid var(--border);border-radius:14px;padding:1rem 1.1rem;background:var(--card-bg,#fff)">
+          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.5rem">
+            <span style="font-size:1.15rem;font-weight:800">${esc(c.name)}</span>
+            <span style="font-size:.78rem;color:var(--text-muted)">cliente desde ${mesAno(c.created_at)}</span>
+            ${c.email_verified ? '<span style="font-size:.7rem;color:#2ea043"><i class="bi bi-patch-check-fill"></i> e-mail verificado</span>' : ''}
+            ${origemTop ? `<span style="font-size:.7rem;color:var(--text-muted)"><i class="bi bi-shop"></i> ${esc(origemTop)}</span>` : ''}
+          </div>
+          <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:.8rem">
+            <i class="bi bi-envelope"></i> ${esc(c.email || '—')} &nbsp;·&nbsp;
+            <i class="bi bi-telephone"></i> ${esc(c.phone || '—')} &nbsp;·&nbsp;
+            CPF ${esc(c.cpf || '—')} &nbsp;·&nbsp;
+            Nasc. ${dt(c.birthdate)}<br>
+            <i class="bi bi-geo-alt"></i> ${esc([c.address, c.house_number].filter(Boolean).join(', ') || '—')}${c.neighborhood ? ' — ' + esc(c.neighborhood) : ''}${c.city ? ', ' + esc(c.city) : ''}${c.cep ? ' (CEP ' + esc(c.cep) + ')' : ''}
+          </div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem">
+            ${kpi('Total de pedidos', s.totalPedidos)}
+            ${kpi('Total gasto', fmt(s.totalGasto))}
+            ${kpi('Ticket médio', fmt(s.ticketMedio))}
+            ${kpi('Última compra', dt(s.ultimaCompra))}
+          </div>
+          <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.6rem">
+            Primeira compra: ${dt(s.primeiraCompra)} &nbsp;·&nbsp; Pagamento preferido: <b>${esc(s.pagamentoPreferido || '—')}</b>
+          </div>
+          <div style="margin-bottom:.7rem">${statusChips}</div>
+          <div>
+            <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:.3rem">Produtos mais comprados</div>
+            ${top}
+          </div>
+        </div>`;
+      box.style.display = 'block';
+    } catch (e) {
+      box.style.display = 'none'; box.innerHTML = '';
+    }
+  }
+
   async function loadClientOrders() {
     const clientId = document.getElementById('clientSelect').value;
+    loadClientSummary(clientId);
     const tbody    = document.getElementById('ordersList');
 
     if (!clientId) {
