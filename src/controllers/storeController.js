@@ -1,5 +1,5 @@
 const db = require('../database/connection');
-const { getCidadeEntrega, getFretePadrao } = require('../utils/delivery');
+const { getCidadeEntrega, getFretePadrao, getEnderecoRetirada } = require('../utils/delivery');
 const { getDescontoGlobal, precoEfetivo } = require('../utils/pricing');
 
 const SORTS = {
@@ -64,7 +64,7 @@ async function listFranquias(req, res) {
 async function entregaConfig(req, res) {
   try {
     const [bairros] = await db.query('SELECT bairro, fee FROM delivery_zones WHERE active = 1 ORDER BY bairro');
-    return res.json({ cidade: await getCidadeEntrega(), fretePadrao: await getFretePadrao(), bairros });
+    return res.json({ cidade: await getCidadeEntrega(), fretePadrao: await getFretePadrao(), bairros, enderecoRetirada: await getEnderecoRetirada() });
   } catch (e) { console.error('Erro entregaConfig:', e); return res.status(500).json({ error: 'Erro.' }); }
 }
 

@@ -18,32 +18,35 @@ async function criarPagamento(req, res) {
     if (indisponivel) return res.status(400).json({ error: indisponivel.reason || 'Item indisponível.', itemId: indisponivel.id });
 
     const subtotal = Number(linhas.reduce((s, l) => s + l.lineTotal, 0).toFixed(2));
+    const metodo = store.metodoEntrega(req.body);
     const addr = store.effectiveAddress(client, req.body);
     const addressChanged = store.hasAddress(req.body);
-    if (addr.city && !(await cidadeAtende(addr.city))) {
-      return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+    let fee = 0;
+    if (metodo === 'entrega') {
+      if (addr.city && !(await cidadeAtende(addr.city))) {
+        return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+      }
+      fee = await freteDoBairro(addr.neighborhood);
     }
-    const fee = await freteDoBairro(addr.neighborhood);
     const total = Number((subtotal + fee).toFixed(2));
     if (total <= 0) return res.status(400).json({ error: 'Total inválido.' });
 
-    // Persiste o endereço no cadastro (mesma decisão do sub-3) se foi editado
-    if (addressChanged) {
+    // Persiste o endereço no cadastro só quando é entrega e foi editado
+    if (metodo === 'entrega' && addressChanged) {
       await db.query(
         'UPDATE clients SET address=?, house_number=?, neighborhood=?, cep=?, city=? WHERE id=?',
         [addr.address, addr.house_number, addr.neighborhood, addr.cep, addr.city, client.id]
       );
     }
 
-    // Snapshot de linhas (preço travado = o que será cobrado)
     const snapshot = linhas.map(l => ({ id: l.id, qty: l.qty, unitPrice: l.unitPrice, costPrice: l.costPrice != null ? l.costPrice : null }));
     const externalReference = crypto.randomBytes(32).toString('hex');
 
     const [ins] = await db.query(
       `INSERT INTO payment_intents
-       (client_id, external_reference, items_json, address, house_number, neighborhood, cep, city, subtotal, delivery_fee, total, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente')`,
-      [client.id, externalReference, JSON.stringify(snapshot), addr.address, addr.house_number, addr.neighborhood, addr.cep, addr.city, subtotal, fee, total]
+       (client_id, external_reference, items_json, address, house_number, neighborhood, cep, city, subtotal, delivery_fee, total, status, delivery_method)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?)`,
+      [client.id, externalReference, JSON.stringify(snapshot), addr.address, addr.house_number, addr.neighborhood, addr.cep, addr.city, subtotal, fee, total, metodo]
     );
 
     let pref;
@@ -101,6 +104,7 @@ async function confirmarIntencao(intent, pagamento) {
       total: intent.total,
       paymentMethod: mapPaymentMethod(pagamento.payment_type_id),
       mpPaymentId: intent.mp_payment_id,
+      deliveryMethod: intent.delivery_method,
     });
     await conn.query("UPDATE payment_intents SET status='pago', order_id=? WHERE id=?", [orderId, intent.id]);
     await conn.commit();
@@ -200,16 +204,21 @@ async function criarPix(req, res) {
     if (indisponivel) return res.status(400).json({ error: indisponivel.reason || 'Item indisponível.', itemId: indisponivel.id });
 
     const subtotal = Number(linhas.reduce((s, l) => s + l.lineTotal, 0).toFixed(2));
+    const metodo = store.metodoEntrega(req.body);
     const addr = store.effectiveAddress(client, req.body);
     const addressChanged = store.hasAddress(req.body);
-    if (addr.city && !(await cidadeAtende(addr.city))) {
-      return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+    let fee = 0;
+    if (metodo === 'entrega') {
+      if (addr.city && !(await cidadeAtende(addr.city))) {
+        return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+      }
+      fee = await freteDoBairro(addr.neighborhood);
     }
-    const fee = await freteDoBairro(addr.neighborhood);
     const total = Number((subtotal + fee).toFixed(2));
     if (total <= 0) return res.status(400).json({ error: 'Total inválido.' });
 
-    if (addressChanged) {
+    // Persiste o endereço no cadastro só quando é entrega e foi editado
+    if (metodo === 'entrega' && addressChanged) {
       await db.query(
         'UPDATE clients SET address=?, house_number=?, neighborhood=?, cep=?, city=? WHERE id=?',
         [addr.address, addr.house_number, addr.neighborhood, addr.cep, addr.city, client.id]
@@ -221,9 +230,9 @@ async function criarPix(req, res) {
 
     const [ins] = await db.query(
       `INSERT INTO payment_intents
-       (client_id, external_reference, items_json, address, house_number, neighborhood, cep, city, subtotal, delivery_fee, total, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente')`,
-      [client.id, externalReference, JSON.stringify(snapshot), addr.address, addr.house_number, addr.neighborhood, addr.cep, addr.city, subtotal, fee, total]
+       (client_id, external_reference, items_json, address, house_number, neighborhood, cep, city, subtotal, delivery_fee, total, status, delivery_method)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?)`,
+      [client.id, externalReference, JSON.stringify(snapshot), addr.address, addr.house_number, addr.neighborhood, addr.cep, addr.city, subtotal, fee, total, metodo]
     );
 
     let pix;

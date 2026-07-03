@@ -1,4 +1,5 @@
 const db = require('../database/connection');
+const { getEnderecoRetirada } = require('../utils/delivery');
 
 const VALID_PAYMENT_METHODS = ['PIX', 'DINHEIRO', 'CARTÃO DE CRÉDITO', 'PARCELADO', 'PAGAMENTO COMBINADO'];
 
@@ -115,7 +116,7 @@ async function getOrderById(req, res) {
     // Buscar cabeçalho do pedido
     const [orderRows] = await db.query(
       `SELECT o.id, o.payment_method, o.payment_status, o.origin, o.total_cost, o.installments, o.combined_payment_value, o.status,
-              o.delivery_fee,
+              o.delivery_fee, o.delivery_method,
               c.name AS client_name, c.address AS client_address,
               c.house_number AS client_house_number, c.neighborhood AS client_neighborhood
        FROM orders o JOIN clients c ON o.client_id = c.id
@@ -136,7 +137,8 @@ async function getOrderById(req, res) {
       [id]
     );
 
-    const order = { ...orderRows[0], products: productRows };
+    const enderecoRetirada = orderRows[0].delivery_method === 'retirada' ? await getEnderecoRetirada() : null;
+    const order = { ...orderRows[0], enderecoRetirada, products: productRows };
     return res.json(order);
   } catch (err) {
     console.error('Erro ao buscar pedido:', err);

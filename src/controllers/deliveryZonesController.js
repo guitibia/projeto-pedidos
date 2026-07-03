@@ -1,10 +1,10 @@
 const db = require('../database/connection');
-const { getCidadeEntrega, getFretePadrao } = require('../utils/delivery');
+const { getCidadeEntrega, getFretePadrao, getEnderecoRetirada } = require('../utils/delivery');
 
 async function listar(req, res) {
   try {
     const [zones] = await db.query('SELECT id, bairro, fee, active FROM delivery_zones ORDER BY bairro');
-    return res.json({ zones, cidade: await getCidadeEntrega(), fretePadrao: await getFretePadrao() });
+    return res.json({ zones, cidade: await getCidadeEntrega(), fretePadrao: await getFretePadrao(), enderecoRetirada: await getEnderecoRetirada() });
   } catch (e) { console.error('Erro ao listar zonas:', e); return res.status(500).json({ error: 'Erro ao listar zonas.' }); }
 }
 async function criar(req, res) {
@@ -47,6 +47,8 @@ async function salvarSettings(req, res) {
   try {
     await db.query('INSERT INTO store_settings (skey, svalue) VALUES (?,?) ON DUPLICATE KEY UPDATE svalue=VALUES(svalue)', ['cidade_entrega', cidade]);
     await db.query('INSERT INTO store_settings (skey, svalue) VALUES (?,?) ON DUPLICATE KEY UPDATE svalue=VALUES(svalue)', ['frete_padrao', String(fretePadrao)]);
+    const enderecoRetirada = String(req.body.enderecoRetirada || '').slice(0, 255);
+    await db.query("INSERT INTO store_settings (skey, svalue) VALUES ('endereco_retirada', ?) ON DUPLICATE KEY UPDATE svalue=VALUES(svalue)", [enderecoRetirada]);
     return res.json({ ok: true });
   } catch (e) { console.error('Erro ao salvar settings:', e); return res.status(500).json({ error: 'Erro ao salvar.' }); }
 }

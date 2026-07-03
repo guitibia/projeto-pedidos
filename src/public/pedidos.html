@@ -973,10 +973,10 @@
     document.getElementById('orderDetailsContent').innerHTML = `
       <div style="margin-bottom:1rem">
         <div style="font-size:1rem;font-weight:700;color:var(--text-heading)">Pedido #${order.id} &nbsp;·&nbsp; ${esc(order.client_name)}</div>
-        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem"><i class="bi bi-geo-alt-fill me-1" style="color:#39c5cf"></i>${esc(order.client_address)}, ${esc(order.client_house_number)} — ${esc(order.client_neighborhood)}</div>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem"><i class="bi bi-geo-alt-fill me-1" style="color:#39c5cf"></i>${order.delivery_method === 'retirada' ? `Retirada com o vendedor${order.enderecoRetirada ? ' — ' + esc(order.enderecoRetirada) : ''}` : `${esc(order.client_address)}, ${esc(order.client_house_number)} — ${esc(order.client_neighborhood)}`}</div>
         <div style="font-size:.82rem;color:var(--text-muted);margin-top:.15rem"><i class="bi bi-credit-card-fill me-1" style="color:#58a6ff"></i>${pagamento}</div>
         <div style="margin-top:.4rem">${badgeOrigem(order.origin)}</div>
-        ${order.delivery_fee > 0 ? `<div style="font-size:.82rem;color:#f0883e;margin-top:.15rem"><i class="bi bi-truck-front-fill me-1"></i>Taxa de entrega: ${fmt(order.delivery_fee)}</div>` : ''}
+        ${order.delivery_method === 'retirada' ? `<div style="font-size:.82rem;color:var(--success);margin-top:.15rem"><i class="bi bi-truck-front-fill me-1"></i>Frete: Grátis</div>` : (order.delivery_fee > 0 ? `<div style="font-size:.82rem;color:#f0883e;margin-top:.15rem"><i class="bi bi-truck-front-fill me-1"></i>Taxa de entrega: ${fmt(order.delivery_fee)}</div>` : '')}
       </div>
       <div style="border-top:1px solid var(--border);padding-top:.75rem;margin-bottom:.75rem">${prodHTML}</div>
       ${parcelasHTML}
@@ -1079,7 +1079,7 @@
     </head><body>
       <h3>Pedido #${order.id}</h3>
       <p><strong>Cliente:</strong> ${esc(order.client_name)}</p>
-      <p><strong>Endereço:</strong> ${esc(order.client_address)}, ${esc(order.client_house_number)} — ${esc(order.client_neighborhood)}</p>
+      <p><strong>Endereço:</strong> ${order.delivery_method === 'retirada' ? `Retirada com o vendedor${order.enderecoRetirada ? ' — ' + esc(order.enderecoRetirada) : ''}` : `${esc(order.client_address)}, ${esc(order.client_house_number)} — ${esc(order.client_neighborhood)}`}</p>
       <p><strong>Pagamento:</strong> ${esc(order.payment_method)}</p><hr>
       ${order.products.map(p=>`<div class="row">${esc(p.product_name)} — COD ${esc(p.code)} — Qtd ${p.quantity} — R$ ${(p.sale_price*p.quantity).toFixed(2)}</div>`).join('')}
       <hr><p><strong>Total Venda: R$ ${totalVenda}</strong> &nbsp; Total Custo: R$ ${totalCusto} &nbsp; Lucro: R$ ${(totalVenda-totalCusto).toFixed(2)}</p>

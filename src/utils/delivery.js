@@ -10,6 +10,7 @@ async function getSetting(key, def) {
   } catch (_) { return def; }
 }
 async function getCidadeEntrega() { return getSetting('cidade_entrega', 'São João da Boa Vista'); }
+async function getEnderecoRetirada() { return getSetting('endereco_retirada', ''); }
 async function getFretePadrao() { return Number(await getSetting('frete_padrao', '15')) || 0; }
 async function cidadeAtende(cidade) {
   return normalizar(cidade) === normalizar(await getCidadeEntrega());
@@ -37,4 +38,4 @@ async function garantirZonaBairro(bairro, cidade) {
   } catch (_) { /* best-effort: nunca quebra o cadastro */ }
 }
 
-module.exports = { normalizar, getSetting, getCidadeEntrega, getFretePadrao, cidadeAtende, freteDoBairro, garantirZonaBairro };
+module.exports = { normalizar, getSetting, getCidadeEntrega, getEnderecoRetirada, getFretePadrao, cidadeAtende, freteDoBairro, garantirZonaBairro };

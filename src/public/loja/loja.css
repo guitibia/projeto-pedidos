@@ -87,7 +87,7 @@ img{max-width:100%;display:block}
 .product-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
 .product-card__media{position:relative;aspect-ratio:1/1;overflow:hidden;background:var(--bg)}
 .product-card__media img,.product-card__media .img-ph{width:100%;height:100%;object-fit:cover}
-.product-card__media .brand-badge{position:absolute;top:.7rem;right:.7rem;left:auto;z-index:2}
+.product-card__media .brand-badge{position:absolute;bottom:.7rem;left:.7rem;top:auto;right:auto;z-index:2}
 .product-card__media .discount-badge{position:absolute;top:.7rem;left:.7rem;z-index:3;background:#e5334a;color:#fff;font-weight:800;font-size:.72rem;letter-spacing:.3px;padding:.24rem .5rem;border-radius:6px;box-shadow:0 2px 8px rgba(229,51,74,.35)}
 .discount-pill{display:inline-flex;align-items:center;font-weight:800;font-size:.8rem;color:#fff;background:#e5334a;border-radius:6px;padding:.12rem .45rem;margin-left:.5rem;vertical-align:middle}
 .product-card__body{display:flex;flex-direction:column;gap:.45rem;padding:1rem 1rem 1.15rem}

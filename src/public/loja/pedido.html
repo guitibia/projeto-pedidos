@@ -164,13 +164,12 @@
           <h4>Informações</h4>
           <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem">
             <li><a href="privacidade.html">Política de Privacidade</a></li>
-            <li><a href="mailto:contato@belezamultimarcas.com.br">Contato</a></li>
           </ul>
         </div>
         <div>
           <h4>Redes Sociais</h4>
           <div style="display:flex;gap:.6rem;margin-top:.2rem">
-            <a href="#" aria-label="Instagram" title="Instagram" class="icon-btn"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+            <a href="https://www.instagram.com/beleza_multi_marcas/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram" class="icon-btn"><i class="bi bi-instagram" aria-hidden="true"></i></a>
             <a href="#" aria-label="Facebook" title="Facebook" class="icon-btn"><i class="bi bi-facebook" aria-hidden="true"></i></a>
             <a href="#" aria-label="WhatsApp" title="WhatsApp" class="icon-btn"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
           </div>
@@ -244,18 +243,21 @@
         }).join('');
 
         /* Frete */
+        var isRetirada = o.delivery_method === 'retirada';
         var freteVal = Number(o.delivery_fee);
-        var freteHtml = freteVal === 0
+        var freteHtml = (isRetirada || freteVal === 0)
           ? '<span class="frete-gratis">Grátis</span>'
           : fmtBRL(freteVal);
 
         /* Address */
-        var addrParts = [
-          esc(o.address || '') + (o.house_number ? ', ' + esc(String(o.house_number)) : ''),
-          esc(o.neighborhood || ''),
-          esc(o.city || ''),
-          esc(o.cep || '')
-        ].filter(Boolean);
+        var addrParts = isRetirada
+          ? ['Retirada com o vendedor'].concat(o.enderecoRetirada ? [esc(o.enderecoRetirada)] : [])
+          : [
+              esc(o.address || '') + (o.house_number ? ', ' + esc(String(o.house_number)) : ''),
+              esc(o.neighborhood || ''),
+              esc(o.city || ''),
+              esc(o.cep || '')
+            ].filter(Boolean);
 
         var html =
           /* Header */
@@ -302,7 +304,7 @@
 
           /* Delivery address */
           '<section class="pedido-section" aria-labelledby="endereco-title">' +
-            '<h2 id="endereco-title"><i class="bi bi-geo-alt" aria-hidden="true"></i> Endereço de entrega</h2>' +
+            '<h2 id="endereco-title"><i class="bi bi-geo-alt" aria-hidden="true"></i> ' + (isRetirada ? 'Retirada' : 'Endereço de entrega') + '</h2>' +
             '<div class="address-block">' +
               addrParts.join('<br>') +
             '</div>' +

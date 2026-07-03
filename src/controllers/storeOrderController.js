@@ -1,5 +1,5 @@
 const db = require('../database/connection');
-const { freteDoBairro, cidadeAtende, getCidadeEntrega } = require('../utils/delivery');
+const { freteDoBairro, cidadeAtende, getCidadeEntrega, getEnderecoRetirada } = require('../utils/delivery');
 const { precoEfetivo, getDescontoGlobal } = require('../utils/pricing');
 
 const DEFAULT_CITY = 'São João da Boa Vista';
@@ -82,11 +82,15 @@ async function resumo(req, res) {
     if (!client) return res.status(404).json({ error: 'Conta não encontrada.' });
     const lines = await buildLines(items);
     const subtotal = Number(lines.filter(l => l.ok).reduce((s, l) => s + l.lineTotal, 0).toFixed(2));
-    const addr = effectiveAddress(client, req.body);
-    if (addr.city && !(await cidadeAtende(addr.city))) {
-      return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+    const metodo = metodoEntrega(req.body);
+    let fee = 0;
+    if (metodo === 'entrega') {
+      const addr = effectiveAddress(client, req.body);
+      if (addr.city && !(await cidadeAtende(addr.city))) {
+        return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+      }
+      fee = await freteDoBairro(addr.neighborhood);
     }
-    const fee = await freteDoBairro(addr.neighborhood);
     const total = Number((subtotal + fee).toFixed(2));
     return res.json({
       items: lines.map(l => ({
@@ -94,6 +98,8 @@ async function resumo(req, res) {
         unitPrice: l.unitPrice || 0, qty: l.qty, lineTotal: l.lineTotal || 0, ok: l.ok, reason: l.reason,
       })),
       subtotal, deliveryFee: fee, total,
+      deliveryMethod: metodo,
+      enderecoRetirada: metodo === 'retirada' ? await getEnderecoRetirada() : null,
     });
   } catch (e) {
     console.error('Erro no resumo do checkout:', e);
@@ -123,7 +129,7 @@ async function detalhePedido(req, res) {
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
   try {
     const [[order]] = await db.query(
-      `SELECT o.id, o.created_at, o.status, o.payment_status, o.payment_method, o.total_cost, o.delivery_fee, o.client_id,
+      `SELECT o.id, o.created_at, o.status, o.payment_status, o.payment_method, o.total_cost, o.delivery_fee, o.client_id, o.delivery_method,
               c.name AS client_name, c.address, c.house_number, c.neighborhood, c.cep, c.city
        FROM orders o JOIN clients c ON c.id = o.client_id WHERE o.id = ?`,
       [id]
@@ -135,7 +141,8 @@ async function detalhePedido(req, res) {
       [id]
     );
     delete order.client_id;
-    return res.json({ ...order, products });
+    const enderecoRetirada = order.delivery_method === 'retirada' ? await getEnderecoRetirada() : null;
+    return res.json({ ...order, enderecoRetirada, products });
   } catch (e) {
     console.error('Erro ao buscar pedido do cliente:', e);
     return res.status(500).json({ error: 'Erro ao buscar o pedido.' });
@@ -147,7 +154,7 @@ const PAYMENT_METHODS_VALIDOS = ['PIX', 'CARTÃO DE CRÉDITO'];
 // Cria o pedido JÁ PAGO em transação, a partir do snapshot de linhas da intenção.
 // lines: [{ id, qty, unitPrice, costPrice }]. Não re-precifica (o valor pago é a verdade).
 // "Pago sem estoque": baixa mesmo assim (pode ficar negativo) e marca a movimentação.
-async function criarPedidoPago(conn, { clientId, lines, fee, total, paymentMethod, mpPaymentId }) {
+async function criarPedidoPago(conn, { clientId, lines, fee, total, paymentMethod, mpPaymentId, deliveryMethod }) {
   if (!PAYMENT_METHODS_VALIDOS.includes(paymentMethod)) paymentMethod = 'PIX';
   const rows = [];
   for (const ln of lines) {
@@ -157,10 +164,11 @@ async function criarPedidoPago(conn, { clientId, lines, fee, total, paymentMetho
     rows.push({ id: ln.id, qty: ln.qty, unitPrice: Number(ln.unitPrice), costPrice: ln.costPrice != null ? ln.costPrice : null, short });
   }
 
+  const metodo = deliveryMethod === 'retirada' ? 'retirada' : 'entrega';
   const [orderResult] = await conn.query(
-    "INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value, delivery_fee, origin, payment_status, mp_payment_id) " +
-    "VALUES (?, ?, NULL, ?, NULL, ?, 'loja', 'pago', ?)",
-    [clientId, paymentMethod, Number(total), Number(fee), mpPaymentId || null]
+    "INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value, delivery_fee, origin, payment_status, mp_payment_id, delivery_method) " +
+    "VALUES (?, ?, NULL, ?, NULL, ?, 'loja', 'pago', ?, ?)",
+    [clientId, paymentMethod, Number(total), Number(fee), mpPaymentId || null, metodo]
   );
   const orderId = orderResult.insertId;
 
@@ -177,7 +185,13 @@ async function criarPedidoPago(conn, { clientId, lines, fee, total, paymentMetho
   return orderId;
 }
 
+// Normaliza o método de entrega do body: só 'retirada' (case-insensitive) conta; resto é 'entrega'.
+function metodoEntrega(body) {
+  return (body && String(body.deliveryMethod || '').toLowerCase() === 'retirada') ? 'retirada' : 'entrega';
+}
+
 module.exports = {
   resumo, listarPedidos, detalhePedido, criarPedidoPago,
   parseItems, buildLines, getClient, effectiveAddress, hasAddress,
+  metodoEntrega,
 };

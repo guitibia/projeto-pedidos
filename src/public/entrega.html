@@ -135,6 +135,10 @@
             <i class="bi bi-check-lg me-1"></i> Salvar
           </button>
         </div>
+        <div class="col-12">
+          <label class="form-label" style="font-size:.8rem;font-weight:600;color:var(--text-muted)">Endereço de retirada (o cliente busca aqui)</label>
+          <textarea class="form-control" id="endereco-retirada" rows="2" placeholder="Ex: Rua Exemplo, 123 - Centro"></textarea>
+        </div>
       </form>
     </div>
 
@@ -201,6 +205,7 @@
       // Pre-fill settings form
       document.getElementById('settingCidade').value = data.cidade || '';
       document.getElementById('settingFrete').value  = data.fretePadrao != null ? data.fretePadrao : '';
+      document.getElementById('endereco-retirada').value = data.enderecoRetirada || '';
 
       const sub = zonesData.length
         ? `${zonesData.length} bairro${zonesData.length !== 1 ? 's' : ''} cadastrado${zonesData.length !== 1 ? 's' : ''}`
@@ -264,13 +269,14 @@
     e.preventDefault();
     const cidade      = document.getElementById('settingCidade').value.trim();
     const fretePadrao = parseFloat(document.getElementById('settingFrete').value);
+    const enderecoRetirada = document.getElementById('endereco-retirada').value;
     if (!cidade) return Swal.fire('Atenção', 'Informe a cidade de entrega.', 'warning');
     if (isNaN(fretePadrao) || fretePadrao < 0) return Swal.fire('Atenção', 'Informe um frete padrão válido.', 'warning');
 
     const res  = await Auth.apiFetch('/api/delivery-zones/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cidade, fretePadrao })
+      body: JSON.stringify({ cidade, fretePadrao, enderecoRetirada })
     });
     const data = await res.json();
     if (!res.ok) return Swal.fire('Erro', data.error || 'Não foi possível salvar.', 'error');

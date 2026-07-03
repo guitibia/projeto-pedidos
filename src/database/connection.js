@@ -222,6 +222,13 @@ pool.getConnection()
       }
     } catch (_) {}
 
+    // Migração: método de entrega (entrega/retirada) + endereço de retirada
+    for (const sql of [
+      "ALTER TABLE orders ADD COLUMN delivery_method VARCHAR(20) NOT NULL DEFAULT 'entrega'",
+      "ALTER TABLE payment_intents ADD COLUMN delivery_method VARCHAR(20) NOT NULL DEFAULT 'entrega'",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+    try { await conn.query("INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('endereco_retirada', '')"); } catch (_) {}
+
     conn.release();
   })
   .catch(err => {
