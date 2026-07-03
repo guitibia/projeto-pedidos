@@ -116,46 +116,62 @@
       <section class="co-section" aria-labelledby="co-address-title">
         <h2 id="co-address-title"><i class="bi bi-geo-alt" aria-hidden="true"></i> Endereço de entrega</h2>
 
-        <div id="addr-source" class="field" role="radiogroup" aria-label="Endereço de entrega" style="margin-bottom:1rem">
-          <label style="display:flex;gap:.5rem;align-items:center;font-weight:400;cursor:pointer;margin-bottom:.4rem">
-            <input type="radio" name="addr-source" id="addr-cadastro" value="cadastro"> Usar meu endereço cadastrado
+        <div id="metodo-entrega" class="field" role="radiogroup" aria-label="Como receber" style="margin-bottom:1rem">
+          <label style="display:flex;gap:.5rem;align-items:center;cursor:pointer;margin-bottom:.4rem">
+            <input type="radio" name="metodo-entrega" id="metodo-entrega-opt" value="entrega" checked> Receber no meu endereço
           </label>
-          <label style="display:flex;gap:.5rem;align-items:center;font-weight:400;cursor:pointer">
-            <input type="radio" name="addr-source" id="addr-outro" value="outro"> Entregar em outro endereço
+          <label style="display:flex;gap:.5rem;align-items:center;cursor:pointer">
+            <input type="radio" name="metodo-entrega" id="metodo-retirada-opt" value="retirada"> Retirar com o vendedor — grátis
           </label>
         </div>
+        <div id="bloco-retirada" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;margin-bottom:1rem">
+          <div style="font-weight:700;margin-bottom:.3rem"><i class="bi bi-shop"></i> Retirada com o vendedor</div>
+          <div id="endereco-retirada-txt" style="font-size:.9rem;color:var(--text-soft);white-space:pre-line"></div>
+          <div style="font-size:.85rem;color:var(--success);margin-top:.4rem">Frete: Grátis</div>
+        </div>
 
-        <form id="address-form" novalidate>
-          <div class="field-row">
-            <div class="field">
-              <label for="cep">CEP</label>
-              <input type="tel" id="cep" name="cep" placeholder="00000-000" maxlength="9" inputmode="numeric" autocomplete="postal-code">
-              <span id="cep-hint" class="cep-hint" aria-live="polite"></span>
-            </div>
-            <div class="field">
-              <label for="houseNumber">Número</label>
-              <input type="text" id="houseNumber" name="houseNumber" placeholder="Ex.: 123" autocomplete="address-line2">
-            </div>
+        <div id="bloco-entrega">
+          <div id="addr-source" class="field" role="radiogroup" aria-label="Endereço de entrega" style="margin-bottom:1rem">
+            <label style="display:flex;gap:.5rem;align-items:center;font-weight:400;cursor:pointer;margin-bottom:.4rem">
+              <input type="radio" name="addr-source" id="addr-cadastro" value="cadastro"> Usar meu endereço cadastrado
+            </label>
+            <label style="display:flex;gap:.5rem;align-items:center;font-weight:400;cursor:pointer">
+              <input type="radio" name="addr-source" id="addr-outro" value="outro"> Entregar em outro endereço
+            </label>
           </div>
 
-          <div class="field">
-            <label for="address">Logradouro</label>
-            <input type="text" id="address" name="address" placeholder="Rua, Av., Travessa…" autocomplete="address-line1">
-          </div>
+          <form id="address-form" novalidate>
+            <div class="field-row">
+              <div class="field">
+                <label for="cep">CEP</label>
+                <input type="tel" id="cep" name="cep" placeholder="00000-000" maxlength="9" inputmode="numeric" autocomplete="postal-code">
+                <span id="cep-hint" class="cep-hint" aria-live="polite"></span>
+              </div>
+              <div class="field">
+                <label for="houseNumber">Número</label>
+                <input type="text" id="houseNumber" name="houseNumber" placeholder="Ex.: 123" autocomplete="address-line2">
+              </div>
+            </div>
 
-          <div class="field-row">
             <div class="field">
-              <label for="neighborhood">Bairro</label>
-              <select id="neighborhood" name="neighborhood">
-                <option value="">Selecione o bairro…</option>
-              </select>
+              <label for="address">Logradouro</label>
+              <input type="text" id="address" name="address" placeholder="Rua, Av., Travessa…" autocomplete="address-line1">
             </div>
-            <div class="field">
-              <label for="city">Cidade</label>
-              <input type="text" id="city" name="city" placeholder="Sua cidade" autocomplete="address-level2">
+
+            <div class="field-row">
+              <div class="field">
+                <label for="neighborhood">Bairro</label>
+                <select id="neighborhood" name="neighborhood">
+                  <option value="">Selecione o bairro…</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="city">Cidade</label>
+                <input type="text" id="city" name="city" placeholder="Sua cidade" autocomplete="address-level2">
+              </div>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </section>
 
       <!-- RESUMO DO PEDIDO -->
@@ -301,8 +317,35 @@
   }
 
   /* ---------- Config de entrega ---------- */
-  var cfg = { cidade: '', fretePadrao: 0, bairros: [] };
+  var cfg = { cidade: '', fretePadrao: 0, bairros: [], enderecoRetirada: '' };
   var foraDeArea = false;
+
+  /* ---------- Método de entrega (entrega x retirada) ---------- */
+  var metodoAtual = 'entrega';
+  var radioMetodoEntrega  = document.getElementById('metodo-entrega-opt');
+  var radioMetodoRetirada = document.getElementById('metodo-retirada-opt');
+  var blocoEntrega  = document.getElementById('bloco-entrega');
+  var blocoRetirada = document.getElementById('bloco-retirada');
+  var elEnderecoRetirada = document.getElementById('endereco-retirada-txt');
+
+  function aplicarMetodoEntrega() {
+    if (metodoAtual === 'retirada') {
+      blocoEntrega.style.display = 'none';
+      blocoRetirada.style.display = '';
+      elEnderecoRetirada.textContent = cfg.enderecoRetirada || 'Combine o local com o vendedor pelo WhatsApp.';
+    } else {
+      blocoEntrega.style.display = '';
+      blocoRetirada.style.display = 'none';
+    }
+    atualizarResumo();
+  }
+
+  radioMetodoEntrega.addEventListener('change', function () {
+    if (this.checked) { metodoAtual = 'entrega'; aplicarMetodoEntrega(); }
+  });
+  radioMetodoRetirada.addEventListener('change', function () {
+    if (this.checked) { metodoAtual = 'retirada'; aplicarMetodoEntrega(); }
+  });
 
   function cidadeOk(c) {
     function norm(s) {
@@ -493,15 +536,16 @@
         address:      addr.address,
         houseNumber:  addr.houseNumber,
         neighborhood: addr.neighborhood,
-        city:         addr.city
+        city:         addr.city,
+        deliveryMethod: metodoAtual
       })
     })
     .then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
     .then(function (res) {
       var d = res.data;
 
-      /* Bloquear se cidade fora da área */
-      if (res.status === 400 && d && d.foraDeArea) {
+      /* Bloquear se cidade fora da área (não se aplica à retirada) */
+      if (res.status === 400 && d && d.foraDeArea && metodoAtual !== 'retirada') {
         foraDeArea = true;
         setCepHint('error', d.error || 'Fora da área de entrega.');
         btnFinalizar.disabled = true;
@@ -595,13 +639,14 @@
 
   /* ---------- Finalizar e pagar ---------- */
   btnFinalizar.addEventListener('click', async function () {
-    if (foraDeArea) return;
+    if (foraDeArea && metodoAtual !== 'retirada') return;
     var metodo = (document.querySelector('input[name="metodo"]:checked') || {}).value || 'pix';
     var addr = getAddressValues();
     var corpo = {
       items: Cart.getItems().map(function (i) { return { id: i.id, qty: i.qty }; }),
       cep: addr.cep, address: addr.address, houseNumber: addr.houseNumber,
-      neighborhood: addr.neighborhood, city: addr.city
+      neighborhood: addr.neighborhood, city: addr.city,
+      deliveryMethod: metodoAtual
     };
 
     if (metodo === 'pix') {
@@ -674,6 +719,8 @@
       cfg.cidade = data.cidade || '';
       cfg.fretePadrao = data.fretePadrao || 0;
       cfg.bairros = Array.isArray(data.bairros) ? data.bairros : [];
+      cfg.enderecoRetirada = data.enderecoRetirada || '';
+      if (metodoAtual === 'retirada') elEnderecoRetirada.textContent = cfg.enderecoRetirada || 'Combine o local com o vendedor pelo WhatsApp.';
       // Popular select sem pré-seleção inicial
       popularSelectBairros(cfg.bairros, '');
       // Depois que config carregou, aguardar /me e definir default do radio
