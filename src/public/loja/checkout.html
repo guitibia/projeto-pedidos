@@ -116,12 +116,28 @@
       <section class="co-section" aria-labelledby="co-address-title">
         <h2 id="co-address-title"><i class="bi bi-geo-alt" aria-hidden="true"></i> Endereço de entrega</h2>
 
-        <div id="metodo-entrega" class="field" role="radiogroup" aria-label="Como receber" style="margin-bottom:1rem">
-          <label style="display:flex;gap:.5rem;align-items:center;cursor:pointer;margin-bottom:.4rem">
-            <input type="radio" name="metodo-entrega" id="metodo-entrega-opt" value="entrega" checked> Receber no meu endereço
+        <style>
+          .metodo-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1rem}
+          @media (max-width:480px){.metodo-grid{grid-template-columns:1fr}}
+          .metodo-tile{display:flex;align-items:center;gap:.6rem;border:1.5px solid var(--border);border-radius:12px;padding:.7rem .8rem;cursor:pointer;transition:border-color .15s,background .15s;background:var(--bg)}
+          .metodo-tile:hover{border-color:var(--accent)}
+          .metodo-tile:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+          .metodo-tile input{accent-color:var(--accent);flex:0 0 auto;margin:0}
+          .metodo-tile > i{font-size:1.15rem;color:var(--accent);flex:0 0 auto}
+          .metodo-tile span{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+          .metodo-tile span b{font-size:.9rem;font-weight:700;color:var(--text)}
+          .metodo-tile span small{font-size:.75rem;color:var(--text-soft)}
+        </style>
+        <div id="metodo-entrega" class="metodo-grid" role="radiogroup" aria-label="Como receber">
+          <label class="metodo-tile">
+            <input type="radio" name="metodo-entrega" id="metodo-entrega-opt" value="entrega" checked>
+            <i class="bi bi-house-door"></i>
+            <span><b>Receber no meu endereço</b><small>Entrega no endereço</small></span>
           </label>
-          <label style="display:flex;gap:.5rem;align-items:center;cursor:pointer">
-            <input type="radio" name="metodo-entrega" id="metodo-retirada-opt" value="retirada"> Retirar com o vendedor — grátis
+          <label class="metodo-tile">
+            <input type="radio" name="metodo-entrega" id="metodo-retirada-opt" value="retirada">
+            <i class="bi bi-shop"></i>
+            <span><b>Retirar com o vendedor</b><small>Grátis</small></span>
           </label>
         </div>
         <div id="bloco-retirada" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;margin-bottom:1rem">
