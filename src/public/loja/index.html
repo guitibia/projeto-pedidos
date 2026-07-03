@@ -58,6 +58,22 @@
         </a>
       </section>
 
+      <!-- SELOS DE CONFIANÇA -->
+      <style>
+        .trust-band{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin:.5rem 0 2rem}
+        @media (max-width:760px){.trust-band{grid-template-columns:1fr 1fr}}
+        .trust-item{display:flex;align-items:center;gap:.7rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.8rem .9rem}
+        .trust-item__ic{width:40px;height:40px;flex:0 0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent-soft);color:var(--accent-dark);font-size:1.2rem}
+        .trust-item__txt b{display:block;font-size:.86rem;color:var(--text);line-height:1.2}
+        .trust-item__txt small{font-size:.76rem;color:var(--text-soft)}
+      </style>
+      <section class="trust-band" aria-label="Nossos diferenciais">
+        <div class="trust-item"><span class="trust-item__ic"><i class="bi bi-shield-lock" aria-hidden="true"></i></span><span class="trust-item__txt"><b>Pagamento seguro</b><small>PIX e cartão via Mercado Pago</small></span></div>
+        <div class="trust-item"><span class="trust-item__ic"><i class="bi bi-shop" aria-hidden="true"></i></span><span class="trust-item__txt"><b>Retirada grátis</b><small>Retire com o vendedor</small></span></div>
+        <div class="trust-item"><span class="trust-item__ic"><i class="bi bi-truck" aria-hidden="true"></i></span><span class="trust-item__txt"><b>Entrega na sua cidade</b><small>Frete por bairro</small></span></div>
+        <div class="trust-item"><span class="trust-item__ic"><i class="bi bi-whatsapp" aria-hidden="true"></i></span><span class="trust-item__txt"><b>Atendimento</b><small>Fale conosco no WhatsApp</small></span></div>
+      </section>
+
       <!-- COMPRE POR MARCA -->
       <section aria-labelledby="marcas-title">
         <h2 class="section-title" id="marcas-title">Compre por marca</h2>
