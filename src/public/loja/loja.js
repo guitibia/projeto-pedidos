@@ -7,6 +7,12 @@ function precoHTML(p){
     ? `<span class="price">${fmtBRL(pp)} <s>${fmtBRL(venda)}</s></span>`
     : `<span class="price">${fmtBRL(venda)}</span>`;
 }
+// % de desconto (item ou global; o backend já preenche promotion_price nos dois casos). 0 = sem desconto.
+function descontoPct(p){
+  const venda = Number(p.sale_value||0);
+  const pp = (p.promotion_price!=null) ? Number(p.promotion_price) : 0;
+  return (pp > 0 && pp < venda && venda > 0) ? Math.round((venda - pp) / venda * 100) : 0;
+}
 function imgHTML(p, cls=''){
   return p.image
     ? `<img class="${cls}" src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`
@@ -48,6 +54,7 @@ function cardHTML(p) {
         '<a href="produto.html?id=' + esc(String(p.id)) + '" tabindex="-1" aria-hidden="true">' +
           imgHTML(p, '') +
         '</a>' +
+        (descontoPct(p) ? '<span class="discount-badge">' + descontoPct(p) + '% OFF</span>' : '') +
         '<span class="brand-badge">' + esc(p.franchise || '') + '</span>' +
       '</div>' +
       '<div class="product-card__body">' +

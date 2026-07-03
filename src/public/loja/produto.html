@@ -367,7 +367,7 @@
               '<h1 class="produto-nome">' + esc(p.name) + '</h1>' +
 
               /* Price */
-              '<div class="produto-preco">' + precoHTML(p) + '</div>' +
+              '<div class="produto-preco">' + precoHTML(p) + (descontoPct(p) ? '<span class="discount-pill">-' + descontoPct(p) + '%</span>' : '') + '</div>' +
 
               /* Stock */
               stockHTML(p) +
