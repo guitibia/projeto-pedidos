@@ -1,5 +1,5 @@
 const db = require('../database/connection');
-const { freteDoBairro, cidadeAtende, getCidadeEntrega } = require('../utils/delivery');
+const { freteDoBairro, cidadeAtende, getCidadeEntrega, getEnderecoRetirada } = require('../utils/delivery');
 const { precoEfetivo, getDescontoGlobal } = require('../utils/pricing');
 
 const DEFAULT_CITY = 'São João da Boa Vista';
@@ -82,11 +82,15 @@ async function resumo(req, res) {
     if (!client) return res.status(404).json({ error: 'Conta não encontrada.' });
     const lines = await buildLines(items);
     const subtotal = Number(lines.filter(l => l.ok).reduce((s, l) => s + l.lineTotal, 0).toFixed(2));
-    const addr = effectiveAddress(client, req.body);
-    if (addr.city && !(await cidadeAtende(addr.city))) {
-      return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+    const metodo = metodoEntrega(req.body);
+    let fee = 0;
+    if (metodo === 'entrega') {
+      const addr = effectiveAddress(client, req.body);
+      if (addr.city && !(await cidadeAtende(addr.city))) {
+        return res.status(400).json({ error: 'Entregamos apenas em ' + (await getCidadeEntrega()) + '.', foraDeArea: true });
+      }
+      fee = await freteDoBairro(addr.neighborhood);
     }
-    const fee = await freteDoBairro(addr.neighborhood);
     const total = Number((subtotal + fee).toFixed(2));
     return res.json({
       items: lines.map(l => ({
@@ -94,6 +98,8 @@ async function resumo(req, res) {
         unitPrice: l.unitPrice || 0, qty: l.qty, lineTotal: l.lineTotal || 0, ok: l.ok, reason: l.reason,
       })),
       subtotal, deliveryFee: fee, total,
+      deliveryMethod: metodo,
+      enderecoRetirada: metodo === 'retirada' ? await getEnderecoRetirada() : null,
     });
   } catch (e) {
     console.error('Erro no resumo do checkout:', e);
@@ -147,7 +153,7 @@ const PAYMENT_METHODS_VALIDOS = ['PIX', 'CARTÃO DE CRÉDITO'];
 // Cria o pedido JÁ PAGO em transação, a partir do snapshot de linhas da intenção.
 // lines: [{ id, qty, unitPrice, costPrice }]. Não re-precifica (o valor pago é a verdade).
 // "Pago sem estoque": baixa mesmo assim (pode ficar negativo) e marca a movimentação.
-async function criarPedidoPago(conn, { clientId, lines, fee, total, paymentMethod, mpPaymentId }) {
+async function criarPedidoPago(conn, { clientId, lines, fee, total, paymentMethod, mpPaymentId, deliveryMethod }) {
   if (!PAYMENT_METHODS_VALIDOS.includes(paymentMethod)) paymentMethod = 'PIX';
   const rows = [];
   for (const ln of lines) {
@@ -157,10 +163,11 @@ async function criarPedidoPago(conn, { clientId, lines, fee, total, paymentMetho
     rows.push({ id: ln.id, qty: ln.qty, unitPrice: Number(ln.unitPrice), costPrice: ln.costPrice != null ? ln.costPrice : null, short });
   }
 
+  const metodo = deliveryMethod === 'retirada' ? 'retirada' : 'entrega';
   const [orderResult] = await conn.query(
-    "INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value, delivery_fee, origin, payment_status, mp_payment_id) " +
-    "VALUES (?, ?, NULL, ?, NULL, ?, 'loja', 'pago', ?)",
-    [clientId, paymentMethod, Number(total), Number(fee), mpPaymentId || null]
+    "INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value, delivery_fee, origin, payment_status, mp_payment_id, delivery_method) " +
+    "VALUES (?, ?, NULL, ?, NULL, ?, 'loja', 'pago', ?, ?)",
+    [clientId, paymentMethod, Number(total), Number(fee), mpPaymentId || null, metodo]
   );
   const orderId = orderResult.insertId;
 
