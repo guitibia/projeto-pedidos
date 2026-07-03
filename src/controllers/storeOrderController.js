@@ -177,7 +177,13 @@ async function criarPedidoPago(conn, { clientId, lines, fee, total, paymentMetho
   return orderId;
 }
 
+// Normaliza o método de entrega do body: só 'retirada' (case-insensitive) conta; resto é 'entrega'.
+function metodoEntrega(body) {
+  return (body && String(body.deliveryMethod || '').toLowerCase() === 'retirada') ? 'retirada' : 'entrega';
+}
+
 module.exports = {
   resumo, listarPedidos, detalhePedido, criarPedidoPago,
   parseItems, buildLines, getClient, effectiveAddress, hasAddress,
+  metodoEntrega,
 };
