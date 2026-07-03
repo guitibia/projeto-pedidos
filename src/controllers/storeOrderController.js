@@ -129,7 +129,7 @@ async function detalhePedido(req, res) {
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
   try {
     const [[order]] = await db.query(
-      `SELECT o.id, o.created_at, o.status, o.payment_status, o.payment_method, o.total_cost, o.delivery_fee, o.client_id,
+      `SELECT o.id, o.created_at, o.status, o.payment_status, o.payment_method, o.total_cost, o.delivery_fee, o.client_id, o.delivery_method,
               c.name AS client_name, c.address, c.house_number, c.neighborhood, c.cep, c.city
        FROM orders o JOIN clients c ON c.id = o.client_id WHERE o.id = ?`,
       [id]
@@ -141,7 +141,8 @@ async function detalhePedido(req, res) {
       [id]
     );
     delete order.client_id;
-    return res.json({ ...order, products });
+    const enderecoRetirada = order.delivery_method === 'retirada' ? await getEnderecoRetirada() : null;
+    return res.json({ ...order, enderecoRetirada, products });
   } catch (e) {
     console.error('Erro ao buscar pedido do cliente:', e);
     return res.status(500).json({ error: 'Erro ao buscar o pedido.' });

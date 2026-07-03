@@ -243,18 +243,21 @@
         }).join('');
 
         /* Frete */
+        var isRetirada = o.delivery_method === 'retirada';
         var freteVal = Number(o.delivery_fee);
-        var freteHtml = freteVal === 0
+        var freteHtml = (isRetirada || freteVal === 0)
           ? '<span class="frete-gratis">Grátis</span>'
           : fmtBRL(freteVal);
 
         /* Address */
-        var addrParts = [
-          esc(o.address || '') + (o.house_number ? ', ' + esc(String(o.house_number)) : ''),
-          esc(o.neighborhood || ''),
-          esc(o.city || ''),
-          esc(o.cep || '')
-        ].filter(Boolean);
+        var addrParts = isRetirada
+          ? ['Retirada com o vendedor'].concat(o.enderecoRetirada ? [esc(o.enderecoRetirada)] : [])
+          : [
+              esc(o.address || '') + (o.house_number ? ', ' + esc(String(o.house_number)) : ''),
+              esc(o.neighborhood || ''),
+              esc(o.city || ''),
+              esc(o.cep || '')
+            ].filter(Boolean);
 
         var html =
           /* Header */
@@ -301,7 +304,7 @@
 
           /* Delivery address */
           '<section class="pedido-section" aria-labelledby="endereco-title">' +
-            '<h2 id="endereco-title"><i class="bi bi-geo-alt" aria-hidden="true"></i> Endereço de entrega</h2>' +
+            '<h2 id="endereco-title"><i class="bi bi-geo-alt" aria-hidden="true"></i> ' + (isRetirada ? 'Retirada' : 'Endereço de entrega') + '</h2>' +
             '<div class="address-block">' +
               addrParts.join('<br>') +
             '</div>' +
