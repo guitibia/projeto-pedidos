@@ -288,10 +288,11 @@
     .product-row {
       display:grid;grid-template-columns:auto 1fr auto auto;
       align-items:center;gap:.75rem;
-      padding:.45rem .6rem;border-radius:10px;margin-bottom:.3rem;
-      border:1px solid transparent;transition:background .12s,border-color .12s;cursor:default;
+      padding:.55rem .6rem;border-bottom:1px solid var(--border-color);
+      transition:background .12s;cursor:default;
     }
-    .product-row:hover { background:rgba(255,154,0,.06);border-color:rgba(255,154,0,.2); }
+    .product-row:last-child { border-bottom:none; }
+    .product-row:hover { background:rgba(255,154,0,.06); }
     .prod-thumb {
       width:44px;height:44px;border-radius:10px;overflow:hidden;flex:0 0 auto;
       background:var(--hover-tint);border:1px solid var(--border-color);
@@ -300,7 +301,8 @@
     .prod-thumb img { width:100%;height:100%;object-fit:cover;display:block; }
     .prod-thumb-ph { width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem; }
     .prod-main { min-width:0; }
-    .prod-name { font-size:.9rem;font-weight:600;color:var(--text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .prod-name { font-size:.9rem;font-weight:600;color:var(--text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer; }
+    .prod-name:hover { color:#ff9a00;text-decoration:underline; }
     .prod-sub  { font-size:.74rem;color:var(--text-muted);margin-top:.12rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap; }
     .prod-sub .cod { font-family:monospace; }
     .prod-est {
@@ -311,9 +313,13 @@
     .est-ok   { color:#3fb950;background:rgba(63,185,80,.1); }
     .est-low  { color:#d29922;background:rgba(210,153,34,.12); }
     .est-zero { color:#f85149;background:rgba(248,81,73,.12); }
-    .prod-valor { text-align:right; }
-    .prod-valor-unit  { font-size:.9rem;font-weight:700;color:#3fb950;white-space:nowrap; }
-    .prod-valor-total { font-size:.7rem;color:#3fb950;opacity:.7;white-space:nowrap; }
+    .prod-valores { display:grid;grid-template-columns:auto auto;gap:0 1.1rem;text-align:right; }
+    .pv-col { display:flex;flex-direction:column;align-items:flex-end;line-height:1.15; }
+    .pv-lbl { font-size:.62rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted); }
+    .pv-unit { font-size:.9rem;font-weight:700;color:var(--text-color);font-variant-numeric:tabular-nums;white-space:nowrap; }
+    .pv-unit.pv-sale { color:#3fb950; }
+    .pv-tot { font-size:.68rem;color:var(--text-muted);font-variant-numeric:tabular-nums;white-space:nowrap; }
+    .pv-promo { font-size:.64rem;color:#ff9a00;background:rgba(255,154,0,.12);border:1px solid rgba(255,154,0,.3);border-radius:5px;padding:0 .3rem;margin-top:.12rem;white-space:nowrap; }
     .prod-actions { display:flex;align-items:center;gap:.4rem; }
     .btn-edit-icon, .btn-delete-icon {
       color:var(--text-muted);font-size:.9rem;cursor:pointer;
@@ -324,7 +330,7 @@
     .btn-delete-icon:hover { color:#f85149;background:rgba(248,81,73,.12); }
 
     @media (max-width:600px) {
-      .prod-valor-total { display:none; }
+      .pv-tot { display:none; }
     }
   </style>
 </head>
@@ -919,13 +925,21 @@
             <div class="product-row">
               <div class="prod-thumb">${thumb}</div>
               <div class="prod-main">
-                <div class="prod-name">${esc(p.name)}</div>
+                <div class="prod-name" onclick="openEdit(${p.id})" title="Editar produto">${esc(p.name)}</div>
                 <div class="prod-sub"><span class="cod">COD ${esc(p.code)}</span> · <span class="prod-est ${estCls}">${estTxt}</span></div>
               </div>
-              <div class="prod-valor">
-                <div class="prod-valor-unit">${fmt(p.cost)}</div>
-                ${p.estoque > 1 ? `<div class="prod-valor-total">${fmt(parseFloat(p.cost) * p.estoque)} total</div>` : ''}
-                ${p.promotion_price ? `<div style="font-size:.7rem;background:rgba(255,154,0,.12);border:1px solid rgba(255,154,0,.3);color:#ff9a00;border-radius:6px;padding:.1rem .45rem;font-weight:600;white-space:nowrap;margin-top:.15rem;display:inline-block"><i class="bi bi-tag-fill"></i> ${fmt(p.promotion_price)}</div>` : ''}
+              <div class="prod-valores">
+                <div class="pv-col">
+                  <span class="pv-lbl">Custo</span>
+                  <span class="pv-unit">${fmt(p.cost)}</span>
+                  ${est > 1 ? `<span class="pv-tot">${fmt(parseFloat(p.cost) * est)} tot</span>` : ''}
+                </div>
+                <div class="pv-col">
+                  <span class="pv-lbl">Venda</span>
+                  <span class="pv-unit pv-sale">${fmt(p.sale_value)}</span>
+                  ${est > 1 ? `<span class="pv-tot">${fmt(parseFloat(p.sale_value) * est)} tot</span>` : ''}
+                  ${p.promotion_price ? `<span class="pv-promo"><i class="bi bi-tag-fill"></i> ${fmt(p.promotion_price)}</span>` : ''}
+                </div>
               </div>
               <div class="prod-actions">
                 <span class="btn-edit-icon" onclick="openEdit(${p.id})" title="Editar"><i class="bi bi-pencil"></i></span>
