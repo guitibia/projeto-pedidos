@@ -4,7 +4,7 @@ const db = require('../database/connection');
 async function listEstoque(req, res) {
   try {
     const [rows] = await db.query(`
-      SELECT p.id, p.name, p.code, p.franchise, p.cost, p.estoque,
+      SELECT p.id, p.name, p.code, p.franchise, p.cost, p.sale_value, p.estoque,
              IFNULL(SUM(CASE WHEN m.tipo='Entrada' THEN m.quantidade ELSE 0 END), 0) AS totalEntradas,
              IFNULL(SUM(CASE WHEN m.tipo='Saída'   THEN m.quantidade ELSE 0 END), 0) AS totalSaidas,
              IFNULL(SUM(CASE WHEN m.tipo='Entrada' AND m.origem='NF'     THEN m.quantidade ELSE 0 END), 0) AS entradasNF,

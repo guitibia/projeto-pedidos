@@ -440,7 +440,8 @@
     const zerados    = items.filter(p => p.estoque <= 0).length;
     const baixos     = items.filter(p => p.estoque > 0 && p.estoque <= LOW_STOCK).length;
     const ok         = total - zerados - baixos;
-    const valorTotal = items.reduce((s, p) => s + parseFloat(p.cost || 0) * Math.max(p.estoque, 0), 0);
+    const valorTotal      = items.reduce((s, p) => s + parseFloat(p.cost || 0) * Math.max(p.estoque, 0), 0);
+    const valorTotalVenda = items.reduce((s, p) => s + parseFloat(p.sale_value || 0) * Math.max(p.estoque, 0), 0);
     document.getElementById('estoque-sub').textContent = `${total} produto${total!==1?'s':''} · ${zerados} zerado${zerados!==1?'s':''}`;
     document.getElementById('resumo-grid').innerHTML = `
       <div class="resumo-card">
@@ -461,7 +462,20 @@
       </div>
       <div class="resumo-card" style="grid-column: 1 / -1">
         <div class="resumo-label"><i class="bi bi-cash-stack" style="color:#3fb950"></i> Valor total em estoque</div>
-        <div class="resumo-val" style="color:#3fb950;font-size:1.6rem">${fmt(valorTotal)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:1.75rem;align-items:flex-end;margin-top:.35rem">
+          <div>
+            <div class="resumo-val" style="color:#3fb950;font-size:1.6rem;line-height:1.05">${fmt(valorTotal)}</div>
+            <div style="font-size:.72rem;color:var(--text-muted,#8b949e);margin-top:.1rem">a custo <span style="opacity:.7">(investido)</span></div>
+          </div>
+          <div>
+            <div class="resumo-val" style="color:#ff9a00;font-size:1.6rem;line-height:1.05">${fmt(valorTotalVenda)}</div>
+            <div style="font-size:.72rem;color:var(--text-muted,#8b949e);margin-top:.1rem">a preço de venda <span style="opacity:.7">(potencial)</span></div>
+          </div>
+          <div>
+            <div class="resumo-val" style="color:#58a6ff;font-size:1.25rem;line-height:1.05">${fmt(valorTotalVenda - valorTotal)}</div>
+            <div style="font-size:.72rem;color:var(--text-muted,#8b949e);margin-top:.1rem">margem potencial</div>
+          </div>
+        </div>
       </div>`;
 
     // Lista de produtos filtrada pela aba (o resumo acima já é global)

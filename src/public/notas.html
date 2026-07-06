@@ -327,7 +327,7 @@
         </div>
 
         <div style="display:flex;justify-content:flex-end">
-          <button id="btn-importar" onclick="importarNota()"
+          <button id="btn-importar" onclick="revisarNovos()"
             style="padding:.6rem 1.6rem;border-radius:10px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.9rem;font-weight:700;cursor:pointer">
             <i class="bi bi-check2-circle me-1"></i> Importar nota
           </button>
@@ -356,6 +356,26 @@
       </div>
       <div class="modal-body p-3" id="nf-modal-body">
         <div class="empty-state"><i class="bi bi-hourglass-split"></i><p>Carregando...</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: novos produtos a criar (preencher preço antes de importar) -->
+<div class="modal fade" id="novosProdutosModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-plus-square me-2"></i>Novos produtos desta nota</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.8rem">Confira o nome e a franquia e informe o <b>preço de venda</b> de cada produto novo. O custo vem da nota.</p>
+        <div id="novos-produtos-body"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success" onclick="confirmarNovos()"><i class="bi bi-check2-circle me-1"></i> Confirmar e importar</button>
       </div>
     </div>
   </div>
@@ -699,6 +719,60 @@
       if (!item.sugestaoProductId) selectAcao(idx, 'criar');
     });
     atualizarResumo();
+  }
+
+  // ── Revisar os produtos NOVOS num modal antes de importar (preencher preço de uma vez) ──
+  function revisarNovos() {
+    if (!previaData) return;
+    const fileInput = document.getElementById('nf-file');
+    if (!fileInput.files.length) return Swal.fire('Atenção', 'Arquivo perdido. Selecione o XML novamente.', 'warning');
+    const itens = previaData.itens || [];
+    const criarIdx = [];
+    for (let idx = 0; idx < itens.length; idx++) {
+      if (document.getElementById('acao-' + idx).value === 'criar') criarIdx.push(idx);
+    }
+    if (!criarIdx.length) { importarNota(); return; } // nada a criar → importa direto
+
+    const body = document.getElementById('novos-produtos-body');
+    body.innerHTML = criarIdx.map(idx => {
+      const it = itens[idx];
+      const nome = document.getElementById('criar-nome-' + idx).value;
+      const franqHtml = document.getElementById('criar-franquia-' + idx).innerHTML;
+      const preco = document.getElementById('criar-preco-' + idx).value;
+      return `
+        <div class="np-item" data-idx="${idx}" style="border:1px solid var(--border-color);border-radius:10px;padding:.7rem .8rem;margin-bottom:.6rem">
+          <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.45rem">${esc(it.descricao)} <span style="opacity:.65">· custo NF ${fmt(it.valorUnit)}</span></div>
+          <div class="row g-2">
+            <div class="col-12 col-md-5"><input type="text" class="form-control form-control-sm np-nome" value="${esc(nome)}" placeholder="Nome do produto"></div>
+            <div class="col-7 col-md-4"><select class="form-select form-select-sm np-franq">${franqHtml}</select></div>
+            <div class="col-5 col-md-3"><input type="number" class="form-control form-control-sm np-preco" step="0.01" min="0" placeholder="Preço venda" value="${esc(preco)}"></div>
+          </div>
+        </div>`;
+    }).join('');
+    const nodes = body.querySelectorAll('.np-item');
+    criarIdx.forEach((idx, i) => { nodes[i].querySelector('.np-franq').value = document.getElementById('criar-franquia-' + idx).value; });
+    new bootstrap.Modal(document.getElementById('novosProdutosModal')).show();
+    setTimeout(() => { const f = body.querySelector('.np-preco'); if (f) f.focus(); }, 300);
+  }
+
+  function confirmarNovos() {
+    const body = document.getElementById('novos-produtos-body');
+    const rows = [...body.querySelectorAll('.np-item')];
+    for (const r of rows) {
+      const nome  = r.querySelector('.np-nome').value.trim();
+      const preco = parseFloat(r.querySelector('.np-preco').value);
+      if (!nome)  return Swal.fire('Atenção', 'Todos os novos produtos precisam de um nome.', 'warning');
+      if (!preco || preco <= 0) return Swal.fire('Atenção', 'Informe o preço de venda de todos os novos produtos.', 'warning');
+    }
+    rows.forEach(r => {
+      const idx = r.dataset.idx;
+      document.getElementById('criar-nome-' + idx).value     = r.querySelector('.np-nome').value;
+      document.getElementById('criar-franquia-' + idx).value = r.querySelector('.np-franq').value;
+      document.getElementById('criar-preco-' + idx).value    = r.querySelector('.np-preco').value;
+    });
+    const m = bootstrap.Modal.getInstance(document.getElementById('novosProdutosModal'));
+    if (m) m.hide();
+    importarNota();
   }
 
   // ── Importar nota: POST /api/nf/importar (fetch direto + FormData) ──
