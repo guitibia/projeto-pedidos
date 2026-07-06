@@ -286,28 +286,45 @@
 
     /* ── Product rows ── */
     .product-row {
-      display:grid;grid-template-columns:1fr auto auto auto;
+      display:grid;grid-template-columns:auto 1fr auto auto;
       align-items:center;gap:.75rem;
-      padding:.5rem .75rem;border-radius:8px;margin-bottom:.25rem;
+      padding:.45rem .6rem;border-radius:10px;margin-bottom:.3rem;
       border:1px solid transparent;transition:background .12s,border-color .12s;cursor:default;
     }
     .product-row:hover { background:rgba(255,154,0,.06);border-color:rgba(255,154,0,.2); }
-    .product-field { font-size:.875rem;color:var(--text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-    .product-code {
-      font-size:.75rem;color:var(--text-muted);font-family:monospace;
+    .prod-thumb {
+      width:44px;height:44px;border-radius:10px;overflow:hidden;flex:0 0 auto;
       background:var(--hover-tint);border:1px solid var(--border-color);
-      border-radius:5px;padding:.1rem .4rem;
+      display:flex;align-items:center;justify-content:center;
     }
-    .btn-edit-icon, .btn-delete-icon { color:var(--text-muted);font-size:.85rem;transition:color .15s;cursor:pointer; }
-    .product-row:hover .btn-edit-icon   { color:#ff9a00; }
-    .product-row:hover .btn-delete-icon { color:#f85149; }
+    .prod-thumb img { width:100%;height:100%;object-fit:cover;display:block; }
+    .prod-thumb-ph { width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem; }
+    .prod-main { min-width:0; }
+    .prod-name { font-size:.9rem;font-weight:600;color:var(--text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .prod-sub  { font-size:.74rem;color:var(--text-muted);margin-top:.12rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap; }
+    .prod-sub .cod { font-family:monospace; }
+    .prod-est {
+      display:inline-flex;align-items:center;gap:.3rem;padding:.05rem .45rem;
+      border-radius:20px;font-weight:600;font-size:.68rem;white-space:nowrap;
+    }
+    .prod-est::before { content:"";width:6px;height:6px;border-radius:50%;background:currentColor; }
+    .est-ok   { color:#3fb950;background:rgba(63,185,80,.1); }
+    .est-low  { color:#d29922;background:rgba(210,153,34,.12); }
+    .est-zero { color:#f85149;background:rgba(248,81,73,.12); }
     .prod-valor { text-align:right; }
-    .prod-valor-unit  { font-size:.875rem;font-weight:600;color:#3fb950;white-space:nowrap; }
-    .prod-valor-total { font-size:.7rem;color:#3fb950;opacity:.75;white-space:nowrap; }
+    .prod-valor-unit  { font-size:.9rem;font-weight:700;color:#3fb950;white-space:nowrap; }
+    .prod-valor-total { font-size:.7rem;color:#3fb950;opacity:.7;white-space:nowrap; }
+    .prod-actions { display:flex;align-items:center;gap:.4rem; }
+    .btn-edit-icon, .btn-delete-icon {
+      color:var(--text-muted);font-size:.9rem;cursor:pointer;
+      width:28px;height:28px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;
+      transition:color .15s,background .15s;
+    }
+    .btn-edit-icon:hover   { color:#ff9a00;background:rgba(255,154,0,.12); }
+    .btn-delete-icon:hover { color:#f85149;background:rgba(248,81,73,.12); }
 
     @media (max-width:600px) {
-      .product-row { grid-template-columns:1fr auto auto; }
-      .col-code    { display:none; }
+      .prod-valor-total { display:none; }
     }
   </style>
 </head>
@@ -891,20 +908,31 @@
               cmp = av < bv ? -1 : av > bv ? 1 : 0;
             }
             return sortDir === 'asc' ? cmp : -cmp;
-          }).map(p => `
+          }).map(p => {
+            const est = Number(p.estoque) || 0;
+            const estCls = est <= 0 ? 'est-zero' : est <= 5 ? 'est-low' : 'est-ok';
+            const estTxt = est <= 0 ? 'Esgotado' : est + ' em estoque';
+            const thumb = p.image
+              ? `<img src="${esc(p.image)}" alt="" loading="lazy">`
+              : `<span class="prod-thumb-ph" style="background:${f.bg};color:${f.color}">${esc((String(p.name || '?').trim()[0] || '?').toUpperCase())}</span>`;
+            return `
             <div class="product-row">
-              <div class="product-field" style="font-weight:500">${esc(p.name)}</div>
-              <div class="product-code col-code">${esc(p.code)}</div>
+              <div class="prod-thumb">${thumb}</div>
+              <div class="prod-main">
+                <div class="prod-name">${esc(p.name)}</div>
+                <div class="prod-sub"><span class="cod">COD ${esc(p.code)}</span> · <span class="prod-est ${estCls}">${estTxt}</span></div>
+              </div>
               <div class="prod-valor">
                 <div class="prod-valor-unit">${fmt(p.cost)}</div>
                 ${p.estoque > 1 ? `<div class="prod-valor-total">${fmt(parseFloat(p.cost) * p.estoque)} total</div>` : ''}
-                ${p.promotion_price ? `<span style="font-size:.7rem;background:rgba(255,154,0,.12);border:1px solid rgba(255,154,0,.3);color:#ff9a00;border-radius:6px;padding:.1rem .45rem;font-weight:600;white-space:nowrap"><i class="bi bi-tag-fill"></i> ${fmt(p.promotion_price)}</span>` : ''}
+                ${p.promotion_price ? `<div style="font-size:.7rem;background:rgba(255,154,0,.12);border:1px solid rgba(255,154,0,.3);color:#ff9a00;border-radius:6px;padding:.1rem .45rem;font-weight:600;white-space:nowrap;margin-top:.15rem;display:inline-block"><i class="bi bi-tag-fill"></i> ${fmt(p.promotion_price)}</div>` : ''}
               </div>
-              <div style="display:flex;align-items:center;gap:.35rem">
+              <div class="prod-actions">
                 <span class="btn-edit-icon" onclick="openEdit(${p.id})" title="Editar"><i class="bi bi-pencil"></i></span>
                 <span class="btn-delete-icon" onclick="excluirProduto(${p.id},'${esc(p.name)}')" title="Excluir"><i class="bi bi-trash3"></i></span>
               </div>
-            </div>`).join('')}
+            </div>`;
+          }).join('')}
         </div>
       </div>`;
     }).join('');
