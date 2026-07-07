@@ -111,6 +111,7 @@
   </nav>
   <div class="sidebar-footer">
     <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()" style="margin-bottom:.5rem"><i class="bi bi-sun"></i> Tema claro</button>
+    <button class="btn-logout" id="btn-acessos"><i class="bi bi-shield-lock"></i> Gerenciar acessos</button>
     <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
   </div>
 </div>
@@ -333,6 +334,46 @@
       </div>
       <div class="modal-body p-4" id="dash-order-body">
         <div class="text-center py-3" style="color:var(--text-muted)">Carregando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="acessosModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-shield-lock me-2"></i>Gerenciar acessos</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <h6 class="mb-3"><i class="bi bi-key me-1"></i> Trocar minha senha</h6>
+        <div class="row g-2 mb-2">
+          <div class="col-12 col-md-4"><input type="password" class="form-control form-control-sm" id="ac-senha-atual" placeholder="Senha atual"></div>
+          <div class="col-6 col-md-4"><input type="password" class="form-control form-control-sm" id="ac-senha-nova" placeholder="Nova senha (mín. 6)"></div>
+          <div class="col-6 col-md-4"><input type="password" class="form-control form-control-sm" id="ac-senha-conf" placeholder="Confirmar nova"></div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="ac-btn-senha"><i class="bi bi-check2 me-1"></i> Salvar nova senha</button>
+
+        <div id="ac-admin-area" style="display:none">
+          <hr class="my-4">
+          <h6 class="mb-3"><i class="bi bi-people me-1"></i> Logins do painel</h6>
+          <div id="ac-users-list" style="margin-bottom:1rem"></div>
+          <div style="border:1px solid var(--border-color);border-radius:10px;padding:.8rem">
+            <div style="font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:.5rem">Criar novo login</div>
+            <div class="row g-2">
+              <div class="col-12 col-md-4"><input type="text" class="form-control form-control-sm" id="ac-novo-user" placeholder="Usuário"></div>
+              <div class="col-6 col-md-3"><input type="password" class="form-control form-control-sm" id="ac-novo-senha" placeholder="Senha (mín. 6)"></div>
+              <div class="col-6 col-md-3">
+                <select class="form-select form-select-sm" id="ac-novo-papel">
+                  <option value="admin">Admin</option>
+                  <option value="user">Limitado</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-2"><button type="button" class="btn btn-success btn-sm w-100" id="ac-btn-criar">Criar</button></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -648,6 +689,72 @@
       btn.disabled = false;
       setTimeout(() => { msg.textContent = ''; }, 3000);
     }
+  });
+
+  // ── Gerenciar acessos ──
+  const acModalEl = document.getElementById('acessosModal');
+  document.getElementById('btn-acessos').addEventListener('click', () => {
+    const u = Auth.getUser() || {};
+    document.getElementById('ac-admin-area').style.display = (u.role === 'admin') ? '' : 'none';
+    ['ac-senha-atual','ac-senha-nova','ac-senha-conf','ac-novo-user','ac-novo-senha'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    if (u.role === 'admin') acCarregarUsers();
+    new bootstrap.Modal(acModalEl).show();
+  });
+
+  document.getElementById('ac-btn-senha').addEventListener('click', async () => {
+    const atual = document.getElementById('ac-senha-atual').value;
+    const nova  = document.getElementById('ac-senha-nova').value;
+    const conf  = document.getElementById('ac-senha-conf').value;
+    if (!atual || !nova) return Swal.fire('Atenção', 'Preencha a senha atual e a nova.', 'warning');
+    if (nova.length < 6)  return Swal.fire('Atenção', 'A nova senha deve ter ao menos 6 caracteres.', 'warning');
+    if (nova !== conf)    return Swal.fire('Atenção', 'A confirmação não confere com a nova senha.', 'warning');
+    const res  = await Auth.apiFetch('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword: atual, newPassword: nova }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return Swal.fire('Erro', data.error || 'Não foi possível trocar a senha.', 'error');
+    ['ac-senha-atual','ac-senha-nova','ac-senha-conf'].forEach(id => document.getElementById(id).value = '');
+    Swal.fire({ icon: 'success', title: 'Senha alterada!', timer: 1600, showConfirmButton: false });
+  });
+
+  async function acCarregarUsers() {
+    const box = document.getElementById('ac-users-list');
+    box.innerHTML = '<div style="font-size:.85rem;color:var(--text-muted)">Carregando...</div>';
+    const res = await Auth.apiFetch('/api/auth/users');
+    if (!res.ok) { box.innerHTML = '<div style="font-size:.85rem;color:#f85149">Erro ao carregar.</div>'; return; }
+    const users = await res.json();
+    const eu = (Auth.getUser() || {}).id;
+    box.innerHTML = users.map(u => `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.5rem .7rem;border:1px solid var(--border-color);border-radius:9px;margin-bottom:.35rem">
+        <div style="min-width:0">
+          <div style="font-weight:600;font-size:.88rem">${esc(u.username)}${u.id===eu?' <span style="font-size:.7rem;color:var(--text-muted)">(você)</span>':''}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">${u.role === 'admin' ? 'Admin' : 'Limitado'}</div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="acRemover(${u.id}, '${esc(u.username)}')" ${u.id===eu?'disabled title="Não dá para remover você mesmo"':''}><i class="bi bi-trash3"></i></button>
+      </div>`).join('') || '<div style="font-size:.85rem;color:var(--text-muted)">Nenhum login.</div>';
+  }
+
+  async function acRemover(id, nome) {
+    const r = await Swal.fire({ title: 'Remover login?', html: 'Remover o acesso de <b>' + esc(nome) + '</b>?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sim, remover', cancelButtonText: 'Cancelar', confirmButtonColor: '#dc3545' });
+    if (!r.isConfirmed) return;
+    const res  = await Auth.apiFetch('/api/auth/users/' + id, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return Swal.fire('Não foi possível', data.error || 'Erro ao remover.', 'warning');
+    acCarregarUsers();
+    Swal.fire({ icon: 'success', title: 'Login removido.', timer: 1400, showConfirmButton: false });
+  }
+
+  document.getElementById('ac-btn-criar').addEventListener('click', async () => {
+    const username = document.getElementById('ac-novo-user').value.trim();
+    const password = document.getElementById('ac-novo-senha').value;
+    const role     = document.getElementById('ac-novo-papel').value;
+    if (!username || !password) return Swal.fire('Atenção', 'Informe usuário e senha.', 'warning');
+    if (password.length < 6)    return Swal.fire('Atenção', 'A senha deve ter ao menos 6 caracteres.', 'warning');
+    const res  = await Auth.apiFetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ username, password, role }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return Swal.fire('Erro', data.error || 'Não foi possível criar o login.', 'error');
+    document.getElementById('ac-novo-user').value = '';
+    document.getElementById('ac-novo-senha').value = '';
+    acCarregarUsers();
+    Swal.fire({ icon: 'success', title: 'Login criado!', timer: 1400, showConfirmButton: false });
   });
 
   loadDesconto();
