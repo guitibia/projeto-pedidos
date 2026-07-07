@@ -715,12 +715,14 @@
     Swal.fire({ icon: 'success', title: 'Senha alterada!', timer: 1600, showConfirmButton: false });
   });
 
+  let acUsers = [];
   async function acCarregarUsers() {
     const box = document.getElementById('ac-users-list');
     box.innerHTML = '<div style="font-size:.85rem;color:var(--text-muted)">Carregando...</div>';
     const res = await Auth.apiFetch('/api/auth/users');
     if (!res.ok) { box.innerHTML = '<div style="font-size:.85rem;color:#f85149">Erro ao carregar.</div>'; return; }
-    const users = await res.json();
+    acUsers = await res.json();
+    const users = acUsers;
     const eu = (Auth.getUser() || {}).id;
     box.innerHTML = users.map(u => `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.5rem .7rem;border:1px solid var(--border-color);border-radius:9px;margin-bottom:.35rem">
@@ -728,11 +730,13 @@
           <div style="font-weight:600;font-size:.88rem">${esc(u.username)}${u.id===eu?' <span style="font-size:.7rem;color:var(--text-muted)">(você)</span>':''}</div>
           <div style="font-size:.72rem;color:var(--text-muted)">${u.role === 'admin' ? 'Admin' : 'Limitado'}</div>
         </div>
-        <button type="button" class="btn btn-outline-danger btn-sm" onclick="acRemover(${u.id}, '${esc(u.username)}')" ${u.id===eu?'disabled title="Não dá para remover você mesmo"':''}><i class="bi bi-trash3"></i></button>
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="acRemover(${u.id})" ${u.id===eu?'disabled title="Não dá para remover você mesmo"':''}><i class="bi bi-trash3"></i></button>
       </div>`).join('') || '<div style="font-size:.85rem;color:var(--text-muted)">Nenhum login.</div>';
   }
 
-  async function acRemover(id, nome) {
+  async function acRemover(id) {
+    const alvo = (acUsers || []).find(x => x.id === id);
+    const nome = alvo ? alvo.username : 'este login';
     const r = await Swal.fire({ title: 'Remover login?', html: 'Remover o acesso de <b>' + esc(nome) + '</b>?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sim, remover', cancelButtonText: 'Cancelar', confirmButtonColor: '#dc3545' });
     if (!r.isConfirmed) return;
     const res  = await Auth.apiFetch('/api/auth/users/' + id, { method: 'DELETE' });

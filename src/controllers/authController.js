@@ -47,6 +47,9 @@ async function register(req, res) {
   if (!username || !password) {
     return res.status(400).json({ error: 'Usuário e senha são obrigatórios.' });
   }
+  if (String(username).length > 60) {
+    return res.status(400).json({ error: 'Nome de usuário muito longo (máx. 60).' });
+  }
   if (String(password).length < 6) {
     return res.status(400).json({ error: 'A senha deve ter ao menos 6 caracteres.' });
   }
