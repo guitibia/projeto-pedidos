@@ -201,7 +201,10 @@ body {
 .sidebar i.bi-bag-check     { color: #bc8cff; background: rgba(188,140,255,.12);}
 .sidebar i.bi-people        { color: #39c5cf; background: rgba(57,197,207,.12); }
 .sidebar i.bi-receipt       { color: #d29922; background: rgba(210,153,34,.12); }
-.sidebar i.bi-archive       { color: #58a6ff; background: rgba(88,166,255,.12); }
+.sidebar i.bi-archive       { color: #2dd4bf; background: rgba(45,212,191,.14); }
+.sidebar i.bi-receipt-cutoff{ color: #db61a2; background: rgba(219,97,162,.14); }
+.sidebar i.bi-truck         { color: #3fb950; background: rgba(63,185,80,.14);  }
+.sidebar i.bi-keyboard      { color: #7c8aff; background: rgba(124,138,255,.14);}
 .sidebar i.bi-plus-lg       { color: #58a6ff; background: rgba(88,166,255,.10); }
 .sidebar i.bi-list-ul       { color: #58a6ff; background: rgba(88,166,255,.10); }
 
