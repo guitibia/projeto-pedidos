@@ -34,7 +34,8 @@ const loginLimiter = rateLimit({
 
 // ── Rotas públicas ────────────────────────────────────────────────────────────
 const authRoutes = require('./routes/auth');
-app.use('/api/auth', loginLimiter, authRoutes);
+app.use('/api/auth/login', loginLimiter);        // limite restrito só no login
+app.use('/api/auth', apiLimiter, authRoutes);
 
 const lojaRoutes = require('./routes/loja');
 app.use('/api/loja', apiLimiter, lojaRoutes);
