@@ -114,6 +114,7 @@ body {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
+  box-shadow: 4px 0 24px rgba(0,0,0,.22);
   transition: transform .25s ease;
 }
 
@@ -139,7 +140,7 @@ body {
   font-size: 1.1rem;
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 2px 10px rgba(56,139,253,.35);
+  box-shadow: 0 4px 16px rgba(56,139,253,.45);
 }
 
 .sidebar-header .system-name {
@@ -174,7 +175,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  border-radius: 8px;
+  border-radius: 10px;
   transition: all .15s ease;
   text-decoration: none;
   position: relative;
@@ -205,6 +206,11 @@ body {
 .sidebar i.bi-list-ul       { color: #58a6ff; background: rgba(88,166,255,.10); }
 
 .sidebar .nav-link.active i,
+.sidebar .nav-sub-link.active i {
+  background: rgba(255,255,255,.22);
+  color: #fff;
+  filter: none;
+}
 .nav-group-toggle.has-active i { filter: brightness(1.25); }
 
 .sidebar .nav-link:hover {
@@ -214,8 +220,9 @@ body {
 
 .sidebar .nav-link.active {
   color: #fff !important;
-  background: var(--sidebar-active);
-  font-weight: 500;
+  background: linear-gradient(135deg, var(--sidebar-active), var(--accent));
+  box-shadow: 0 4px 14px rgba(56,139,253,.35);
+  font-weight: 600;
 }
 
 /* Left accent indicator on active nav item */
@@ -228,6 +235,7 @@ body {
   width: 3px;
   background: #388bfd;
   border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 8px rgba(56,139,253,.6);
 }
 
 /* ── Nav group (collapsible) ── */
@@ -320,8 +328,9 @@ body {
 
 .nav-sub-link.active {
   color: #fff !important;
-  background: var(--sidebar-active);
-  font-weight: 500;
+  background: linear-gradient(135deg, var(--sidebar-active), var(--accent));
+  box-shadow: 0 4px 14px rgba(56,139,253,.3);
+  font-weight: 600;
 }
 
 .nav-sub-link.active::before {
@@ -357,6 +366,11 @@ body {
 }
 
 .btn-logout:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--sidebar-hover);
+}
+#btn-logout:hover {
   color: var(--danger);
   border-color: rgba(248,81,73,.4);
   background: rgba(248,81,73,.08);
