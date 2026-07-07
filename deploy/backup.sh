@@ -17,7 +17,7 @@ FILE="$DIR/db_pedidos_${STAMP}.sql.gz"
 LOG="$DIR/backup.log"
 
 # Dump consistente (InnoDB) + rotinas/triggers/events, comprimido com gzip.
-if mysqldump --defaults-file="$CNF" --single-transaction --quick \
+if mysqldump --defaults-file="$CNF" --single-transaction --quick --no-tablespaces \
      --routines --triggers --events "$DB" | gzip > "$FILE" && [ -s "$FILE" ]; then
   echo "$(date '+%F %T') OK    $FILE ($(du -h "$FILE" | cut -f1))" >> "$LOG"
 else
