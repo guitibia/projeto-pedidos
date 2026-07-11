@@ -561,6 +561,10 @@
     updateInstallmentAmount();
   }
 
+  // Rascunho de venda vindo da tela Demanda (src/public/demanda.html, botão "Gerar venda do que veio").
+  // Guarda os itens (com demanda_item_id) para, após criar o pedido, marcar cada um com o order_id.
+  let rascunhoAtual = null;
+
   async function init() {
     const [clientRes, franchiseRes] = await Promise.all([
       Auth.apiFetch('/api/clients'),
@@ -574,6 +578,23 @@
 
     const fs = document.getElementById('franchiseId');
     franchises.forEach(f => fs.insertAdjacentHTML('beforeend', `<option value="${f}">${f}</option>`));
+
+    const raw = sessionStorage.getItem('rascunhoVenda');
+    if (raw) {
+      sessionStorage.removeItem('rascunhoVenda');
+      try {
+        const rasc = JSON.parse(raw);
+        if (rasc && rasc.itens && rasc.itens.length) {
+          rascunhoAtual = rasc;
+          if (rasc.client_id) cs.value = String(rasc.client_id);
+          rasc.itens.forEach(it => {
+            adicionarItemAoCarrinho(it.product_id, it.nome || ('Produto #' + it.product_id), Number(it.preco) || 0, Number(it.qtd) || 1, false, null);
+          });
+          switchTab(document.querySelector('[data-tab="criar"]'));
+          Swal.fire({ icon: 'info', title: 'Rascunho de venda carregado', text: 'Confira os itens recebidos da Demanda e finalize o pedido.', timer: 2500, showConfirmButton: false });
+        }
+      } catch (e) { console.error('rascunhoVenda inválido', e); }
+    }
   }
   init();
 
@@ -714,19 +735,11 @@
     }
   });
 
-  document.getElementById('addProductBtn').addEventListener('click', () => {
-    const salePrice = parseFloat(document.getElementById('salePrice').value);
-    const qty       = parseInt(document.getElementById('productQuantity').value) || 1;
-    const isPromo   = document.getElementById('promotionalPrice').checked;
-    const cost      = parseFloat(document.getElementById('productCost').value);
-
-    if (!selectedProduct || isNaN(salePrice) || salePrice <= 0 || qty < 1) {
-      return Swal.fire('Atenção', 'Selecione o produto, valor de venda e quantidade corretamente.', 'warning');
-    }
-
-    const productName  = selectedProduct.name;
+  // Adiciona um item ao carrinho do pedido (reaproveitada tanto pelo botão "+" quanto
+  // pelo pré-preenchimento vindo do rascunho de venda da Demanda).
+  function adicionarItemAoCarrinho(productId, productName, salePrice, qty, isPromo, cost) {
     const totalProduct = salePrice * qty;
-    const entry        = { id: selectedProduct.id, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null };
+    const entry = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null };
 
     const li = document.createElement('li');
     li.className = 'product-item';
@@ -747,6 +760,20 @@
     productsList.push(entry);
     totalValue += totalProduct;
     refreshTotal();
+    return entry;
+  }
+
+  document.getElementById('addProductBtn').addEventListener('click', () => {
+    const salePrice = parseFloat(document.getElementById('salePrice').value);
+    const qty       = parseInt(document.getElementById('productQuantity').value) || 1;
+    const isPromo   = document.getElementById('promotionalPrice').checked;
+    const cost      = parseFloat(document.getElementById('productCost').value);
+
+    if (!selectedProduct || isNaN(salePrice) || salePrice <= 0 || qty < 1) {
+      return Swal.fire('Atenção', 'Selecione o produto, valor de venda e quantidade corretamente.', 'warning');
+    }
+
+    adicionarItemAoCarrinho(selectedProduct.id, selectedProduct.name, salePrice, qty, isPromo, isPromo ? cost : null);
 
     document.getElementById('salePrice').value = '';
     document.getElementById('productQuantity').value = 1;
@@ -814,6 +841,20 @@
       const res  = await Auth.apiFetch('/api/orders', { method: 'POST', body: JSON.stringify(payload) });
       const data = await res.json();
       if (!res.ok) return Swal.fire('Erro', data.error, 'error');
+
+      // Se o pedido veio de um rascunho de venda (Demanda), marca cada item de demanda com o order_id gerado.
+      if (rascunhoAtual && rascunhoAtual.itens && rascunhoAtual.itens.length) {
+        for (const it of rascunhoAtual.itens) {
+          try {
+            await Auth.apiFetch('/api/demanda/itens/'+it.demanda_item_id+'/venda', {
+              method: 'PUT', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ order_id: data.orderId })
+            });
+          } catch (e) { console.error('Falha ao marcar item de demanda como vendido', it.demanda_item_id, e); }
+        }
+        rascunhoAtual = null;
+      }
+
       await Swal.fire({
         icon: 'success',
         title: `Pedido #${data.orderId} criado!`,

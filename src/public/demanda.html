@@ -159,7 +159,10 @@
     const linhas = p.itens.map(i => `
       <tr>
         <td>${esc(i.fornecedor_nome||'')}</td><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td>
-        <td>${i.qtd_pedida}</td><td>${i.qtd_recebida}</td><td>${esc(i.status)}</td>
+        <td>${i.qtd_pedida}</td>
+        <td><input type="number" min="0" value="${i.qtd_recebida}" style="width:64px" class="form-control form-control-sm"
+            onchange="ajustarRecebido(${i.id}, this.value, ${id})"></td>
+        <td>${esc(i.status)}</td>
         <td><button class="btn btn-sm btn-outline-danger" onclick="removerItem(${i.id}, ${id})">×</button></td>
       </tr>`).join('');
     Swal.fire({
@@ -175,6 +178,10 @@
           <div class="col"><input id="it-qtd" type="number" min="1" value="1" class="form-control form-control-sm" placeholder="Qtd"></div>
           <div class="col"><input id="it-preco" type="number" min="0" step="0.01" class="form-control form-control-sm" placeholder="Preço"></div>
           <div class="col-auto"><button id="it-add" class="btn btn-sm btn-primary">+</button></div>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+          <button id="btn-gerar-venda" class="btn btn-sm btn-success">Gerar venda do que veio</button>
+          <button id="btn-whats" class="btn btn-sm btn-outline-success">Avisar no WhatsApp</button>
         </div>`,
       showConfirmButton: false, showCloseButton: true,
       didOpen: () => {
@@ -192,8 +199,29 @@
           if (!rr.ok) return Swal.fire('Erro', (await rr.json()).error || '', 'error');
           abrirPedido(id);
         };
+        document.getElementById('btn-gerar-venda').onclick = async () => {
+          const rr = await Auth.apiFetch('/api/demanda/'+id+'/rascunho-venda');
+          const rasc = await rr.json();
+          if (!rasc.itens || !rasc.itens.length) return Swal.fire('Nada recebido ainda', 'Não há itens com produto e quantidade recebida para vender.', 'info');
+          sessionStorage.setItem('rascunhoVenda', JSON.stringify(rasc));
+          window.location.href = 'pedidos.html';
+        };
+        document.getElementById('btn-whats').onclick = () => {
+          const veio = p.itens.filter(i => i.status==='veio' || i.status==='parcial').map(i => '• '+ (i.nome||i.codigo) + (i.status==='parcial' ? ' (parcial)' : '')).join('\n');
+          const faltou = p.itens.filter(i => i.status!=='veio' && Number(i.qtd_recebida)===0).map(i => '• '+(i.nome||i.codigo)).join('\n');
+          let msg = 'Oi '+p.client_name+'! ';
+          if (veio) msg += 'Chegou:\n'+veio+'\n';
+          if (faltou) msg += '\nInfelizmente não veio dessa vez:\n'+faltou;
+          const tel = (p.phone||'').replace(/\D/g,'');
+          window.open('https://wa.me/'+ (tel ? '55'+tel : '') +'?text='+encodeURIComponent(msg), '_blank');
+        };
       }
     });
+  }
+  async function ajustarRecebido(itemId, val, pedidoId){
+    const rr = await Auth.apiFetch('/api/demanda/itens/'+itemId+'/alocacao', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ qtd_recebida: val }) });
+    if (!rr.ok) { Swal.fire('Erro', (await rr.json()).error || '', 'error'); }
+    abrirPedido(pedidoId);
   }
   async function removerItem(itemId, pedidoId){
     const rr = await Auth.apiFetch('/api/demanda/itens/'+itemId, { method:'DELETE' });
