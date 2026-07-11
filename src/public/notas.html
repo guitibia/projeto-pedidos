@@ -326,6 +326,11 @@
           <span class="resumo-chip total"><i class="bi bi-currency-dollar"></i> <span id="resumo-total">R$ 0,00</span></span>
         </div>
 
+        <div class="form-check my-2">
+          <input class="form-check-input" type="checkbox" id="conciliar-pedidos" checked>
+          <label class="form-check-label" for="conciliar-pedidos">Conciliar com pedidos das clientes</label>
+        </div>
+
         <div style="display:flex;justify-content:flex-end">
           <button id="btn-importar" onclick="revisarNovos()"
             style="padding:.6rem 1.6rem;border-radius:10px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.9rem;font-weight:700;cursor:pointer">
@@ -816,6 +821,7 @@
       const fd = new FormData();
       fd.append('xml', fileInput.files[0]);
       fd.append('decisoes', JSON.stringify(decisoes));
+      fd.append('conciliar', document.getElementById('conciliar-pedidos')?.checked ? 'true' : 'false');
 
       const res = await fetch('/api/nf/importar', {
         method: 'POST',
