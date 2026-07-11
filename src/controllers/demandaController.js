@@ -103,6 +103,59 @@ async function listarFornecedores(req, res) {
   } catch (e) { console.error('listarFornecedores', e); return res.status(500).json({ error: 'Erro.' }); }
 }
 
+// GET /api/demanda/compra
+async function listaCompra(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT di.fornecedor_cnpj, di.fornecedor_nome, di.codigo, di.nome,
+              (di.qtd_pedida - di.qtd_recebida) AS falta, c.name AS client_name
+       FROM demanda_itens di
+       JOIN demanda_pedidos dp ON dp.id = di.pedido_id
+       JOIN clients c ON c.id = dp.client_id
+       WHERE di.status IN ('pendente','parcial') AND (di.qtd_pedida - di.qtd_recebida) > 0
+       ORDER BY di.fornecedor_nome, di.codigo, di.id`);
+    const mapF = new Map();
+    for (const r of rows) {
+      const fk = r.fornecedor_cnpj || ('nome:' + (r.fornecedor_nome || '?'));
+      if (!mapF.has(fk)) mapF.set(fk, { fornecedor_cnpj: r.fornecedor_cnpj, fornecedor_nome: r.fornecedor_nome, itens: new Map() });
+      const forn = mapF.get(fk);
+      const ck = String(r.codigo);
+      if (!forn.itens.has(ck)) forn.itens.set(ck, { codigo: r.codigo, nome: r.nome, qtd_total: 0, clientes: [] });
+      const it = forn.itens.get(ck);
+      it.qtd_total += Number(r.falta) || 0;
+      it.clientes.push({ client_name: r.client_name, qtd: Number(r.falta) || 0 });
+    }
+    const out = [...mapF.values()].map(f => ({ fornecedor_cnpj: f.fornecedor_cnpj, fornecedor_nome: f.fornecedor_nome, itens: [...f.itens.values()] }));
+    return res.json(out);
+  } catch (e) { console.error('listaCompra', e); return res.status(500).json({ error: 'Erro na lista de compra.' }); }
+}
+
+// GET /api/demanda/relatorio
+async function relatorio(req, res) {
+  try {
+    const [porCliente] = await db.query(
+      `SELECT c.name AS client_name, dp.id AS pedido_id,
+              SUM(CASE WHEN di.status='veio' THEN 1 ELSE 0 END) AS itens_veio,
+              SUM(CASE WHEN di.status='parcial' THEN 1 ELSE 0 END) AS itens_parcial,
+              SUM(CASE WHEN di.status IN ('pendente','faltou') THEN 1 ELSE 0 END) AS itens_faltou,
+              COUNT(*) AS itens_total
+       FROM demanda_itens di
+       JOIN demanda_pedidos dp ON dp.id = di.pedido_id
+       JOIN clients c ON c.id = dp.client_id
+       GROUP BY dp.id, c.name
+       ORDER BY dp.created_at DESC LIMIT 300`);
+    const [porFornecedor] = await db.query(
+      `SELECT COALESCE(fornecedor_nome, '(sem fornecedor)') AS fornecedor_nome, fornecedor_cnpj,
+              SUM(qtd_pedida) AS qtd_pedida, SUM(qtd_recebida) AS qtd_recebida,
+              SUM(qtd_pedida - qtd_recebida) AS qtd_faltou
+       FROM demanda_itens
+       GROUP BY fornecedor_nome, fornecedor_cnpj
+       ORDER BY fornecedor_nome LIMIT 300`);
+    return res.json({ porCliente, porFornecedor });
+  } catch (e) { console.error('relatorio', e); return res.status(500).json({ error: 'Erro no relatório.' }); }
+}
+
 module.exports = {
   criarPedido, listarPedidos, getPedido, addItem, updateItem, deleteItem, listarFornecedores,
+  listaCompra, relatorio,
 };

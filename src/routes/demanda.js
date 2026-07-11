@@ -4,6 +4,8 @@ const c = require('../controllers/demandaController');
 
 // rotas fixas ANTES de /:id para não serem capturadas pelo parâmetro
 router.get('/fornecedores', c.listarFornecedores);
+router.get('/compra', c.listaCompra);
+router.get('/relatorio', c.relatorio);
 
 router.post('/', c.criarPedido);
 router.get('/', c.listarPedidos);

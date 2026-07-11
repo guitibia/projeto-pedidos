@@ -11,7 +11,8 @@ test('migração criou as tabelas de demanda', async () => {
 });
 
 const {
-  criarPedido, getPedido, addItem, updateItem, deleteItem, listarPedidos, listarFornecedores
+  criarPedido, getPedido, addItem, updateItem, deleteItem, listarPedidos, listarFornecedores,
+  listaCompra, relatorio
 } = require('../src/controllers/demandaController');
 
 function mockRes() {
@@ -80,4 +81,31 @@ test('deleteItem remove o item', async () => {
   await getPedido({ params: { id: pedidoId } }, res);
   assert.strictEqual(res.body.itens.length, 0);
   await cleanupDemanda();
+});
+
+test('listaCompra agrupa linhas pendentes por fornecedor', async () => {
+  const clientId = await seedClient();
+  let res = mockRes();
+  await criarPedido({ body: { client_id: clientId } }, res);
+  const pedidoId = res.body.id;
+  res = mockRes();
+  await addItem({ params: { id: pedidoId }, body: { fornecedor_nome: 'Natura', fornecedor_cnpj: '11111111000191', codigo: 'AA1', nome: 'Batom', qtd_pedida: 2 } }, res);
+
+  res = mockRes();
+  await listaCompra({ query: {} }, res);
+  assert.strictEqual(res.statusCode, 200);
+  const forn = res.body.find(f => f.fornecedor_cnpj === '11111111000191');
+  assert.ok(forn, 'fornecedor presente');
+  const it = forn.itens.find(i => i.codigo === 'AA1');
+  assert.strictEqual(it.qtd_total, 2);
+  assert.strictEqual(it.clientes.length, 1);
+  await cleanupDemanda();
+});
+
+test('relatorio devolve visões por cliente e por fornecedor', async () => {
+  const res = mockRes();
+  await relatorio({ query: {} }, res);
+  assert.strictEqual(res.statusCode, 200);
+  assert.ok(Array.isArray(res.body.porCliente));
+  assert.ok(Array.isArray(res.body.porFornecedor));
 });
