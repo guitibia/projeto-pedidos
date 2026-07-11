@@ -15,5 +15,6 @@ router.put('/itens/:itemId', c.updateItem);
 router.delete('/itens/:itemId', c.deleteItem);
 router.get('/:id/rascunho-venda', c.rascunhoVenda);
 router.put('/itens/:itemId/venda', c.marcarVenda);
+router.put('/itens/:itemId/alocacao', c.remanejarAlocacao);
 
 module.exports = router;

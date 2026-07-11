@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 require('dotenv').config();
 const db = require('../src/database/connection');
-const { rascunhoVenda, marcarVenda } = require('../src/controllers/demandaController');
+const { rascunhoVenda, marcarVenda, remanejarAlocacao } = require('../src/controllers/demandaController');
 
 function mockRes(){ return { statusCode:200, body:null, status(c){this.statusCode=c;return this;}, json(b){this.body=b;return this;} }; }
 async function seedClient(){ const [r] = await db.query('INSERT INTO clients (name) VALUES (?)', ['zz_test_cli_'+Date.now()+Math.random()]); return r.insertId; }
@@ -45,4 +45,20 @@ test('marcarVenda grava order_id e bloqueia segunda venda (409)', async () => {
   } finally {
     await cleanup();
   }
+});
+
+test('remanejarAlocacao ajusta recebido e rejeita acima do pedido (400)', async () => {
+  const cli = await seedClient();
+  const [p] = await db.query('INSERT INTO demanda_pedidos (client_id) VALUES (?)', [cli]);
+  const [i] = await db.query('INSERT INTO demanda_itens (pedido_id, codigo, qtd_pedida, qtd_recebida, status) VALUES (?,?,?,?,?)', [p.insertId, 'K1', 3, 3, 'veio']);
+  let res = mockRes();
+  await remanejarAlocacao({ params: { itemId: i.insertId }, body: { qtd_recebida: 1 } }, res);
+  assert.strictEqual(res.statusCode, 200);
+  let [[row]] = await db.query('SELECT qtd_recebida, status FROM demanda_itens WHERE id = ?', [i.insertId]);
+  assert.strictEqual(Number(row.qtd_recebida), 1);
+  assert.strictEqual(row.status, 'parcial');
+  res = mockRes();
+  await remanejarAlocacao({ params: { itemId: i.insertId }, body: { qtd_recebida: 99 } }, res);
+  assert.strictEqual(res.statusCode, 400);
+  await cleanup();
 });
