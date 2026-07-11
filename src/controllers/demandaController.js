@@ -221,7 +221,8 @@ async function marcarVenda(req, res) {
     const [[item]] = await db.query('SELECT order_id FROM demanda_itens WHERE id = ?', [itemId]);
     if (!item) return res.status(404).json({ error: 'Item não encontrado.' });
     if (item.order_id) return res.status(409).json({ error: 'Este item já foi vendido.' });
-    await db.query('UPDATE demanda_itens SET order_id = ? WHERE id = ?', [orderId, itemId]);
+    const [r] = await db.query('UPDATE demanda_itens SET order_id = ? WHERE id = ? AND order_id IS NULL', [orderId, itemId]);
+    if (r.affectedRows === 0) return res.status(409).json({ error: 'Este item já foi vendido.' });
     return res.json({ ok: true });
   } catch (e) { console.error('marcarVenda', e); return res.status(500).json({ error: 'Erro.' }); }
 }
