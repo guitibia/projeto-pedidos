@@ -72,15 +72,30 @@ async function updateItem(req, res) {
   if (!Number.isInteger(qtd) || qtd <= 0) return res.status(400).json({ error: 'Quantidade inválida.' });
   const preco = b.preco_venda == null || b.preco_venda === '' ? null : Number(b.preco_venda);
   if (preco != null && (isNaN(preco) || preco < 0)) return res.status(400).json({ error: 'Preço inválido.' });
+  const conn = await db.getConnection();
   try {
-    const [r] = await db.query(
+    await conn.beginTransaction();
+    const [r] = await conn.query(
       'UPDATE demanda_itens SET fornecedor_nome = ?, fornecedor_cnpj = ?, codigo = ?, nome = ?, qtd_pedida = ?, preco_venda = ? WHERE id = ?',
       [b.fornecedor_nome ? String(b.fornecedor_nome).slice(0, 160) : null,
        b.fornecedor_cnpj ? String(b.fornecedor_cnpj).replace(/\D/g, '').slice(0, 14) : null,
        String(b.codigo || '').trim().slice(0, 60), b.nome ? String(b.nome).slice(0, 200) : null, qtd, preco, itemId]);
-    if (r.affectedRows === 0) return res.status(404).json({ error: 'Item não encontrado.' });
+    if (r.affectedRows === 0) { await conn.rollback(); return res.status(404).json({ error: 'Item não encontrado.' }); }
+
+    // Clamp: reduzir qtd_pedida abaixo do que já foi recebido não pode deixar qtd_faltou negativo.
+    await conn.query('UPDATE demanda_itens SET qtd_recebida = LEAST(qtd_recebida, qtd_pedida) WHERE id = ?', [itemId]);
+
+    const [[item]] = await conn.query('SELECT qtd_pedida, qtd_recebida, pedido_id FROM demanda_itens WHERE id = ?', [itemId]);
+    const recebida = Number(item.qtd_recebida);
+    const pedida = Number(item.qtd_pedida);
+    const status = recebida >= pedida ? 'veio' : (recebida > 0 ? 'parcial' : 'pendente');
+    await conn.query('UPDATE demanda_itens SET status = ? WHERE id = ?', [status, itemId]);
+    await recalcularStatusPedido(conn, item.pedido_id);
+
+    await conn.commit();
     return res.json({ ok: true });
-  } catch (e) { console.error('updateItem', e); return res.status(500).json({ error: 'Erro ao atualizar item.' }); }
+  } catch (e) { await conn.rollback(); console.error('updateItem', e); return res.status(500).json({ error: 'Erro ao atualizar item.' }); }
+  finally { conn.release(); }
 }
 
 // DELETE /api/demanda/itens/:itemId
@@ -147,7 +162,7 @@ async function relatorio(req, res) {
     const [porFornecedor] = await db.query(
       `SELECT COALESCE(fornecedor_nome, '(sem fornecedor)') AS fornecedor_nome, fornecedor_cnpj,
               SUM(qtd_pedida) AS qtd_pedida, SUM(qtd_recebida) AS qtd_recebida,
-              SUM(qtd_pedida - qtd_recebida) AS qtd_faltou
+              SUM(GREATEST(qtd_pedida - qtd_recebida, 0)) AS qtd_faltou
        FROM demanda_itens
        GROUP BY fornecedor_nome, fornecedor_cnpj
        ORDER BY fornecedor_nome LIMIT 300`);

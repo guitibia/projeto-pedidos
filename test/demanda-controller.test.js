@@ -109,3 +109,44 @@ test('relatorio devolve visões por cliente e por fornecedor', async () => {
   assert.ok(Array.isArray(res.body.porCliente));
   assert.ok(Array.isArray(res.body.porFornecedor));
 });
+
+test('updateItem faz clamp de qtd_recebida e recalcula status (veio)', async () => {
+  const clientId = await seedClient();
+  let res = mockRes();
+  await criarPedido({ body: { client_id: clientId } }, res);
+  const pedidoId = res.body.id;
+  res = mockRes();
+  await addItem({ params: { id: pedidoId }, body: { codigo: 'Z1', qtd_pedida: 5 } }, res);
+  const itemId = res.body.id;
+  // Simula recebimento total (5/5, status 'veio') via UPDATE direto, como faria a conciliação.
+  await db.query("UPDATE demanda_itens SET qtd_recebida = 5, status = 'veio' WHERE id = ?", [itemId]);
+
+  res = mockRes();
+  await updateItem({ params: { itemId }, body: { qtd_pedida: 2 } }, res);
+  assert.strictEqual(res.statusCode, 200);
+  let [[row]] = await db.query('SELECT qtd_pedida, qtd_recebida, status FROM demanda_itens WHERE id = ?', [itemId]);
+  assert.strictEqual(Number(row.qtd_pedida), 2);
+  assert.strictEqual(Number(row.qtd_recebida), 2, 'clamp: recebida não pode passar da pedida');
+  assert.strictEqual(row.status, 'veio', '2 recebida >= 2 pedida => veio');
+  await cleanupDemanda();
+});
+
+test('updateItem recalcula status para parcial quando recebida < pedida', async () => {
+  const clientId = await seedClient();
+  let res = mockRes();
+  await criarPedido({ body: { client_id: clientId } }, res);
+  const pedidoId = res.body.id;
+  res = mockRes();
+  await addItem({ params: { id: pedidoId }, body: { codigo: 'Z2', qtd_pedida: 5 } }, res);
+  const itemId = res.body.id;
+  await db.query("UPDATE demanda_itens SET qtd_recebida = 2, status = 'parcial' WHERE id = ?", [itemId]);
+
+  res = mockRes();
+  await updateItem({ params: { itemId }, body: { qtd_pedida: 3 } }, res);
+  assert.strictEqual(res.statusCode, 200);
+  const [[row]] = await db.query('SELECT qtd_pedida, qtd_recebida, status FROM demanda_itens WHERE id = ?', [itemId]);
+  assert.strictEqual(Number(row.qtd_pedida), 3);
+  assert.strictEqual(Number(row.qtd_recebida), 2, 'recebida abaixo da pedida não é alterada');
+  assert.strictEqual(row.status, 'parcial', '2 recebida < 3 pedida => parcial');
+  await cleanupDemanda();
+});
