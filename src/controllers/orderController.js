@@ -5,7 +5,7 @@ const VALID_PAYMENT_METHODS = ['PIX', 'DINHEIRO', 'CARTÃO DE CRÉDITO', 'PARCEL
 
 // POST /api/orders  — usa transação para garantir consistência
 async function createOrder(req, res) {
-  const { clientId, paymentMethod, products, totalValue, combinedPaymentValue, installments } = req.body;
+  const { clientId, paymentMethod, products, totalValue, combinedPaymentValue, installments, demandaItemIds } = req.body;
 
   const productArray = Array.isArray(products) ? products : [products];
 
@@ -72,6 +72,15 @@ async function createOrder(req, res) {
         'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)',
         [product.id, 'Saída', qtd, `Pedido #${orderId}`]
       );
+    }
+
+    // Marcação atômica das linhas de demanda que originaram esta venda (opcional, aditivo).
+    // Só quem tiver order_id ainda NULL é marcado — protege contra reclique/duplicidade.
+    if (Array.isArray(demandaItemIds) && demandaItemIds.length) {
+      const ids = demandaItemIds.map(v => parseInt(v, 10)).filter(v => Number.isInteger(v));
+      if (ids.length) {
+        await conn.query('UPDATE demanda_itens SET order_id = ? WHERE id IN (?) AND order_id IS NULL', [orderId, ids]);
+      }
     }
 
     await conn.commit();

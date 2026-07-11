@@ -588,7 +588,7 @@
           rascunhoAtual = rasc;
           if (rasc.client_id) cs.value = String(rasc.client_id);
           rasc.itens.forEach(it => {
-            adicionarItemAoCarrinho(it.product_id, it.nome || ('Produto #' + it.product_id), Number(it.preco) || 0, Number(it.qtd) || 1, false, null);
+            adicionarItemAoCarrinho(it.product_id, it.nome || ('Produto #' + it.product_id), Number(it.preco) || 0, Number(it.qtd) || 1, false, null, it.demanda_item_id);
           });
           switchTab(document.querySelector('[data-tab="criar"]'));
           Swal.fire({ icon: 'info', title: 'Rascunho de venda carregado', text: 'Confira os itens recebidos da Demanda e finalize o pedido.', timer: 2500, showConfirmButton: false });
@@ -737,9 +737,9 @@
 
   // Adiciona um item ao carrinho do pedido (reaproveitada tanto pelo botão "+" quanto
   // pelo pré-preenchimento vindo do rascunho de venda da Demanda).
-  function adicionarItemAoCarrinho(productId, productName, salePrice, qty, isPromo, cost) {
+  function adicionarItemAoCarrinho(productId, productName, salePrice, qty, isPromo, cost, demandaItemId) {
     const totalProduct = salePrice * qty;
-    const entry = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null };
+    const entry = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null, demandaItemId: demandaItemId || null };
 
     const li = document.createElement('li');
     li.className = 'product-item';
@@ -828,13 +828,16 @@
     if (!method) return Swal.fire('Atenção', 'Selecione um método de pagamento.', 'warning');
 
     const needsInstallments = method === 'PARCELADO' || method === 'PAGAMENTO COMBINADO';
+    // Só os demanda_item_id dos itens que AINDA estão no carrinho (itens removidos não devem ser marcados).
+    const demandaItemIds = productsList.filter(p => p.demandaItemId).map(p => p.demandaItemId);
     const payload = {
       clientId:             document.getElementById('clientId').value,
       paymentMethod:        method,
       products:             productsList,
       totalValue,
       installments:         needsInstallments ? (document.getElementById('installments').value || null) : null,
-      combinedPaymentValue: method === 'PAGAMENTO COMBINADO' ? (document.getElementById('combinedPaymentValue').value || null) : null
+      combinedPaymentValue: method === 'PAGAMENTO COMBINADO' ? (document.getElementById('combinedPaymentValue').value || null) : null,
+      demandaItemIds:       demandaItemIds.length ? demandaItemIds : undefined
     };
 
     try {
@@ -842,18 +845,9 @@
       const data = await res.json();
       if (!res.ok) return Swal.fire('Erro', data.error, 'error');
 
-      // Se o pedido veio de um rascunho de venda (Demanda), marca cada item de demanda com o order_id gerado.
-      if (rascunhoAtual && rascunhoAtual.itens && rascunhoAtual.itens.length) {
-        for (const it of rascunhoAtual.itens) {
-          try {
-            await Auth.apiFetch('/api/demanda/itens/'+it.demanda_item_id+'/venda', {
-              method: 'PUT', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ order_id: data.orderId })
-            });
-          } catch (e) { console.error('Falha ao marcar item de demanda como vendido', it.demanda_item_id, e); }
-        }
-        rascunhoAtual = null;
-      }
+      // A marcação de demanda_itens.order_id agora é feita atomicamente pelo backend (POST /api/orders),
+      // dentro da mesma transação que cria o pedido — ver demandaItemIds acima.
+      rascunhoAtual = null;
 
       await Swal.fire({
         icon: 'success',
