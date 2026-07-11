@@ -155,7 +155,48 @@ async function relatorio(req, res) {
   } catch (e) { console.error('relatorio', e); return res.status(500).json({ error: 'Erro no relatório.' }); }
 }
 
+// Helper: recalcula o status do pedido pai a partir das suas linhas.
+async function recalcularStatusPedido(conn, pedidoId) {
+  const [itens] = await conn.query('SELECT qtd_recebida, status FROM demanda_itens WHERE pedido_id = ?', [pedidoId]);
+  if (!itens.length) return;
+  const algumRecebido = itens.some(i => Number(i.qtd_recebida) > 0);
+  const todosVieram = itens.every(i => i.status === 'veio');
+  const status = todosVieram ? 'concluido' : (algumRecebido ? 'parcial' : 'aberto');
+  await conn.query('UPDATE demanda_pedidos SET status = ? WHERE id = ?', [status, pedidoId]);
+}
+
+// Chamado por nfController.importar, DENTRO da mesma transação, atrás da flag `conciliar`.
+async function aplicarConciliacao(conn, nfId, emitenteCnpj) {
+  if (!emitenteCnpj) return;
+  const [nfItensRows] = await conn.query(
+    'SELECT cprod AS codigo, SUM(quantidade) AS qtd, MAX(product_id) AS product_id FROM nf_entrada_itens WHERE nf_id = ? GROUP BY cprod', [nfId]);
+  const [linhas] = await conn.query(
+    "SELECT id, codigo, qtd_pedida, qtd_recebida, created_at, product_id, pedido_id FROM demanda_itens WHERE fornecedor_cnpj = ? AND status IN ('pendente','parcial') ORDER BY created_at, id", [emitenteCnpj]);
+  if (!linhas.length || !nfItensRows.length) return;
+
+  const nfItens = nfItensRows.map(r => ({ codigo: r.codigo, qtd: Number(r.qtd) }));
+  const { alocacoes } = conciliar(nfItens, linhas);
+
+  const prodPorCod = new Map(nfItensRows.map(r => [String(r.codigo).trim().toLowerCase(), r.product_id]));
+  const linhaPorId = new Map(linhas.map(l => [l.id, l]));
+  const pedidosAfetados = new Set();
+
+  for (const a of alocacoes) {
+    const [ins] = await conn.query('INSERT IGNORE INTO demanda_conciliacoes (nf_id, demanda_item_id, qtd) VALUES (?, ?, ?)', [nfId, a.demanda_item_id, a.qtd]);
+    if (ins.affectedRows === 0) continue; // já contado numa importação anterior (idempotência)
+    const linha = linhaPorId.get(a.demanda_item_id);
+    const novoRecebido = (Number(linha.qtd_recebida) || 0) + a.qtd;
+    const novoStatus = novoRecebido >= Number(linha.qtd_pedida) ? 'veio' : 'parcial';
+    const pid = linha.product_id || prodPorCod.get(String(linha.codigo).trim().toLowerCase()) || null;
+    await conn.query('UPDATE demanda_itens SET qtd_recebida = ?, status = ?, product_id = COALESCE(product_id, ?) WHERE id = ?',
+      [novoRecebido, novoStatus, pid, a.demanda_item_id]);
+    linha.qtd_recebida = novoRecebido;
+    pedidosAfetados.add(linha.pedido_id);
+  }
+  for (const pid of pedidosAfetados) await recalcularStatusPedido(conn, pid);
+}
+
 module.exports = {
   criarPedido, listarPedidos, getPedido, addItem, updateItem, deleteItem, listarFornecedores,
-  listaCompra, relatorio,
+  listaCompra, relatorio, aplicarConciliacao,
 };
