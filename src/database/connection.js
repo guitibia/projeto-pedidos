@@ -205,6 +205,13 @@ pool.getConnection()
       'ALTER TABLE nf_entrada_itens ADD COLUMN ean VARCHAR(14) NULL',
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Migração: pedidos das clientes + conciliação com a NF
+    for (const sql of [
+      "CREATE TABLE IF NOT EXISTS demanda_pedidos (id INT AUTO_INCREMENT PRIMARY KEY, client_id INT NOT NULL, observacao VARCHAR(255) NULL, status VARCHAR(12) NOT NULL DEFAULT 'aberto', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX (client_id))",
+      "CREATE TABLE IF NOT EXISTS demanda_itens (id INT AUTO_INCREMENT PRIMARY KEY, pedido_id INT NOT NULL, fornecedor_cnpj VARCHAR(14) NULL, fornecedor_nome VARCHAR(160) NULL, codigo VARCHAR(60) NOT NULL, nome VARCHAR(200) NULL, qtd_pedida INT NOT NULL, qtd_recebida INT NOT NULL DEFAULT 0, preco_venda DECIMAL(10,2) NULL, product_id INT NULL, status VARCHAR(12) NOT NULL DEFAULT 'pendente', order_id INT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX (pedido_id), INDEX (fornecedor_cnpj, codigo))",
+      "CREATE TABLE IF NOT EXISTS demanda_conciliacoes (id INT AUTO_INCREMENT PRIMARY KEY, nf_id INT NOT NULL, demanda_item_id INT NOT NULL, qtd INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY uq_nf_item (nf_id, demanda_item_id))",
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Backfill one-shot: nomes de produto "gritando" (CAIXA ALTA) viram Title Case.
     // Só mexe nos 100% maiúsculos; nomes já formatados ficam intactos.
     try {

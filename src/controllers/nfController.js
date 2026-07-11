@@ -105,6 +105,18 @@ function importar(req, res) {
         }
       }
 
+      // Conciliação opcional com os pedidos das clientes (não pode derrubar a importação).
+      if (String(req.body.conciliar) === 'true' || String(req.body.conciliar) === '1') {
+        try {
+          await conn.query('SAVEPOINT sp_conc');
+          const { aplicarConciliacao } = require('./demandaController');
+          await aplicarConciliacao(conn, nfId, nf.emitente.cnpj);
+        } catch (e) {
+          console.error('Conciliação falhou (NF importada mesmo assim):', e);
+          try { await conn.query('ROLLBACK TO SAVEPOINT sp_conc'); } catch (_) {}
+        }
+      }
+
       await conn.commit();
       return res.status(201).json({ ok: true, nfId, message: 'Nota importada e estoque atualizado.' });
     } catch (e) {

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedidos das Clientes</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/theme.js"></script>
+  <style>
+    .page-hero-icon {
+      width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+      background: linear-gradient(135deg, #0d6efd 0%, #6f42c1 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff;
+      box-shadow: 0 4px 14px rgba(13,110,253,.3);
+    }
+    .page-hero-title { font-size: 1.3rem; font-weight: 700; margin: 0; }
+    .page-hero-sub   { font-size: .8rem; color: var(--text-muted); margin: 0; }
+    .card-section {
+      background: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div>
+        <div class="system-name">Sistema de Pedidos</div>
+        <div class="user-name" id="sidebar-user">Carregando...</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav"></nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()" style="margin-bottom:.5rem"><i class="bi bi-sun"></i> Tema claro</button>
+    <button class="btn-logout" id="btn-logout"><i class="bi bi-box-arrow-left"></i> Sair</button>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="container-fluid py-3" style="max-width:1100px">
+
+    <!-- Hero -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div class="page-hero-icon"><i class="bi bi-people"></i></div>
+      <div>
+        <div class="page-hero-title">Pedidos das Clientes</div>
+        <div class="page-hero-sub">Registre o que cada cliente pediu, agrupe por fornecedor pra comprar e concilie com a NF</div>
+      </div>
+    </div>
+
+    <div class="card-section">
+      <ul class="nav nav-tabs mb-3" id="demandaTabs">
+        <li class="nav-item"><button class="nav-link active" data-tab="pedidos">Pedidos</button></li>
+        <li class="nav-item"><button class="nav-link" data-tab="comprar">Comprar</button></li>
+        <li class="nav-item"><button class="nav-link" data-tab="relatorio">Conciliação / Relatório</button></li>
+      </ul>
+
+      <section id="tab-pedidos">
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+          <select id="novo-cliente" class="form-select" style="max-width:320px"></select>
+          <input id="novo-obs" class="form-control" placeholder="Observação (opcional)" style="max-width:280px">
+          <button id="btn-novo-pedido" class="btn btn-primary">Novo pedido</button>
+        </div>
+        <div id="lista-pedidos"></div>
+      </section>
+
+      <section id="tab-comprar" class="d-none"><div id="lista-compra"></div></section>
+      <section id="tab-relatorio" class="d-none"><div id="conteudo-relatorio"></div></section>
+    </div>
+
+  </div>
+</div>
+
+<footer class="text-center py-3 mt-4">
+  <small>&copy; <span id="footer-year"></span> Sistema de Pedidos</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  Auth.requireAuth();
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+  Auth.initSidebar();
+  document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+  function esc(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  const $ = s => document.querySelector(s);
+  function show(tab){
+    for (const s of ['pedidos','comprar','relatorio']) $('#tab-'+s).classList.toggle('d-none', s!==tab);
+    document.querySelectorAll('#demandaTabs .nav-link').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+    if (tab==='comprar') carregarCompra();
+    if (tab==='relatorio') carregarRelatorio();
+  }
+  document.querySelectorAll('#demandaTabs .nav-link').forEach(b => b.onclick = () => show(b.dataset.tab));
+
+  let clientes = [];
+  async function carregarClientes(){
+    const r = await Auth.apiFetch('/api/clients'); clientes = await r.json();
+    $('#novo-cliente').innerHTML = '<option value="">Escolha a cliente…</option>' +
+      clientes.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  }
+  let fornecedores = [];
+  async function carregarFornecedores(){
+    const r = await Auth.apiFetch('/api/demanda/fornecedores'); fornecedores = await r.json();
+  }
+
+  async function carregarPedidos(){
+    const r = await Auth.apiFetch('/api/demanda'); const pedidos = await r.json();
+    $('#lista-pedidos').innerHTML = pedidos.map(p => `
+      <div class="card mb-2"><div class="card-body">
+        <div class="d-flex justify-content-between">
+          <strong>${esc(p.client_name)}</strong>
+          <span class="badge bg-secondary">${esc(p.status)} · ${p.qtd_itens} itens</span>
+        </div>
+        ${p.observacao ? `<div class="text-muted small">${esc(p.observacao)}</div>` : ''}
+        <button class="btn btn-sm btn-outline-primary mt-2" onclick="abrirPedido(${p.id})">Abrir</button>
+      </div></div>`).join('') || '<p class="text-muted">Nenhum pedido ainda.</p>';
+  }
+
+  $('#btn-novo-pedido').onclick = async () => {
+    const client_id = $('#novo-cliente').value;
+    if (!client_id) return Swal.fire('Escolha a cliente', '', 'warning');
+    const r = await Auth.apiFetch('/api/demanda', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id, observacao: $('#novo-obs').value }) });
+    if (!r.ok) return Swal.fire('Erro', (await r.json()).error || '', 'error');
+    const novo = await r.json();
+    $('#novo-obs').value = '';
+    await carregarPedidos();
+    abrirPedido(novo.id);
+  };
+
+  async function abrirPedido(id){
+    const r = await Auth.apiFetch('/api/demanda/'+id); const p = await r.json();
+    const fornOpts = fornecedores.map(f => `<option value="${esc(f.cnpj)}" data-nome="${esc(f.nome)}">${esc(f.nome)}</option>`).join('');
+    const linhas = p.itens.map(i => `
+      <tr>
+        <td>${esc(i.fornecedor_nome||'')}</td><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td>
+        <td>${i.qtd_pedida}</td>
+        <td><input type="number" min="0" value="${i.qtd_recebida}" style="width:64px" class="form-control form-control-sm"
+            onchange="ajustarRecebido(${i.id}, this.value, ${id})"></td>
+        <td>${esc(i.status)}</td>
+        <td><button class="btn btn-sm btn-outline-danger" onclick="removerItem(${i.id}, ${id})">×</button></td>
+      </tr>`).join('');
+    Swal.fire({
+      title: esc(p.client_name), width: 800,
+      html: `
+        <table class="table table-sm"><thead><tr><th>Fornecedor</th><th>Cód.</th><th>Produto</th><th>Ped.</th><th>Rec.</th><th>Status</th><th></th></tr></thead>
+        <tbody>${linhas || '<tr><td colspan=7 class="text-muted">Sem itens</td></tr>'}</tbody></table>
+        <hr>
+        <div class="row g-2">
+          <div class="col"><select id="it-forn" class="form-select form-select-sm"><option value="">Fornecedor…</option>${fornOpts}</select></div>
+          <div class="col"><input id="it-cod" class="form-control form-control-sm" placeholder="Código"></div>
+          <div class="col"><input id="it-nome" class="form-control form-control-sm" placeholder="Produto"></div>
+          <div class="col"><input id="it-qtd" type="number" min="1" value="1" class="form-control form-control-sm" placeholder="Qtd"></div>
+          <div class="col"><input id="it-preco" type="number" min="0" step="0.01" class="form-control form-control-sm" placeholder="Preço"></div>
+          <div class="col-auto"><button id="it-add" class="btn btn-sm btn-primary">+</button></div>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+          <button id="btn-gerar-venda" class="btn btn-sm btn-success">Gerar venda do que veio</button>
+          <button id="btn-whats" class="btn btn-sm btn-outline-success">Avisar no WhatsApp</button>
+        </div>`,
+      showConfirmButton: false, showCloseButton: true,
+      didOpen: () => {
+        document.getElementById('it-add').onclick = async () => {
+          const sel = document.getElementById('it-forn');
+          const body = {
+            fornecedor_cnpj: sel.value,
+            fornecedor_nome: sel.selectedOptions[0] ? sel.selectedOptions[0].dataset.nome : '',
+            codigo: document.getElementById('it-cod').value,
+            nome: document.getElementById('it-nome').value,
+            qtd_pedida: document.getElementById('it-qtd').value,
+            preco_venda: document.getElementById('it-preco').value,
+          };
+          const rr = await Auth.apiFetch('/api/demanda/'+id+'/itens', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+          if (!rr.ok) return Swal.fire('Erro', (await rr.json()).error || '', 'error');
+          abrirPedido(id);
+        };
+        document.getElementById('btn-gerar-venda').onclick = async () => {
+          const rr = await Auth.apiFetch('/api/demanda/'+id+'/rascunho-venda');
+          const rasc = await rr.json();
+          if (!rasc.itens || !rasc.itens.length) return Swal.fire('Nada recebido ainda', 'Não há itens com produto e quantidade recebida para vender.', 'info');
+          sessionStorage.setItem('rascunhoVenda', JSON.stringify(rasc));
+          window.location.href = 'pedidos.html';
+        };
+        document.getElementById('btn-whats').onclick = () => {
+          const veio = p.itens.filter(i => i.status==='veio' || i.status==='parcial').map(i => '• '+ (i.nome||i.codigo) + (i.status==='parcial' ? ' (parcial)' : '')).join('\n');
+          const faltou = p.itens.filter(i => i.status!=='veio' && Number(i.qtd_recebida)===0).map(i => '• '+(i.nome||i.codigo)).join('\n');
+          let msg = 'Oi '+p.client_name+'! ';
+          if (veio) msg += 'Chegou:\n'+veio+'\n';
+          if (faltou) msg += '\nInfelizmente não veio dessa vez:\n'+faltou;
+          const tel = (p.phone||'').replace(/\D/g,'');
+          window.open('https://wa.me/'+ (tel ? '55'+tel : '') +'?text='+encodeURIComponent(msg), '_blank');
+        };
+      }
+    });
+  }
+  async function ajustarRecebido(itemId, val, pedidoId){
+    const rr = await Auth.apiFetch('/api/demanda/itens/'+itemId+'/alocacao', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ qtd_recebida: val }) });
+    if (!rr.ok) { Swal.fire('Erro', (await rr.json()).error || '', 'error'); }
+    abrirPedido(pedidoId);
+  }
+  async function removerItem(itemId, pedidoId){
+    const rr = await Auth.apiFetch('/api/demanda/itens/'+itemId, { method:'DELETE' });
+    if (rr.ok) abrirPedido(pedidoId);
+  }
+
+  async function carregarCompra(){
+    const r = await Auth.apiFetch('/api/demanda/compra'); const forns = await r.json();
+    $('#lista-compra').innerHTML = forns.map(f => `
+      <div class="card mb-3"><div class="card-body">
+        <h5>${esc(f.fornecedor_nome||'(sem fornecedor)')}</h5>
+        <table class="table table-sm"><thead><tr><th>Cód.</th><th>Produto</th><th>Qtd</th><th>Clientes</th></tr></thead>
+        <tbody>${f.itens.map(i => `<tr><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td><td>${i.qtd_total}</td>
+          <td>${i.clientes.map(c => esc(c.client_name)+' ('+c.qtd+')').join(', ')}</td></tr>`).join('')}</tbody></table>
+      </div></div>`).join('') || '<p class="text-muted">Nada pendente para comprar.</p>';
+  }
+
+  async function carregarRelatorio(){
+    const r = await Auth.apiFetch('/api/demanda/relatorio'); const d = await r.json();
+    $('#conteudo-relatorio').innerHTML = `
+      <h5>Por cliente</h5>
+      <table class="table table-sm"><thead><tr><th>Cliente</th><th>Veio</th><th>Parcial</th><th>Faltou</th><th>Total</th></tr></thead>
+      <tbody>${d.porCliente.map(c => `<tr><td>${esc(c.client_name)}</td><td>${c.itens_veio}</td><td>${c.itens_parcial}</td><td>${c.itens_faltou}</td><td>${c.itens_total}</td></tr>`).join('')}</tbody></table>
+      <h5 class="mt-4">Por fornecedor</h5>
+      <table class="table table-sm"><thead><tr><th>Fornecedor</th><th>Pedido</th><th>Recebido</th><th>Faltou</th></tr></thead>
+      <tbody>${d.porFornecedor.map(f => `<tr><td>${esc(f.fornecedor_nome)}</td><td>${f.qtd_pedida}</td><td>${f.qtd_recebida}</td><td>${f.qtd_faltou}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  (async function init(){ await carregarClientes(); await carregarFornecedores(); await carregarPedidos(); })();
+</script>
+</body>
+</html>
