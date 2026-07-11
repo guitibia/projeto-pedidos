@@ -13,5 +13,7 @@ router.post('/:id/itens', c.addItem);
 router.get('/:id', c.getPedido);
 router.put('/itens/:itemId', c.updateItem);
 router.delete('/itens/:itemId', c.deleteItem);
+router.get('/:id/rascunho-venda', c.rascunhoVenda);
+router.put('/itens/:itemId/venda', c.marcarVenda);
 
 module.exports = router;

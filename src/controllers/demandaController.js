@@ -196,7 +196,37 @@ async function aplicarConciliacao(conn, nfId, emitenteCnpj) {
   for (const pid of pedidosAfetados) await recalcularStatusPedido(conn, pid);
 }
 
+// GET /api/demanda/:id/rascunho-venda
+async function rascunhoVenda(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  try {
+    const [[ped]] = await db.query('SELECT dp.id, dp.client_id, c.name AS client_name FROM demanda_pedidos dp JOIN clients c ON c.id = dp.client_id WHERE dp.id = ?', [id]);
+    if (!ped) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    const [itens] = await db.query(
+      `SELECT di.id AS demanda_item_id, di.product_id, di.nome, di.qtd_recebida AS qtd,
+              COALESCE(di.preco_venda, p.sale_value) AS preco
+       FROM demanda_itens di LEFT JOIN products p ON p.id = di.product_id
+       WHERE di.pedido_id = ? AND di.qtd_recebida > 0 AND di.product_id IS NOT NULL AND di.order_id IS NULL`, [id]);
+    return res.json({ client_id: ped.client_id, client_name: ped.client_name, itens });
+  } catch (e) { console.error('rascunhoVenda', e); return res.status(500).json({ error: 'Erro.' }); }
+}
+
+// PUT /api/demanda/itens/:itemId/venda
+async function marcarVenda(req, res) {
+  const itemId = parseInt(req.params.itemId, 10);
+  const orderId = parseInt(req.body.order_id, 10);
+  if (!Number.isInteger(itemId) || !Number.isInteger(orderId)) return res.status(400).json({ error: 'Dados inválidos.' });
+  try {
+    const [[item]] = await db.query('SELECT order_id FROM demanda_itens WHERE id = ?', [itemId]);
+    if (!item) return res.status(404).json({ error: 'Item não encontrado.' });
+    if (item.order_id) return res.status(409).json({ error: 'Este item já foi vendido.' });
+    await db.query('UPDATE demanda_itens SET order_id = ? WHERE id = ?', [orderId, itemId]);
+    return res.json({ ok: true });
+  } catch (e) { console.error('marcarVenda', e); return res.status(500).json({ error: 'Erro.' }); }
+}
+
 module.exports = {
   criarPedido, listarPedidos, getPedido, addItem, updateItem, deleteItem, listarFornecedores,
-  listaCompra, relatorio, aplicarConciliacao,
+  listaCompra, relatorio, aplicarConciliacao, rascunhoVenda, marcarVenda,
 };
