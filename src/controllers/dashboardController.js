@@ -43,7 +43,7 @@ async function getDashboard(req, res) {
     `);
 
     const [[pendentes]] = await db.query(`
-      SELECT COUNT(*) AS total FROM orders WHERE status != 'Entregue'
+      SELECT COUNT(*) AS total FROM orders WHERE status = 'Pendente'
     `);
 
     const [[countClientes]] = await db.query(`
