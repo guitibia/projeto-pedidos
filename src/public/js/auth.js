@@ -61,8 +61,38 @@ const Auth = (() => {
     window.location.href = '/login.html';
   }
 
-  // Preenche o nome do usuário na sidebar
+  // Itens do menu lateral — fonte ÚNICA (evita duplicar a sidebar em cada página).
+  // Para adicionar/alterar um item do menu, mexa só aqui.
+  const NAV_ITEMS = [
+    { href: '/painel.html',       icon: 'bi-speedometer2',   label: 'Dashboard' },
+    { href: '/clientes.html',     icon: 'bi-people',         label: 'Clientes' },
+    { href: '/produtos.html',     icon: 'bi-box-seam',       label: 'Produtos' },
+    { href: '/pedidos.html',      icon: 'bi-bag-check',      label: 'Pedidos' },
+    { href: '/estoque.html',      icon: 'bi-archive',        label: 'Estoque' },
+    { href: '/notas.html',        icon: 'bi-receipt-cutoff', label: 'Notas' },
+    { href: '/entrega.html',      icon: 'bi-truck',          label: 'Entrega' },
+    { href: '/promissorias.html', icon: 'bi-receipt',        label: 'Promissórias' },
+    { href: '/demanda.html',      icon: 'bi-card-checklist', label: 'Pedidos das Clientes' },
+    { href: '#', icon: 'bi-keyboard', label: 'Atalhos', onclick: 'window.CommandPalette && CommandPalette.openHelp(); return false;' },
+  ];
+
+  // Monta os links do menu no <nav class="sidebar-nav"> (deixado vazio no HTML de cada página),
+  // marcando como ativo o item cuja href bate com a URL atual.
+  function renderSidebarNav() {
+    const nav = document.querySelector('nav.sidebar-nav');
+    if (!nav) return;
+    const path = window.location.pathname;
+    nav.innerHTML = NAV_ITEMS.map((it) => {
+      const active = it.href !== '#' && path === it.href ? ' active' : '';
+      const onclick = it.onclick ? ` onclick="${it.onclick}"` : '';
+      return `<a class="nav-link${active}" href="${it.href}"${onclick}><i class="bi ${it.icon}"></i> ${it.label}</a>`;
+    }).join('');
+  }
+
+  // Preenche o nome do usuário na sidebar e monta o menu
   function initSidebar() {
+    renderSidebarNav();
+
     const user = getUser();
     const el = document.getElementById('sidebar-user');
     if (el && user) el.textContent = `Olá, ${user.username}!`;
