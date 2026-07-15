@@ -103,7 +103,7 @@ async function getProductById(req, res) {
     const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
     const p = rows[0];
-    return res.json({ id: p.id, name: p.name, cost: p.cost, sale_value: p.sale_value, franchise: p.franchise, code: p.code, promotion_price: p.promotion_price ?? null, description: p.description ?? null, image: p.image ?? null, ean: p.ean ?? null });
+    return res.json({ id: p.id, name: p.name, cost: p.cost, sale_value: p.sale_value, franchise: p.franchise, code: p.code, promotion_price: p.promotion_price ?? null, description: p.description ?? null, image: p.image ?? null, ean: p.ean ?? null, visivel_loja: p.visivel_loja });
   } catch (err) {
     console.error('Erro ao buscar produto:', err);
     return res.status(500).json({ error: 'Erro ao buscar produto.' });
@@ -137,7 +137,7 @@ async function updateProduct(req, res) {
   const id = parseInt(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
 
-  const { name, sale_value, franchise, code, promotion_price, description, ean } = req.body;
+  const { name, sale_value, franchise, code, promotion_price, description, ean, visivel_loja } = req.body;
   if (!name || sale_value == null || !franchise || !code) {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
   }
@@ -156,9 +156,11 @@ async function updateProduct(req, res) {
 
     const cost = await calcCost(conn, franchise, sv);
 
+    const vis = visivel_loja === undefined ? null : (visivel_loja ? 1 : 0);
+
     const [result] = await conn.query(
-      'UPDATE products SET name=?, cost=?, sale_value=?, franchise=?, code=?, promotion_price=?, description=?, ean=? WHERE id=?',
-      [name, cost, sv, franchise, code, promoVal, description ?? null, (ean && String(ean).trim()) ? String(ean).trim().slice(0,14) : null, id]
+      'UPDATE products SET name=?, cost=?, sale_value=?, franchise=?, code=?, promotion_price=?, description=?, ean=?, visivel_loja=COALESCE(?, visivel_loja) WHERE id=?',
+      [name, cost, sv, franchise, code, promoVal, description ?? null, (ean && String(ean).trim()) ? String(ean).trim().slice(0,14) : null, vis, id]
     );
     if (result.affectedRows === 0) {
       await conn.rollback();

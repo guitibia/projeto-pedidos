@@ -217,6 +217,11 @@ pool.getConnection()
       'ALTER TABLE clients ADD COLUMN pix_discount_percent DECIMAL(5,2) NULL',
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Migração: visibilidade do produto na loja (produto da NF nasce oculto; padrão visível)
+    for (const sql of [
+      'ALTER TABLE products ADD COLUMN visivel_loja TINYINT(1) NOT NULL DEFAULT 1',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Backfill one-shot: nomes de produto "gritando" (CAIXA ALTA) viram Title Case.
     // Só mexe nos 100% maiúsculos; nomes já formatados ficam intactos.
     try {

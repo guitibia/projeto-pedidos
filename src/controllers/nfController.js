@@ -69,7 +69,7 @@ function importar(req, res) {
           }
         } else if (d.acao === 'criar' && d.novo) {
           const [pr] = await conn.query(
-            'INSERT INTO products (name, cost, sale_value, franchise, code, ean, estoque) VALUES (?, ?, ?, ?, ?, ?, 0)',
+            'INSERT INTO products (name, cost, sale_value, franchise, code, ean, estoque, visivel_loja) VALUES (?, ?, ?, ?, ?, ?, 0, 0)',
             [titleCasePtBr(String(d.novo.name || it.nomeSugerido || it.descricao)).slice(0, 200),
              // custo = valor unitário REAL da nota de compra (proposital; difere do custo derivado do desconto de franquia)
              it.valorUnit,
