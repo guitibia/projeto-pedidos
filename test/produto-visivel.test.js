@@ -69,6 +69,11 @@ test('ocultarNuncaVendidos oculta sem venda e mantém com venda', async () => {
   const [ord] = await db.query('INSERT INTO orders (client_id, payment_method, total_cost) VALUES (?,?,?)', [cli.insertId, 'PIX', 40]);
   await db.query('INSERT INTO order_products (order_id, product_id, sale_price, quantity) VALUES (?,?,?,?)', [ord.insertId, comVenda, 40, 1]);
 
+  // snapshot dos produtos REAIS (não-fixture) que seriam ocultados, pra restaurar depois
+  // (o endpoint mexe na tabela toda; sem isso o teste poluiria o banco de dev)
+  const [colateral] = await db.query(
+    "SELECT id FROM products WHERE visivel_loja=1 AND name <> 'zz_test_prod' AND NOT EXISTS (SELECT 1 FROM order_products op WHERE op.product_id = products.id)");
+
   const res = mockRes();
   await ocultarNuncaVendidos({}, res);
   assert.strictEqual(res.statusCode, 200);
@@ -77,6 +82,8 @@ test('ocultarNuncaVendidos oculta sem venda e mantém com venda', async () => {
   assert.strictEqual(Number(a.visivel_loja), 0, 'sem venda foi ocultado');
   assert.strictEqual(Number(b.visivel_loja), 1, 'com venda continua visível');
 
+  // restaura os produtos reais afetados (fora dos fixtures)
+  if (colateral.length) await db.query('UPDATE products SET visivel_loja=1 WHERE id IN (?)', [colateral.map(r => r.id)]);
   // limpeza
   await db.query('DELETE FROM order_products WHERE order_id = ?', [ord.insertId]);
   await db.query('DELETE FROM orders WHERE id = ?', [ord.insertId]);
