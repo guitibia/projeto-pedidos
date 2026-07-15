@@ -387,6 +387,8 @@
     }
   }
 
+  let clienteIdAtual = null;
+
   async function loadClientSummary(clientId) {
     const box = document.getElementById('client-profile');
     if (!clientId) { box.style.display = 'none'; box.innerHTML = ''; return; }
@@ -394,7 +396,9 @@
       const res = await Auth.apiFetch('/api/clients/' + clientId + '/summary');
       if (!res.ok) { box.style.display = 'none'; box.innerHTML = ''; return; }
       const d = await res.json();
+      clienteIdAtual = clientId;
       const c = d.client, s = d.stats;
+      const pixPercentVal = (c.pix_discount_percent === null || c.pix_discount_percent === undefined) ? '' : c.pix_discount_percent;
       const dt   = v => v ? new Date(v).toLocaleDateString('pt-BR') : '—';
       const dtDate = v => { if (!v) return '—'; const p = String(v).slice(0, 10).split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : dt(v); };
       const mesAno = v => v ? new Date(v).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : '—';
@@ -488,6 +492,12 @@
               <div class="cp-row"><i class="bi bi-clock-history"></i><div><span class="k">Primeira compra:</span> ${dt(s.primeiraCompra)}</div></div>
               <div class="cp-row"><i class="bi bi-credit-card"></i><div><span class="k">Pagamento preferido:</span> <b>${esc(s.pagamentoPreferido || '—')}</b></div></div>
               <div style="margin-top:.2rem">${statusChips}</div>
+              <div class="input-group input-group-sm mt-2" style="max-width:260px">
+                <span class="input-group-text">Desconto PIX (%)</span>
+                <input type="number" min="0" max="99.99" step="0.01" class="form-control" id="cli-pix-percent" placeholder="usa o global" value="${esc(String(pixPercentVal))}">
+                <button class="btn btn-outline-primary" id="cli-pix-salvar" type="button" onclick="salvarClientePix()">Salvar</button>
+              </div>
+              <div class="form-text">Vazio = usa o desconto global do PIX.</div>
             </div>
           </div>
 
@@ -499,6 +509,22 @@
       box.style.display = 'block';
     } catch (e) {
       box.style.display = 'none'; box.innerHTML = '';
+    }
+  }
+
+  async function salvarClientePix() {
+    if (!clienteIdAtual) return;
+    const v = document.getElementById('cli-pix-percent').value;
+    try {
+      const r = await Auth.apiFetch('/api/clients/' + clienteIdAtual + '/pix-discount', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ percent: v === '' ? null : Number(v) })
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok) Swal.fire('Salvo!', 'Desconto PIX do cliente atualizado.', 'success');
+      else Swal.fire('Erro', data.error || 'Falha ao salvar.', 'error');
+    } catch (e) {
+      Swal.fire('Erro', 'Falha de rede ao salvar.', 'error');
     }
   }
 

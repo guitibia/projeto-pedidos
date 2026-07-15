@@ -285,6 +285,33 @@
           </div>
         </div>
       </div>
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px">
+              <i class="bi bi-qr-code me-1" style="color:#3fb950"></i>Desconto no PIX
+            </h6>
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="pix-ativo" role="switch">
+                <label class="form-check-label" for="pix-ativo" style="font-size:.85rem">Ativar desconto para pagamentos no PIX</label>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <label for="pix-percent" style="font-size:.85rem;white-space:nowrap;margin-bottom:0">Percentual (%)</label>
+              <input type="number" class="form-control form-control-sm" id="pix-percent"
+                step="0.01" min="0" max="99.99" placeholder="0.00" style="max-width:100px">
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-primary btn-sm" id="pix-save">
+                <i class="bi bi-save me-1"></i>Salvar
+              </button>
+              <span id="pix-msg" style="font-size:.8rem"></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Últimos pedidos -->
@@ -647,21 +674,25 @@
       const d = await res.json();
       document.getElementById('desc-global-ativo').checked = !!d.ativo;
       document.getElementById('desc-global-percent').value = d.percent;
+      document.getElementById('pix-ativo').checked = !!d.pixAtivo;
+      document.getElementById('pix-percent').value = d.pixPercent;
     } catch (e) { console.error('Erro ao carregar desconto global:', e); }
   }
 
-  document.getElementById('desc-global-save').addEventListener('click', async () => {
-    const btn = document.getElementById('desc-global-save');
-    const msg = document.getElementById('desc-global-msg');
+  async function salvarDescontos(btnId, msgId) {
+    const btn = document.getElementById(btnId);
+    const msg = document.getElementById(msgId);
     const ativo = document.getElementById('desc-global-ativo').checked;
     const percent = Number(document.getElementById('desc-global-percent').value);
+    const pixAtivo = document.getElementById('pix-ativo').checked;
+    const pixPercent = Number(document.getElementById('pix-percent').value) || 0;
     btn.disabled = true;
     msg.textContent = '';
     try {
       const res = await Auth.apiFetch('/api/descontos', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ativo, percent })
+        body: JSON.stringify({ ativo, percent, pixAtivo, pixPercent })
       });
       if (!res) { msg.textContent = 'Erro de autenticação.'; msg.style.color = '#f85149'; return; }
       const data = await res.json();
@@ -679,7 +710,10 @@
       btn.disabled = false;
       setTimeout(() => { msg.textContent = ''; }, 3000);
     }
-  });
+  }
+
+  document.getElementById('desc-global-save').addEventListener('click', () => salvarDescontos('desc-global-save', 'desc-global-msg'));
+  document.getElementById('pix-save').addEventListener('click', () => salvarDescontos('pix-save', 'pix-msg'));
 
   // ── Gerenciar acessos ──
   const acModalEl = document.getElementById('acessosModal');

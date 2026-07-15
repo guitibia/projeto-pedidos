@@ -212,6 +212,16 @@ pool.getConnection()
       "CREATE TABLE IF NOT EXISTS demanda_conciliacoes (id INT AUTO_INCREMENT PRIMARY KEY, nf_id INT NOT NULL, demanda_item_id INT NOT NULL, qtd INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY uq_nf_item (nf_id, demanda_item_id))",
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Migração: desconto no PIX por cliente
+    for (const sql of [
+      'ALTER TABLE clients ADD COLUMN pix_discount_percent DECIMAL(5,2) NULL',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
+    // Migração: visibilidade do produto na loja (produto da NF nasce oculto; padrão visível)
+    for (const sql of [
+      'ALTER TABLE products ADD COLUMN visivel_loja TINYINT(1) NOT NULL DEFAULT 1',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Backfill one-shot: nomes de produto "gritando" (CAIXA ALTA) viram Title Case.
     // Só mexe nos 100% maiúsculos; nomes já formatados ficam intactos.
     try {

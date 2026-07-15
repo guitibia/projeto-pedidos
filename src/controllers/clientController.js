@@ -101,7 +101,7 @@ async function clientSummary(req, res) {
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
   try {
     const [[client]] = await db.query(
-      'SELECT id, name, email, email_verified, cpf, phone, birthdate, cep, address, house_number, neighborhood, city, created_at FROM clients WHERE id = ?',
+      'SELECT id, name, email, email_verified, cpf, phone, birthdate, cep, address, house_number, neighborhood, city, pix_discount_percent, created_at FROM clients WHERE id = ?',
       [id]);
     if (!client) return res.status(404).json({ error: 'Cliente não encontrado.' });
 
@@ -150,4 +150,23 @@ async function clientSummary(req, res) {
   }
 }
 
-module.exports = { createClient, listClients, listClientOrders, deleteClient, clientSummary };
+// PUT /api/clients/:id/pix-discount  — define o % de desconto no PIX do cliente (vazio = usa o global)
+async function setPixDiscount(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  const raw = req.body.percent;
+  let percent = null;
+  if (raw !== null && raw !== undefined && String(raw).trim() !== '') {
+    percent = Number(raw);
+    if (isNaN(percent) || percent < 0 || percent >= 100) {
+      return res.status(400).json({ error: 'Percentual deve ser entre 0 e 99,99.' });
+    }
+  }
+  try {
+    const [r] = await db.query('UPDATE clients SET pix_discount_percent = ? WHERE id = ?', [percent, id]);
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'Cliente não encontrado.' });
+    return res.json({ ok: true });
+  } catch (e) { console.error('Erro ao salvar desconto PIX do cliente:', e); return res.status(500).json({ error: 'Erro ao salvar.' }); }
+}
+
+module.exports = { createClient, listClients, listClientOrders, deleteClient, clientSummary, setPixDiscount };
