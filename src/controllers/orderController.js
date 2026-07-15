@@ -1,5 +1,6 @@
 const db = require('../database/connection');
 const { getEnderecoRetirada } = require('../utils/delivery');
+const { getDescontoPix, resolvePixPercent, aplicaPix } = require('../utils/pricing');
 
 const VALID_PAYMENT_METHODS = ['PIX', 'DINHEIRO', 'CARTÃO DE CRÉDITO', 'PARCELADO', 'PAGAMENTO COMBINADO'];
 
@@ -32,6 +33,18 @@ async function createOrder(req, res) {
     }
   }
 
+  // Desconto PIX (só quando o pagamento é PIX): aplica por item e recalcula o total.
+  let effProducts = productArray;
+  let effTotal = Number(totalValue);
+  if (paymentMethod === 'PIX') {
+    const [[cli]] = await db.query('SELECT pix_discount_percent FROM clients WHERE id = ?', [clientId]);
+    const pixPct = resolvePixPercent(cli ? cli.pix_discount_percent : null, await getDescontoPix());
+    if (pixPct > 0) {
+      effProducts = productArray.map(p => Object.assign({}, p, { salePrice: aplicaPix(parseFloat(p.salePrice), pixPct) }));
+      effTotal = Number(effProducts.reduce((s, p) => s + (Number(p.salePrice) * (p.quantity || 1)), 0).toFixed(2));
+    }
+  }
+
   const fee = 0;
 
   const conn = await db.getConnection();
@@ -51,12 +64,12 @@ async function createOrder(req, res) {
     // Inserir pedido com taxa de entrega
     const [orderResult] = await conn.query(
       'INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value, delivery_fee) VALUES (?, ?, ?, ?, ?, ?)',
-      [clientId, paymentMethod, installments || null, totalValue, combinedPaymentValue || null, fee]
+      [clientId, paymentMethod, installments || null, effTotal, combinedPaymentValue || null, fee]
     );
     const orderId = orderResult.insertId;
 
     // Inserir produtos do pedido e descontar estoque
-    const productsValues = productArray.map(p => [
+    const productsValues = effProducts.map(p => [
       orderId,
       p.id,
       parseFloat(p.salePrice),
@@ -65,7 +78,7 @@ async function createOrder(req, res) {
     ]);
     await conn.query('INSERT INTO order_products (order_id, product_id, sale_price, quantity, cost_price) VALUES ?', [productsValues]);
 
-    for (const product of productArray) {
+    for (const product of effProducts) {
       const qtd = product.quantity || 1;
       await conn.query('UPDATE products SET estoque = estoque - ? WHERE id = ?', [qtd, product.id]);
       await conn.query(
@@ -84,7 +97,7 @@ async function createOrder(req, res) {
     }
 
     await conn.commit();
-    return res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue, deliveryFee: fee });
+    return res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue: effTotal, deliveryFee: fee });
   } catch (err) {
     await conn.rollback();
     console.error('Erro ao criar pedido:', err);
