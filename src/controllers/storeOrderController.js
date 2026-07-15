@@ -1,6 +1,6 @@
 const db = require('../database/connection');
 const { freteDoBairro, cidadeAtende, getCidadeEntrega, getEnderecoRetirada } = require('../utils/delivery');
-const { precoEfetivo, getDescontoGlobal } = require('../utils/pricing');
+const { precoEfetivo, getDescontoGlobal, getDescontoPix, resolvePixPercent, aplicaPix } = require('../utils/pricing');
 
 const DEFAULT_CITY = 'São João da Boa Vista';
 
@@ -20,7 +20,7 @@ function parseItems(raw) {
 
 async function getClient(id) {
   const [[c]] = await db.query(
-    'SELECT id, name, address, house_number, neighborhood, cep, city, lat, lng FROM clients WHERE id = ?',
+    'SELECT id, name, address, house_number, neighborhood, cep, city, lat, lng, pix_discount_percent FROM clients WHERE id = ?',
     [id]
   );
   return c;
@@ -92,12 +92,16 @@ async function resumo(req, res) {
       fee = await freteDoBairro(addr.neighborhood);
     }
     const total = Number((subtotal + fee).toFixed(2));
+    const pixPct = resolvePixPercent(client.pix_discount_percent, await getDescontoPix());
+    const pixSubtotal = Number(lines.filter(l => l.ok).reduce((s, l) => s + aplicaPix(l.lineTotal, pixPct), 0).toFixed(2));
+    const pixTotal = Number((pixSubtotal + fee).toFixed(2));
     return res.json({
       items: lines.map(l => ({
         id: l.id, name: l.name, image: l.image, franchise: l.franchise,
         unitPrice: l.unitPrice || 0, qty: l.qty, lineTotal: l.lineTotal || 0, ok: l.ok, reason: l.reason,
       })),
       subtotal, deliveryFee: fee, total,
+      pixPercent: pixPct, pixTotal,
       deliveryMethod: metodo,
       enderecoRetirada: metodo === 'retirada' ? await getEnderecoRetirada() : null,
     });

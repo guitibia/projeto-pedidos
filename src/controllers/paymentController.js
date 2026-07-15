@@ -3,6 +3,7 @@ const db = require('../database/connection');
 const mp = require('../services/mercadopago');
 const store = require('../controllers/storeOrderController');
 const { freteDoBairro, cidadeAtende, getCidadeEntrega } = require('../utils/delivery');
+const { getDescontoPix, resolvePixPercent, aplicaPix } = require('../utils/pricing');
 
 // POST /api/loja/pagamentos — valida carrinho, grava intenção, cria preferência MP
 async function criarPagamento(req, res) {
@@ -197,13 +198,19 @@ async function criarPix(req, res) {
   try {
     const client = await store.getClient(req.customer.id);
     if (!client) return res.status(404).json({ error: 'Conta não encontrada.' });
-    const [[conta]] = await db.query('SELECT email, cpf FROM clients WHERE id = ?', [req.customer.id]);
+    const [[conta]] = await db.query('SELECT email, cpf, pix_discount_percent FROM clients WHERE id = ?', [req.customer.id]);
 
     const linhas = await store.buildLines(items);
     const indisponivel = linhas.find(l => !l.ok);
     if (indisponivel) return res.status(400).json({ error: indisponivel.reason || 'Item indisponível.', itemId: indisponivel.id });
 
-    const subtotal = Number(linhas.reduce((s, l) => s + l.lineTotal, 0).toFixed(2));
+    const pixPct = resolvePixPercent(conta ? conta.pix_discount_percent : null, await getDescontoPix());
+    const linhasPix = linhas.map(l => {
+      const unitPrice = aplicaPix(l.unitPrice, pixPct);
+      return Object.assign({}, l, { unitPrice, lineTotal: Number((unitPrice * l.qty).toFixed(2)) });
+    });
+
+    const subtotal = Number(linhasPix.reduce((s, l) => s + l.lineTotal, 0).toFixed(2));
     const metodo = store.metodoEntrega(req.body);
     const addr = store.effectiveAddress(client, req.body);
     const addressChanged = store.hasAddress(req.body);
@@ -225,7 +232,7 @@ async function criarPix(req, res) {
       );
     }
 
-    const snapshot = linhas.map(l => ({ id: l.id, qty: l.qty, unitPrice: l.unitPrice, costPrice: l.costPrice != null ? l.costPrice : null }));
+    const snapshot = linhasPix.map(l => ({ id: l.id, qty: l.qty, unitPrice: l.unitPrice, costPrice: l.costPrice != null ? l.costPrice : null }));
     const externalReference = crypto.randomBytes(32).toString('hex');
 
     const [ins] = await db.query(
