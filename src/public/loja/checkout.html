@@ -49,7 +49,11 @@
     .co-summary-rows { display: flex; flex-direction: column; gap: .5rem; }
     .co-summary-row { display: flex; justify-content: space-between; font-size: .95rem; color: var(--text-soft); }
     .co-summary-row.total { font-weight: 800; font-size: 1.1rem; color: var(--text); border-top: 1px solid var(--border); padding-top: .7rem; margin-top: .3rem; }
+    .co-summary-row.co-summary-economia { font-size: .82rem; color: var(--success); justify-content: flex-end; gap: .3rem; }
     .co-summary-loading { color: var(--text-soft); font-size: .9rem; }
+    .badge-pix-off { display: inline-block; background: var(--success); color: #fff; font-size: .68rem; font-weight: 700; border-radius: 999px; padding: .1rem .5rem; margin-left: .35rem; vertical-align: middle; }
+    .metodo-op .metodo-preco { display: block; font-size: .84rem; font-weight: 700; color: var(--text); margin-top: .1rem; }
+    .metodo-op .metodo-economia { display: block; font-size: .74rem; color: var(--success); }
     /* Alert */
     .form-alert { border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1rem; font-size: .93rem; display: none; }
     .form-alert.error { background: #fdf0ef; color: var(--danger); border: 1px solid #f5c6c3; display: block; }
@@ -205,11 +209,11 @@
       <div class="metodo-pagamento" role="radiogroup" aria-label="Forma de pagamento" style="margin:1rem 0;display:flex;gap:.6rem;flex-wrap:wrap">
         <label class="metodo-op" style="flex:1;min-width:140px;border:1px solid var(--border);border-radius:var(--radius);padding:.7rem .9rem;cursor:pointer;display:flex;align-items:center;gap:.5rem">
           <input type="radio" name="metodo" value="pix" checked>
-          <span><i class="bi bi-qr-code"></i> PIX <small style="display:block;color:var(--text-soft);font-size:.74rem">QR na hora, aprovação imediata</small></span>
+          <span><i class="bi bi-qr-code"></i> PIX <small style="display:block;color:var(--text-soft);font-size:.74rem">QR na hora, aprovação imediata</small><span id="pix-preco" class="metodo-preco"></span></span>
         </label>
         <label class="metodo-op" style="flex:1;min-width:140px;border:1px solid var(--border);border-radius:var(--radius);padding:.7rem .9rem;cursor:pointer;display:flex;align-items:center;gap:.5rem">
           <input type="radio" name="metodo" value="cartao">
-          <span><i class="bi bi-credit-card"></i> Cartão <small style="display:block;color:var(--text-soft);font-size:.74rem">no Mercado Pago</small></span>
+          <span><i class="bi bi-credit-card"></i> Cartão <small style="display:block;color:var(--text-soft);font-size:.74rem">no Mercado Pago</small><span id="cartao-preco" class="metodo-preco"></span></span>
         </label>
       </div>
 
@@ -300,6 +304,10 @@
   var elSummary   = document.getElementById('co-summary-content');
   var elAlert     = document.getElementById('co-alert');
   var btnFinalizar = document.getElementById('btn-finalizar');
+  var elPixPreco    = document.getElementById('pix-preco');
+  var elCartaoPreco = document.getElementById('cartao-preco');
+  var radiosMetodo  = document.querySelectorAll('input[name="metodo"]');
+  var resumoAtual   = null;
 
   var inpCep          = document.getElementById('cep');
   var inpAddress      = document.getElementById('address');
@@ -533,6 +541,57 @@
     return currentMe;
   }).catch(function () { currentMe = null; return null; });
 
+  /* ---------- Renderização dos totais (resumo + opções de pagamento) ---------- */
+  function metodoSelecionado() {
+    return (document.querySelector('input[name="metodo"]:checked') || {}).value || 'pix';
+  }
+
+  function renderTotais(d) {
+    var subtotal    = typeof d.subtotal    === 'number' ? d.subtotal    : 0;
+    var deliveryFee = typeof d.deliveryFee === 'number' ? d.deliveryFee : 0;
+    var total       = typeof d.total       === 'number' ? d.total       : (subtotal + deliveryFee);
+    var pixPercent  = typeof d.pixPercent  === 'number' ? d.pixPercent  : 0;
+    var pixTotal    = typeof d.pixTotal    === 'number' ? d.pixTotal    : total;
+    var freteStr    = deliveryFee === 0 ? 'Grátis' : fmtBRL(deliveryFee);
+    var metodo      = metodoSelecionado();
+    var totalDestaque = (metodo === 'pix' && pixPercent > 0) ? pixTotal : total;
+
+    /* Preço na opção PIX (com selo + economia) */
+    if (pixPercent > 0) {
+      var economia = total - pixTotal;
+      elPixPreco.innerHTML = fmtBRL(pixTotal) + '<span class="badge-pix-off">' + esc(String(pixPercent)) + '% OFF</span>' +
+        '<span class="metodo-economia">você economiza ' + fmtBRL(economia) + '</span>';
+    } else {
+      elPixPreco.innerHTML = fmtBRL(total);
+    }
+    /* Preço na opção Cartão (sempre o valor cheio) */
+    elCartaoPreco.innerHTML = fmtBRL(total);
+
+    /* Linha de desconto no resumo, exibida quando há desconto de PIX */
+    var pixLinhaHtml = '';
+    if (pixPercent > 0) {
+      var economiaResumo = total - pixTotal;
+      pixLinhaHtml =
+        '<div class="co-summary-row"><span>PIX <span class="badge-pix-off">' + esc(String(pixPercent)) + '% OFF</span></span><span>' + fmtBRL(pixTotal) + '</span></div>' +
+        '<div class="co-summary-row co-summary-economia"><span>você economiza ' + fmtBRL(economiaResumo) + ' pagando no PIX</span></div>';
+    }
+
+    elSummary.innerHTML =
+      '<div class="co-summary-rows">' +
+        '<div class="co-summary-row"><span>Subtotal</span><span>' + fmtBRL(subtotal) + '</span></div>' +
+        '<div class="co-summary-row"><span>Frete</span><span>' + esc(freteStr) + '</span></div>' +
+        pixLinhaHtml +
+        '<div class="co-summary-row total"><span>Total' + (metodo === 'pix' && pixPercent > 0 ? ' no PIX' : '') + '</span><span>' + fmtBRL(totalDestaque) + '</span></div>' +
+      '</div>';
+  }
+
+  /* Trocar entre PIX/Cartão apenas re-renderiza os totais já calculados (sem novo fetch) */
+  radiosMetodo.forEach(function (r) {
+    r.addEventListener('change', function () {
+      if (this.checked && resumoAtual) renderTotais(resumoAtual);
+    });
+  });
+
   /* ---------- Resumo ---------- */
   function atualizarResumo() {
     if (itens.length === 0) {
@@ -597,18 +656,9 @@
         });
       }
 
-      /* Renderizar totais */
-      var subtotal    = typeof d.subtotal    === 'number' ? d.subtotal    : 0;
-      var deliveryFee = typeof d.deliveryFee === 'number' ? d.deliveryFee : 0;
-      var total       = typeof d.total       === 'number' ? d.total       : (subtotal + deliveryFee);
-      var freteStr    = deliveryFee === 0 ? 'Grátis' : fmtBRL(deliveryFee);
-
-      elSummary.innerHTML =
-        '<div class="co-summary-rows">' +
-          '<div class="co-summary-row"><span>Subtotal</span><span>' + fmtBRL(subtotal) + '</span></div>' +
-          '<div class="co-summary-row"><span>Frete</span><span>' + esc(freteStr) + '</span></div>' +
-          '<div class="co-summary-row total"><span>Total</span><span>' + fmtBRL(total) + '</span></div>' +
-        '</div>';
+      /* Renderizar totais (guarda o resumo p/ re-render ao trocar o método) */
+      resumoAtual = d;
+      renderTotais(d);
 
       /* Habilitar/desabilitar Finalizar */
       if (!todosOk) {
