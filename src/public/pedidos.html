@@ -411,6 +411,7 @@
                 <span class="total-chip-value" id="totalValueDisplay">R$ 0,00</span>
                 <input type="hidden" id="totalValue">
               </div>
+              <div id="pixDiscountHint" style="display:none;font-size:.78rem;color:#3fb950;margin-top:.35rem;text-align:right"></div>
               <button type="submit" class="btn-submit-form">
                 <i class="bi bi-bag-check-fill"></i> Criar Pedido
               </button>
@@ -544,11 +545,32 @@
   let totalValue   = 0;
   let productsList = [];
 
+  // Desconto PIX: preview apenas (o backend é a fonte autoritativa do valor gravado — Task 5).
+  let descontoGlobal = { pixAtivo: false, pixPercent: 0 };
+  let clientePixDiscount = null; // pix_discount_percent do cliente selecionado (null/undefined/'' = herda o global)
+
+  function pixPercentEfetivo(cliPix, desc) {
+    if (cliPix !== null && cliPix !== undefined && cliPix !== '') { const p = Number(cliPix); return isNaN(p) ? 0 : p; }
+    if (desc && desc.pixAtivo && Number(desc.pixPercent) > 0) return Number(desc.pixPercent);
+    return 0;
+  }
+
   function refreshTotal() {
     document.getElementById('totalValue').value          = totalValue.toFixed(2);
     document.getElementById('totalValueDisplay').textContent = fmt(totalValue);
     document.getElementById('totalChip').style.display  = productsList.length ? 'flex' : 'none';
+    updatePixDiscountHint();
     updateInstallmentAmount();
+  }
+
+  function updatePixDiscountHint() {
+    const hint   = document.getElementById('pixDiscountHint');
+    const method = document.getElementById('paymentMethod').value;
+    const pct    = pixPercentEfetivo(clientePixDiscount, descontoGlobal);
+    if (method !== 'PIX' || !(pct > 0) || totalValue <= 0) { hint.style.display = 'none'; return; }
+    const totalComDesconto = totalValue * (1 - pct / 100);
+    hint.textContent = `PIX: ${fmt(totalComDesconto)} — ${pct}% aplicado`;
+    hint.style.display = 'block';
   }
 
   // Rascunho de venda vindo da tela Demanda (src/public/demanda.html, botão "Gerar venda do que veio").
@@ -556,12 +578,14 @@
   let rascunhoAtual = null;
 
   async function init() {
-    const [clientRes, franchiseRes] = await Promise.all([
+    const [clientRes, franchiseRes, descRes] = await Promise.all([
       Auth.apiFetch('/api/clients'),
-      Auth.apiFetch('/api/franchises')
+      Auth.apiFetch('/api/franchises'),
+      Auth.apiFetch('/api/descontos')
     ]);
     const clients    = await clientRes.json();
     const franchises = await franchiseRes.json();
+    try { descontoGlobal = await descRes.json(); } catch { /* mantém default */ }
 
     const cs = document.getElementById('clientId');
     clients.forEach(c => cs.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name}</option>`));
@@ -780,8 +804,24 @@
       document.getElementById('paymentMethod').value = m;
       document.getElementById('installmentsDiv').style.display   = (m === 'PARCELADO' || m === 'PAGAMENTO COMBINADO') ? 'block' : 'none';
       document.getElementById('combinedPaymentDiv').style.display = m === 'PAGAMENTO COMBINADO' ? 'block' : 'none';
+      updatePixDiscountHint();
       updateInstallmentAmount();
     });
+  });
+
+  document.getElementById('clientId').addEventListener('change', async (e) => {
+    const id = e.target.value;
+    clientePixDiscount = null;
+    if (id) {
+      try {
+        const r = await Auth.apiFetch(`/api/clients/${id}/summary`);
+        if (r.ok) {
+          const resumo = await r.json();
+          clientePixDiscount = resumo && resumo.client ? resumo.client.pix_discount_percent : null;
+        }
+      } catch { /* mantém sem desconto por cliente; usa o global */ }
+    }
+    updatePixDiscountHint();
   });
 
   document.getElementById('installments').addEventListener('change', updateInstallmentAmount);
@@ -807,6 +847,7 @@
     document.getElementById('installmentsDiv').style.display    = 'none';
     document.getElementById('combinedPaymentDiv').style.display = 'none';
     document.getElementById('installmentHint').style.display    = 'none';
+    clientePixDiscount = null;
     productsList = []; totalValue = 0;
     refreshTotal();
   }
