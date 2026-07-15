@@ -55,7 +55,7 @@ async function buildLines(items) {
   const global = await getDescontoGlobal();
   for (const it of items) {
     const [[p]] = await db.query(
-      'SELECT id, name, image, franchise, estoque, sale_value, promotion_price, cost FROM products WHERE id = ?',
+      'SELECT id, name, image, franchise, estoque, sale_value, promotion_price, cost FROM products WHERE id = ? AND visivel_loja = 1',
       [it.id]
     );
     if (!p) { lines.push({ id: it.id, qty: it.qty, unitPrice: 0, lineTotal: 0, ok: false, reason: 'Produto indisponível.' }); continue; }
