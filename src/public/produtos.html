@@ -286,11 +286,12 @@
 
     /* ── Product rows ── */
     .product-row {
-      display:grid;grid-template-columns:auto 1fr auto auto;
+      display:grid;grid-template-columns:auto 1fr auto auto auto;
       align-items:center;gap:.75rem;
       padding:.55rem .6rem;border-bottom:1px solid var(--border-color);
       transition:background .12s;cursor:default;
     }
+    .prod-vis { display:flex;align-items:center;gap:.15rem;white-space:nowrap; }
     .product-row:last-child { border-bottom:none; }
     .product-row:hover { background:rgba(255,154,0,.06); }
     .prod-thumb {
@@ -520,6 +521,15 @@
           <button class="btn btn-sm btn-outline-secondary" onclick="exportarProdutos('csv')"><i class="bi bi-filetype-csv"></i> CSV</button>
           <button class="btn btn-sm btn-outline-secondary" onclick="exportarProdutos('pdf')"><i class="bi bi-filetype-pdf"></i> PDF</button>
         </div>
+      </div>
+
+      <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn btn-outline-primary active" data-vis="todos" onclick="setFiltroVis(this)">Todos</button>
+          <button class="btn btn-outline-primary" data-vis="loja" onclick="setFiltroVis(this)">Na loja</button>
+          <button class="btn btn-outline-primary" data-vis="ocultos" onclick="setFiltroVis(this)">Ocultos</button>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" onclick="ocultarNuncaVendidos()">Ocultar os que nunca foram vendidos</button>
       </div>
 
       <div class="sort-bar">
@@ -837,11 +847,43 @@
     });
   }
 
+  let filtroVis = 'todos';
+  function setFiltroVis(btn) {
+    filtroVis = btn.dataset.vis;
+    document.querySelectorAll('[data-vis]').forEach(b => b.classList.toggle('active', b === btn));
+    applyFiltersAndSort();
+  }
+
+  async function ocultarNuncaVendidos() {
+    const ok = await Swal.fire({
+      title: 'Ocultar nunca vendidos?',
+      text: 'Vai ocultar da loja todos os produtos que ainda não tiveram nenhuma venda. Você pode reativar depois pelo filtro "Ocultos".',
+      icon: 'warning', showCancelButton: true, confirmButtonText: 'Ocultar', cancelButtonText: 'Cancelar'
+    });
+    if (!ok.isConfirmed) return;
+    const r = await Auth.apiFetch('/api/products/ocultar-nunca-vendidos', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) return Swal.fire('Erro', d.error || '', 'error');
+    await Swal.fire('Pronto', d.ocultados + ' produto(s) ocultado(s).', 'success');
+    loadProducts();
+  }
+
+  async function toggleVisivelLoja(id, visivel) {
+    const r = await Auth.apiFetch('/api/products/' + id + '/visivel', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visivel: !!visivel })
+    });
+    if (!r.ok) { Swal.fire('Erro', (await r.json()).error || '', 'error'); }
+    else { loadProducts(); }
+  }
+
   function applyFiltersAndSort() {
     const q = document.getElementById('search').value.toLowerCase().trim();
-    const filtered = q
+    let filtered = q
       ? allProducts.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q))
       : allProducts;
+    if (filtroVis === 'loja')    filtered = filtered.filter(p => Number(p.visivel_loja) === 1);
+    if (filtroVis === 'ocultos') filtered = filtered.filter(p => Number(p.visivel_loja) === 0);
     renderProducts(filtered);
   }
 
@@ -917,6 +959,12 @@
             const thumb = p.image
               ? `<img src="${esc(p.image)}" alt="" loading="lazy">`
               : `<span class="prod-thumb-ph" style="background:${f.bg};color:${f.color}">${esc((String(p.name || '?').trim()[0] || '?').toUpperCase())}</span>`;
+            const seloLoja = Number(p.visivel_loja) === 1
+              ? '<span class="badge bg-success">Na loja</span>'
+              : '<span class="badge bg-secondary">Oculto</span>';
+            const toggleLoja = `<div class="form-check form-switch d-inline-block ms-2" title="Mostrar na loja">
+              <input class="form-check-input" type="checkbox" ${Number(p.visivel_loja)===1?'checked':''} onchange="toggleVisivelLoja(${p.id}, this.checked)">
+            </div>`;
             return `
             <div class="product-row">
               <div class="prod-thumb">${thumb}</div>
@@ -924,6 +972,7 @@
                 <div class="prod-name" onclick="openEdit(${p.id})" title="Editar produto">${esc(p.name)}</div>
                 <div class="prod-sub"><span class="cod">COD ${esc(p.code)}</span> · <span class="prod-est ${estCls}">${estTxt}</span></div>
               </div>
+              <div class="prod-vis">${seloLoja}${toggleLoja}</div>
               <div class="prod-valores">
                 <div class="pv-col">
                   <span class="pv-lbl">Custo</span>
