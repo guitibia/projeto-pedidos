@@ -261,4 +261,27 @@ async function deleteProduct(req, res) {
   }
 }
 
-module.exports = { createProduct, listProducts, listAllProducts, searchProductByCode, getProductById, listFranchises, updateProduct, deleteProduct, setProductImage, setProductImageUrl };
+// PUT /api/products/:id/visivel  — liga/desliga a visibilidade na loja (toggle rápido)
+async function toggleVisivel(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  const visivel = req.body.visivel ? 1 : 0;
+  try {
+    const [r] = await db.query('UPDATE products SET visivel_loja = ? WHERE id = ?', [visivel, id]);
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'Produto não encontrado.' });
+    return res.json({ ok: true, visivel });
+  } catch (e) { console.error('toggleVisivel', e); return res.status(500).json({ error: 'Erro ao atualizar visibilidade.' }); }
+}
+
+// POST /api/products/ocultar-nunca-vendidos  — oculta produtos visíveis que nunca tiveram venda
+async function ocultarNuncaVendidos(req, res) {
+  try {
+    const [r] = await db.query(
+      `UPDATE products p SET p.visivel_loja = 0
+       WHERE p.visivel_loja = 1
+         AND NOT EXISTS (SELECT 1 FROM order_products op WHERE op.product_id = p.id)`);
+    return res.json({ ocultados: r.affectedRows });
+  } catch (e) { console.error('ocultarNuncaVendidos', e); return res.status(500).json({ error: 'Erro ao ocultar.' }); }
+}
+
+module.exports = { createProduct, listProducts, listAllProducts, searchProductByCode, getProductById, listFranchises, updateProduct, deleteProduct, setProductImage, setProductImageUrl, toggleVisivel, ocultarNuncaVendidos };

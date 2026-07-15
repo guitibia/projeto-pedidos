@@ -45,3 +45,41 @@ test('updateProduct sem visivel_loja no corpo NÃO altera o valor atual', async 
   assert.strictEqual(Number(row.visivel_loja), 0, 'continua oculto');
   await cleanup();
 });
+
+const { toggleVisivel, ocultarNuncaVendidos } = require('../src/controllers/productController');
+
+test('toggleVisivel liga/desliga e 404 para inexistente', async () => {
+  const id = await seedProduct(1);
+  let res = mockRes();
+  await toggleVisivel({ params: { id }, body: { visivel: false } }, res);
+  assert.strictEqual(res.statusCode, 200);
+  let [[row]] = await db.query('SELECT visivel_loja FROM products WHERE id = ?', [id]);
+  assert.strictEqual(Number(row.visivel_loja), 0);
+  res = mockRes();
+  await toggleVisivel({ params: { id: 999999999 }, body: { visivel: true } }, res);
+  assert.strictEqual(res.statusCode, 404);
+  await cleanup();
+});
+
+test('ocultarNuncaVendidos oculta sem venda e mantém com venda', async () => {
+  const semVenda = await seedProduct(1);
+  const comVenda = await seedProduct(1);
+  // cria um pedido + item para "comVenda"
+  const [cli] = await db.query('INSERT INTO clients (name) VALUES (?)', ['zz_test_cli_'+Date.now()]);
+  const [ord] = await db.query('INSERT INTO orders (client_id, payment_method, total_cost) VALUES (?,?,?)', [cli.insertId, 'PIX', 40]);
+  await db.query('INSERT INTO order_products (order_id, product_id, sale_price, quantity) VALUES (?,?,?,?)', [ord.insertId, comVenda, 40, 1]);
+
+  const res = mockRes();
+  await ocultarNuncaVendidos({}, res);
+  assert.strictEqual(res.statusCode, 200);
+  const [[a]] = await db.query('SELECT visivel_loja FROM products WHERE id = ?', [semVenda]);
+  const [[b]] = await db.query('SELECT visivel_loja FROM products WHERE id = ?', [comVenda]);
+  assert.strictEqual(Number(a.visivel_loja), 0, 'sem venda foi ocultado');
+  assert.strictEqual(Number(b.visivel_loja), 1, 'com venda continua visível');
+
+  // limpeza
+  await db.query('DELETE FROM order_products WHERE order_id = ?', [ord.insertId]);
+  await db.query('DELETE FROM orders WHERE id = ?', [ord.insertId]);
+  await db.query('DELETE FROM clients WHERE id = ?', [cli.insertId]);
+  await cleanup();
+});
