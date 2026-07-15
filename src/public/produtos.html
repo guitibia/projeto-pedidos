@@ -599,6 +599,12 @@
               <textarea class="form-control" id="edit-description" rows="2" placeholder="Descrição que aparece na loja"></textarea>
             </div>
             <div class="col-12">
+              <div class="form-check form-switch mt-2">
+                <input class="form-check-input" type="checkbox" id="edit-visivel-loja" checked>
+                <label class="form-check-label" for="edit-visivel-loja">Mostrar na loja</label>
+              </div>
+            </div>
+            <div class="col-12">
               <label class="form-label">Foto do produto <span style="opacity:.5;font-weight:400">(loja)</span></label>
               <div class="d-flex align-items-center gap-2 mb-2">
                 <div id="edit-image-preview"></div>
@@ -961,6 +967,7 @@
     document.getElementById('edit-franchise').value  = p.franchise;
     document.getElementById('edit-description').value = p.description ?? '';
     document.getElementById('edit-ean').value = p.ean || '';
+    document.getElementById('edit-visivel-loja').checked = p.visivel_loja == null ? true : Number(p.visivel_loja) === 1;
     document.getElementById('edit-image').value = '';
     document.getElementById('edit-image-url').value = '';
     document.getElementById('edit-image-preview').innerHTML = p.image
@@ -988,7 +995,8 @@
       franchise:       document.getElementById('edit-franchise').value,
       promotion_price: promoRaw !== '' ? parseFloat(promoRaw) : null,
       description:     document.getElementById('edit-description').value.trim() || null,
-      ean:             document.getElementById('edit-ean').value.trim()
+      ean:             document.getElementById('edit-ean').value.trim(),
+      visivel_loja:    document.getElementById('edit-visivel-loja').checked ? 1 : 0
     };
     const res  = await Auth.apiFetch(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
     const data = await res.json();
