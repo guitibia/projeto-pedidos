@@ -93,7 +93,8 @@ async function resumo(req, res) {
     }
     const total = Number((subtotal + fee).toFixed(2));
     const pixPct = resolvePixPercent(client.pix_discount_percent, await getDescontoPix());
-    const pixSubtotal = Number(lines.filter(l => l.ok).reduce((s, l) => s + aplicaPix(l.lineTotal, pixPct), 0).toFixed(2));
+    // mesma fórmula do criarPix (por unidade, depois × qty) para o preview bater com o valor cobrado
+    const pixSubtotal = Number(lines.filter(l => l.ok).reduce((s, l) => s + Number((aplicaPix(l.unitPrice, pixPct) * l.qty).toFixed(2)), 0).toFixed(2));
     const pixTotal = Number((pixSubtotal + fee).toFixed(2));
     return res.json({
       items: lines.map(l => ({
