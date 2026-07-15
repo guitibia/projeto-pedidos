@@ -13,6 +13,7 @@ async function listProdutos(req, res) {
   const { franchise, q } = req.query;
   const sort = SORTS[req.query.sort] || SORTS.recentes;
   const where = [], params = [];
+  where.push('p.visivel_loja = 1');
   if (franchise) { where.push('p.franchise = ?'); params.push(franchise); }
   if (q) { where.push('(p.name LIKE ? OR p.code LIKE ?)'); params.push('%' + q + '%', '%' + q + '%'); }
   const sql = `SELECT id, name, franchise, code, sale_value, promotion_price, image, estoque
@@ -37,11 +38,11 @@ async function getProduto(req, res) {
   const id = parseInt(req.params.id, 10);
   try {
     const [[p]] = await db.query(
-      'SELECT id, name, franchise, code, sale_value, promotion_price, image, description, estoque FROM products WHERE id = ?', [id]);
+      'SELECT id, name, franchise, code, sale_value, promotion_price, image, description, estoque FROM products WHERE id = ? AND visivel_loja = 1', [id]);
     if (!p) return res.status(404).json({ error: 'Produto não encontrado.' });
     const [relacionados] = await db.query(
       `SELECT id, name, franchise, sale_value, promotion_price, image, estoque
-       FROM products WHERE franchise = ? AND id <> ? ORDER BY RAND() LIMIT 4`, [p.franchise, id]);
+       FROM products WHERE franchise = ? AND id <> ? AND visivel_loja = 1 ORDER BY RAND() LIMIT 4`, [p.franchise, id]);
     const global = await getDescontoGlobal();
     function comGlobal(prod) {
       var temPromo = prod.promotion_price != null && Number(prod.promotion_price) > 0;
@@ -56,7 +57,7 @@ async function getProduto(req, res) {
 
 async function listFranquias(req, res) {
   try {
-    const [rows] = await db.query('SELECT DISTINCT franchise FROM products ORDER BY franchise');
+    const [rows] = await db.query('SELECT DISTINCT franchise FROM products WHERE visivel_loja = 1 ORDER BY franchise');
     return res.json(rows.map(r => r.franchise));
   } catch (e) { console.error('Erro loja/franquias:', e); return res.status(500).json({ error: 'Erro ao buscar franquias.' }); }
 }

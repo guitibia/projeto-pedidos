@@ -8,7 +8,7 @@ async function listar(req, res) {
     const [rows] = await db.query(
       `SELECT p.id, p.name, p.franchise, p.code, p.sale_value, p.promotion_price, p.image, p.estoque
        FROM favorites f JOIN products p ON p.id = f.product_id
-       WHERE f.client_id = ? ORDER BY f.created_at DESC`,
+       WHERE f.client_id = ? AND p.visivel_loja = 1 ORDER BY f.created_at DESC`,
       [req.customer.id]
     );
     return res.json(rows);
