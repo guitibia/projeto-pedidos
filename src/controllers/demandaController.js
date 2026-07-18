@@ -189,10 +189,16 @@ async function aplicarConciliacao(conn, nfId, emitenteCnpj) {
     "SELECT id, codigo, qtd_pedida, qtd_recebida, created_at, product_id, pedido_id FROM demanda_itens WHERE fornecedor_cnpj = ? AND status IN ('pendente','parcial') ORDER BY created_at, id", [emitenteCnpj]);
   if (!linhas.length || !nfItensRows.length) return;
 
-  const nfItens = nfItensRows.map(r => ({ codigo: r.codigo, qtd: Number(r.qtd) }));
+  // vínculos aprendidos: traduz o cProd da NF -> código do pedido (se houver vínculo p/ este fornecedor)
+  const [vincs] = await conn.query('SELECT cprod, codigo_pedido FROM demanda_cod_vinculos WHERE fornecedor_cnpj = ?', [emitenteCnpj]);
+  const mapCprod = new Map(vincs.map(v => [String(v.cprod).trim().toLowerCase(), v.codigo_pedido]));
+  const traduz = (cprod) => mapCprod.get(String(cprod).trim().toLowerCase()) || cprod;
+
+  const nfItens = nfItensRows.map(r => ({ codigo: traduz(r.codigo), qtd: Number(r.qtd) }));
   const { alocacoes } = conciliar(nfItens, linhas);
 
-  const prodPorCod = new Map(nfItensRows.map(r => [String(r.codigo).trim().toLowerCase(), r.product_id]));
+  // product_id chaveado pelo código TRADUZIDO, para o backfill cair na linha certa
+  const prodPorCod = new Map(nfItensRows.map(r => [String(traduz(r.codigo)).trim().toLowerCase(), r.product_id]));
   const linhaPorId = new Map(linhas.map(l => [l.id, l]));
   const pedidosAfetados = new Set();
 

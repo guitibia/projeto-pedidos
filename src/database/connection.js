@@ -222,6 +222,11 @@ pool.getConnection()
       'ALTER TABLE products ADD COLUMN visivel_loja TINYINT(1) NOT NULL DEFAULT 1',
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Migração: memória de vínculos da conciliação (cProd da NF -> código do pedido, por fornecedor)
+    for (const sql of [
+      'CREATE TABLE IF NOT EXISTS demanda_cod_vinculos (id INT AUTO_INCREMENT PRIMARY KEY, fornecedor_cnpj VARCHAR(14) NOT NULL, cprod VARCHAR(60) NOT NULL, codigo_pedido VARCHAR(60) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY uq_forn_cprod (fornecedor_cnpj, cprod))',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Backfill one-shot: nomes de produto "gritando" (CAIXA ALTA) viram Title Case.
     // Só mexe nos 100% maiúsculos; nomes já formatados ficam intactos.
     try {
