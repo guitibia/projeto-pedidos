@@ -287,9 +287,12 @@ async function conferirNf(req, res) {
        FROM nf_entrada_itens i LEFT JOIN products p ON p.id = i.product_id
        WHERE i.nf_id = ? GROUP BY i.cprod ORDER BY i.cprod`, [cnpj, nfId]);
     const [pendentes] = await db.query(
+      // mostra as pendentes deste fornecedor E as ainda sem fornecedor (que são justamente as que
+      // precisam ser ligadas — ao ligar, o conciliar-manual grava o CNPJ nelas)
       `SELECT di.id AS demanda_item_id, di.codigo, di.nome, c.name AS cliente, di.qtd_pedida, di.qtd_recebida
        FROM demanda_itens di JOIN demanda_pedidos dp ON dp.id = di.pedido_id JOIN clients c ON c.id = dp.client_id
-       WHERE di.fornecedor_cnpj = ? AND di.status IN ('pendente','parcial') ORDER BY di.codigo, di.created_at`, [cnpj]);
+       WHERE (di.fornecedor_cnpj = ? OR di.fornecedor_cnpj IS NULL OR di.fornecedor_cnpj = '')
+         AND di.status IN ('pendente','parcial') ORDER BY di.codigo, di.created_at`, [cnpj]);
     return res.json({ nf, itens, pendentes });
   } catch (e) { console.error('conferirNf', e); return res.status(500).json({ error: 'Erro ao conferir NF.' }); }
 }

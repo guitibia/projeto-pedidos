@@ -119,3 +119,15 @@ test('conciliarManual: cprod que não está na NF → 400', async () => {
   assert.strictEqual(res.statusCode,400);
   await cleanup();
 });
+
+test('conferirNf inclui pendentes SEM fornecedor (pra poder ligar)', async () => {
+  const cli = await seedClient();
+  const [p] = await db.query('INSERT INTO demanda_pedidos (client_id) VALUES (?)', [cli]);
+  const cod = 'SEMFORN' + Date.now();
+  await db.query('INSERT INTO demanda_itens (pedido_id, codigo, qtd_pedida) VALUES (?,?,?)', [p.insertId, cod, 1]); // fornecedor_cnpj NULL
+  const nfId = await seedNf('000000000050512547', 1);
+  const res = mockRes();
+  await conferirNf({ params: { nfId } }, res);
+  assert.ok(res.body.pendentes.some(x => x.codigo === cod), 'linha sem fornecedor aparece pra ligar');
+  await cleanup();
+});
