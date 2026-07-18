@@ -269,7 +269,56 @@ async function remanejarAlocacao(req, res) {
   finally { conn.release(); }
 }
 
+// GET /api/demanda/nf/:nfId/conferir — itens da NF + pedidos pendentes do fornecedor (p/ ligar na mão)
+async function conferirNf(req, res) {
+  const nfId = parseInt(req.params.nfId, 10);
+  if (!Number.isInteger(nfId)) return res.status(400).json({ error: 'NF inválida.' });
+  try {
+    const [[nf]] = await db.query('SELECT id, emitente_nome, emitente_cnpj, numero FROM nf_entradas WHERE id = ?', [nfId]);
+    if (!nf) return res.status(404).json({ error: 'NF não encontrada.' });
+    const cnpj = nf.emitente_cnpj;
+    const [itens] = await db.query(
+      `SELECT i.cprod, MAX(i.descricao) AS descricao, SUM(i.quantidade) AS quantidade,
+              MAX(i.product_id) AS product_id, MAX(p.name) AS produto_nome,
+              (SELECT v.codigo_pedido FROM demanda_cod_vinculos v WHERE v.fornecedor_cnpj = ? AND v.cprod = i.cprod) AS codigo_vinculado
+       FROM nf_entrada_itens i LEFT JOIN products p ON p.id = i.product_id
+       WHERE i.nf_id = ? GROUP BY i.cprod ORDER BY i.cprod`, [cnpj, nfId]);
+    const [pendentes] = await db.query(
+      `SELECT di.id AS demanda_item_id, di.codigo, di.nome, c.name AS cliente, di.qtd_pedida, di.qtd_recebida
+       FROM demanda_itens di JOIN demanda_pedidos dp ON dp.id = di.pedido_id JOIN clients c ON c.id = dp.client_id
+       WHERE di.fornecedor_cnpj = ? AND di.status IN ('pendente','parcial') ORDER BY di.codigo, di.created_at`, [cnpj]);
+    return res.json({ nf, itens, pendentes });
+  } catch (e) { console.error('conferirNf', e); return res.status(500).json({ error: 'Erro ao conferir NF.' }); }
+}
+
+// POST /api/demanda/conciliar-manual — grava o vínculo cProd->código e reconcilia a NF
+async function conciliarManual(req, res) {
+  const nfId = parseInt(req.body.nf_id, 10);
+  const cprod = String(req.body.cprod || '').trim();
+  const codigoPedido = String(req.body.codigo_pedido || '').trim();
+  if (!Number.isInteger(nfId) || !cprod || !codigoPedido) return res.status(400).json({ error: 'Dados inválidos.' });
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[nf]] = await conn.query('SELECT emitente_cnpj FROM nf_entradas WHERE id = ? FOR UPDATE', [nfId]);
+    if (!nf) { await conn.rollback(); return res.status(404).json({ error: 'NF não encontrada.' }); }
+    const cnpj = nf.emitente_cnpj;
+    const [[temItem]] = await conn.query('SELECT 1 AS ok FROM nf_entrada_itens WHERE nf_id = ? AND cprod = ? LIMIT 1', [nfId, cprod]);
+    if (!temItem) { await conn.rollback(); return res.status(400).json({ error: 'Esse código não está nesta NF.' }); }
+    await conn.query(
+      'INSERT INTO demanda_cod_vinculos (fornecedor_cnpj, cprod, codigo_pedido) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE codigo_pedido = VALUES(codigo_pedido)',
+      [cnpj, cprod, codigoPedido]);
+    // aprende o fornecedor nas linhas com esse código que ainda não tinham CNPJ (entram no escopo)
+    await conn.query("UPDATE demanda_itens SET fornecedor_cnpj = ? WHERE codigo = ? AND (fornecedor_cnpj IS NULL OR fornecedor_cnpj = '')", [cnpj, codigoPedido]);
+    await aplicarConciliacao(conn, nfId, cnpj);
+    await conn.commit();
+    return res.json({ ok: true });
+  } catch (e) { await conn.rollback(); console.error('conciliarManual', e); return res.status(500).json({ error: 'Erro ao conciliar.' }); }
+  finally { conn.release(); }
+}
+
 module.exports = {
   criarPedido, listarPedidos, getPedido, addItem, updateItem, deleteItem, listarFornecedores,
   listaCompra, relatorio, aplicarConciliacao, rascunhoVenda, marcarVenda, remanejarAlocacao,
+  conferirNf, conciliarManual,
 };

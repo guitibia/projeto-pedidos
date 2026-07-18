@@ -6,6 +6,8 @@ const c = require('../controllers/demandaController');
 router.get('/fornecedores', c.listarFornecedores);
 router.get('/compra', c.listaCompra);
 router.get('/relatorio', c.relatorio);
+router.get('/nf/:nfId/conferir', c.conferirNf);
+router.post('/conciliar-manual', c.conciliarManual);
 
 router.post('/', c.criarPedido);
 router.get('/', c.listarPedidos);

@@ -61,3 +61,46 @@ test('fallback: cProd == código casa mesmo sem vínculo', async () => {
   assert.strictEqual(Number(row.qtd_recebida),1);
   await cleanup();
 });
+
+const { conferirNf, conciliarManual } = require('../src/controllers/demandaController');
+function mockRes(){ return { statusCode:200, body:null, status(c){this.statusCode=c;return this;}, json(b){this.body=b;return this;} }; }
+
+test('conferirNf devolve itens da NF e pendentes do fornecedor', async () => {
+  const cli=await seedClient();
+  await seedPedidoItem(cli,'160380',2);
+  const nfId=await seedNf('000000000050512547',2);
+  const res=mockRes();
+  await conferirNf({ params:{ nfId } }, res);
+  assert.strictEqual(res.statusCode,200);
+  assert.ok(res.body.itens.some(i => i.cprod==='000000000050512547'));
+  assert.ok(res.body.pendentes.some(p => p.codigo==='160380'));
+  await cleanup();
+});
+
+test('conciliarManual grava vínculo, reconcilia e aprende p/ a próxima NF', async () => {
+  const cli=await seedClient();
+  const { itemId }=await seedPedidoItem(cli,'160380',3);
+  const nf1=await seedNf('000000000050512547',2);
+  let res=mockRes();
+  await conciliarManual({ body:{ nf_id:nf1, cprod:'000000000050512547', codigo_pedido:'160380' } }, res);
+  assert.strictEqual(res.statusCode,200);
+  let [[row]]=await db.query('SELECT qtd_recebida,status FROM demanda_itens WHERE id = ?',[itemId]);
+  assert.strictEqual(Number(row.qtd_recebida),2,'reconciliou o que veio');
+  assert.strictEqual(row.status,'parcial');
+  // 2ª NF do mesmo cProd casa AUTOMÁTICO (sem manual), pelo vínculo aprendido
+  const nf2=await seedNf('000000000050512547',1);
+  const conn=await db.getConnection();
+  try{ await conn.beginTransaction(); await aplicarConciliacao(conn,nf2,CNPJ); await conn.commit(); } finally { conn.release(); }
+  [[row]]=await db.query('SELECT qtd_recebida,status FROM demanda_itens WHERE id = ?',[itemId]);
+  assert.strictEqual(Number(row.qtd_recebida),3,'2ª NF casou sozinha');
+  assert.strictEqual(row.status,'veio');
+  await cleanup();
+});
+
+test('conciliarManual: cprod que não está na NF → 400', async () => {
+  const nfId=await seedNf('AAA',1);
+  const res=mockRes();
+  await conciliarManual({ body:{ nf_id:nfId, cprod:'NAO_EXISTE', codigo_pedido:'160380' } }, res);
+  assert.strictEqual(res.statusCode,400);
+  await cleanup();
+});
