@@ -389,13 +389,13 @@
     chevron.className = aberto ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
   }
 
-  function renderMes(key, parcelas, mesAtualKey, abertos, secaoId) {
+  function renderMes(key, parcelas, mesAbrirKey, abertos, secaoId) {
     const totalMes = parcelas.reduce((s, p) => s + p.valor, 0);
     const pagoMes  = parcelas.filter(p => p.status === 'Pago').reduce((s, p) => s + p.valor, 0);
     const pendMes  = totalMes - pagoMes;
     const todoPago = parcelas.every(p => p.status === 'Pago');
     const uid      = 'mes-' + (secaoId || '') + key.replace('-', '');
-    const aberto   = (abertos ? abertos.has(uid) : key === mesAtualKey);
+    const aberto   = (abertos ? abertos.has(uid) : key === mesAbrirKey);   // abre só o 1º mês com pendência
     return `
     <div class="prom-card" style="margin-bottom:.45rem">
       <div class="prom-header" onclick="toggleMes('${uid}')" style="cursor:pointer;user-select:none">
@@ -461,6 +461,8 @@
     parcelas.sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
     const porMes    = {};
     parcelas.forEach(p => { const k = mesKey(p.vencimento); if (!porMes[k]) porMes[k] = []; porMes[k].push(p); });
+    // abre sozinho o primeiro mês (em ordem) que ainda tem parcela pendente (pula os já pagos)
+    const primeiroPendente = Object.keys(porMes).sort().find(k => porMes[k].some(p => p.status !== 'Pago')) || null;
     const totalPend = parcelas.filter(p => p.status !== 'Pago').reduce((s, p) => s + p.valor, 0);
     const uid       = 'secao-' + secaoId;
     const aberto    = secaoAberta.has(uid);
@@ -477,7 +479,7 @@
         <i class="bi bi-chevron-${aberto ? 'up' : 'down'}" id="${uid}-chev" style="color:var(--text-muted);font-size:.85rem"></i>
       </div>
       <div id="${uid}" class="secao-body${aberto ? ' aberto' : ''}">
-        ${Object.keys(porMes).sort().map(k => renderMes(k, porMes[k], mesAtualKey, abertos, secaoId)).join('')}
+        ${Object.keys(porMes).sort().map(k => renderMes(k, porMes[k], primeiroPendente, abertos, secaoId)).join('')}
       </div>
     </div>`;
   }
