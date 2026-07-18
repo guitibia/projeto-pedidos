@@ -317,8 +317,28 @@ async function conciliarManual(req, res) {
   finally { conn.release(); }
 }
 
+// DELETE /api/demanda/:id — exclui um pedido criado por engano (bloqueia se já virou venda)
+async function excluirPedido(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[ped]] = await conn.query('SELECT id FROM demanda_pedidos WHERE id = ? FOR UPDATE', [id]);
+    if (!ped) { await conn.rollback(); return res.status(404).json({ error: 'Pedido não encontrado.' }); }
+    const [[vend]] = await conn.query('SELECT COUNT(*) c FROM demanda_itens WHERE pedido_id = ? AND order_id IS NOT NULL', [id]);
+    if (vend.c > 0) { await conn.rollback(); return res.status(409).json({ error: 'Este pedido já gerou venda; não pode ser excluído.' }); }
+    await conn.query('DELETE c FROM demanda_conciliacoes c JOIN demanda_itens di ON di.id = c.demanda_item_id WHERE di.pedido_id = ?', [id]);
+    await conn.query('DELETE FROM demanda_itens WHERE pedido_id = ?', [id]);
+    await conn.query('DELETE FROM demanda_pedidos WHERE id = ?', [id]);
+    await conn.commit();
+    return res.json({ ok: true });
+  } catch (e) { await conn.rollback(); console.error('excluirPedido', e); return res.status(500).json({ error: 'Erro ao excluir.' }); }
+  finally { conn.release(); }
+}
+
 module.exports = {
   criarPedido, listarPedidos, getPedido, addItem, updateItem, deleteItem, listarFornecedores,
   listaCompra, relatorio, aplicarConciliacao, rascunhoVenda, marcarVenda, remanejarAlocacao,
-  conferirNf, conciliarManual,
+  conferirNf, conciliarManual, excluirPedido,
 };
