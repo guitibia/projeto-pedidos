@@ -395,7 +395,7 @@
     const pendMes  = totalMes - pagoMes;
     const todoPago = parcelas.every(p => p.status === 'Pago');
     const uid      = 'mes-' + (secaoId || '') + key.replace('-', '');
-    const aberto   = (abertos ? abertos.has(uid) : key === mesAtualKey);
+    const aberto   = (abertos ? abertos.has(uid) : false);   // começa fechado; usuário abre o mês que quiser
     return `
     <div class="prom-card" style="margin-bottom:.45rem">
       <div class="prom-header" onclick="toggleMes('${uid}')" style="cursor:pointer;user-select:none">
