@@ -177,6 +177,7 @@
     Swal.fire({
       title: esc(p.client_name), width: 800,
       html: `
+        <div class="text-end mb-2"><button id="btn-conferir-nf" class="btn btn-sm btn-success">Conferir com a NF</button></div>
         <table class="table table-sm"><thead><tr><th>Fornecedor</th><th>Cód.</th><th>Produto</th><th>Ped.</th><th>Rec.</th><th>Status</th><th></th></tr></thead>
         <tbody>${linhas || '<tr><td colspan=7 class="text-muted">Sem itens</td></tr>'}</tbody></table>
         <hr>
@@ -194,6 +195,8 @@
         </div>`,
       showConfirmButton: false, showCloseButton: true,
       didOpen: () => {
+        const btnConf = document.getElementById('btn-conferir-nf');
+        if (btnConf) btnConf.onclick = () => conferirPedido(id);
         document.getElementById('it-add').onclick = async () => {
           const sel = document.getElementById('it-forn');
           const body = {
@@ -227,6 +230,53 @@
       }
     });
   }
+  async function conferirPedido(pedidoId){
+    const r = await Auth.apiFetch('/api/nf'); const nfs = await r.json();
+    const nfOpts = nfs.map(n => `<option value="${n.id}">#${n.id} — ${esc(n.emitente_nome||'')} (nota ${esc(String(n.numero||''))})</option>`).join('');
+    Swal.fire({
+      title: 'Conferir com a NF', width: 820, showConfirmButton: false, showCloseButton: true,
+      html: `
+        <select id="cp-nf" class="form-select form-select-sm mb-2"><option value="">Escolha a NF importada…</option>${nfOpts}</select>
+        <div id="cp-conteudo" class="text-muted small">Escolha uma NF pra conferir.</div>`,
+      didOpen: () => { document.getElementById('cp-nf').onchange = (e) => renderConferenciaPedido(pedidoId, e.target.value); },
+      willClose: () => { abrirPedido(pedidoId); }   // reabre o pedido com os status atualizados
+    });
+  }
+
+  async function renderConferenciaPedido(pedidoId, nfId){
+    const cont = document.getElementById('cp-conteudo');
+    if (!nfId) { cont.innerHTML = 'Escolha uma NF pra conferir.'; return; }
+    const [pr, cr] = await Promise.all([ Auth.apiFetch('/api/demanda/'+pedidoId), Auth.apiFetch('/api/demanda/nf/'+nfId+'/conferir') ]);
+    const p = await pr.json(); const conf = await cr.json();
+    const nfOpts = (conf.itens||[]).map(i => `<option value="${esc(i.cprod)}">${esc(i.cprod)} — ${esc(i.descricao||i.produto_nome||'')} (qtd ${i.quantidade})</option>`).join('');
+    const veio = p.itens.filter(i => i.status==='veio').length;
+    const parcial = p.itens.filter(i => i.status==='parcial').length;
+    const faltou = p.itens.filter(i => i.status!=='veio' && i.status!=='parcial').length;
+    const linhas = p.itens.map(i => {
+      const badge = i.status==='veio' ? '<span class="badge bg-success">veio</span>'
+        : (i.status==='parcial' ? '<span class="badge bg-warning text-dark">parcial</span>' : '<span class="badge bg-secondary">faltou</span>');
+      const acao = i.status==='veio' ? '' : `
+        <select class="form-select form-select-sm d-inline-block" style="max-width:320px" id="cp-link-${i.id}"><option value="">Ligar ao produto da NF…</option>${nfOpts}</select>
+        <button class="btn btn-sm btn-primary" onclick="ligarNoPedido(${i.id}, '${esc(i.codigo)}', ${nfId}, ${pedidoId})">Ligar</button>`;
+      return `<tr><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td><td>${i.qtd_pedida}</td><td>${i.qtd_recebida}</td><td>${badge}</td><td>${acao}</td></tr>`;
+    }).join('');
+    cont.innerHTML = `
+      <div class="mb-2 text-start">✅ Vieram: <b>${veio}</b> &nbsp;·&nbsp; 🟡 Parcial: <b>${parcial}</b> &nbsp;·&nbsp; ❌ Faltaram: <b>${faltou}</b></div>
+      <table class="table table-sm"><thead><tr><th>Cód.</th><th>Produto</th><th>Ped.</th><th>Rec.</th><th>Status</th><th>Conferir</th></tr></thead>
+      <tbody>${linhas || '<tr><td colspan=6 class="text-muted">Sem itens</td></tr>'}</tbody></table>`;
+  }
+
+  async function ligarNoPedido(itemId, codigo, nfId, pedidoId){
+    const sel = document.getElementById('cp-link-'+itemId);
+    const cprod = sel ? sel.value : '';
+    if (!cprod) return Swal.fire('Escolha o produto da NF', 'Selecione qual item da NF corresponde a esse produto.', 'warning');
+    const r = await Auth.apiFetch('/api/demanda/conciliar-manual', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nf_id: nfId, cprod, codigo_pedido: codigo }) });
+    const d = await r.json();
+    if (!r.ok) return Swal.fire('Erro', d.error || '', 'error');
+    renderConferenciaPedido(pedidoId, nfId);   // recarrega: o item vira veio/parcial e o resumo atualiza
+  }
+
   async function ajustarRecebido(itemId, val, pedidoId){
     const rr = await Auth.apiFetch('/api/demanda/itens/'+itemId+'/alocacao', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ qtd_recebida: val }) });
     if (!rr.ok) { Swal.fire('Erro', (await rr.json()).error || '', 'error'); }
