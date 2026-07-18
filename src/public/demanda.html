@@ -61,7 +61,7 @@
       <ul class="nav nav-tabs mb-3" id="demandaTabs">
         <li class="nav-item"><button class="nav-link active" data-tab="pedidos">Pedidos</button></li>
         <li class="nav-item"><button class="nav-link" data-tab="comprar">Comprar</button></li>
-        <li class="nav-item"><button class="nav-link" data-tab="relatorio">Conciliação / Relatório</button></li>
+        <li class="nav-item"><button class="nav-link" data-tab="relatorio">Relatório</button></li>
       </ul>
 
       <section id="tab-pedidos">
@@ -74,7 +74,9 @@
       </section>
 
       <section id="tab-comprar" class="d-none"><div id="lista-compra"></div></section>
-      <section id="tab-relatorio" class="d-none"><div id="conteudo-relatorio"></div></section>
+      <section id="tab-relatorio" class="d-none">
+        <div id="conteudo-relatorio"></div>
+      </section>
     </div>
 
   </div>
@@ -102,7 +104,7 @@
     for (const s of ['pedidos','comprar','relatorio']) $('#tab-'+s).classList.toggle('d-none', s!==tab);
     document.querySelectorAll('#demandaTabs .nav-link').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
     if (tab==='comprar') carregarCompra();
-    if (tab==='relatorio') carregarRelatorio();
+    if (tab==='relatorio') { carregarRelatorio(); }
   }
   document.querySelectorAll('#demandaTabs .nav-link').forEach(b => b.onclick = () => show(b.dataset.tab));
 
@@ -127,7 +129,17 @@
         </div>
         ${p.observacao ? `<div class="text-muted small">${esc(p.observacao)}</div>` : ''}
         <button class="btn btn-sm btn-outline-primary mt-2" onclick="abrirPedido(${p.id})">Abrir</button>
+        <button class="btn btn-sm btn-outline-danger mt-2 ms-1" onclick="excluirPedido(${p.id})">Excluir</button>
       </div></div>`).join('') || '<p class="text-muted">Nenhum pedido ainda.</p>';
+  }
+
+  async function excluirPedido(id){
+    const ok = await Swal.fire({ title:'Excluir este pedido?', text:'Some o pedido e seus itens. Não dá pra desfazer.', icon:'warning', showCancelButton:true, confirmButtonText:'Excluir', cancelButtonText:'Cancelar' });
+    if (!ok.isConfirmed) return;
+    const r = await Auth.apiFetch('/api/demanda/'+id, { method:'DELETE' });
+    const d = await r.json();
+    if (!r.ok) return Swal.fire('Não deu', d.error || '', 'error');
+    carregarPedidos();
   }
 
   $('#btn-novo-pedido').onclick = async () => {
@@ -157,6 +169,7 @@
     Swal.fire({
       title: esc(p.client_name), width: 800,
       html: `
+        <div class="text-end mb-2"><button id="btn-conferir-nf" class="btn btn-sm btn-success">Conferir com a NF</button></div>
         <table class="table table-sm"><thead><tr><th>Fornecedor</th><th>Cód.</th><th>Produto</th><th>Ped.</th><th>Rec.</th><th>Status</th><th></th></tr></thead>
         <tbody>${linhas || '<tr><td colspan=7 class="text-muted">Sem itens</td></tr>'}</tbody></table>
         <hr>
@@ -174,6 +187,8 @@
         </div>`,
       showConfirmButton: false, showCloseButton: true,
       didOpen: () => {
+        const btnConf = document.getElementById('btn-conferir-nf');
+        if (btnConf) btnConf.onclick = () => conferirPedido(id);
         document.getElementById('it-add').onclick = async () => {
           const sel = document.getElementById('it-forn');
           const body = {
@@ -207,6 +222,79 @@
       }
     });
   }
+  async function conferirPedido(pedidoId){
+    const r = await Auth.apiFetch('/api/nf'); const nfs = await r.json();
+    const nfOpts = nfs.map(n => `<option value="${n.id}">#${n.id} — ${esc(n.emitente_nome||'')} (nota ${esc(String(n.numero||''))})</option>`).join('');
+    Swal.fire({
+      title: 'Conferir com a NF', width: 820, showConfirmButton: false, showCloseButton: true,
+      html: `
+        <select id="cp-nf" class="form-select form-select-sm mb-2"><option value="">Escolha a NF importada…</option>${nfOpts}</select>
+        <div id="cp-conteudo" class="text-muted small">Escolha uma NF pra conferir.</div>`,
+      didOpen: () => { document.getElementById('cp-nf').onchange = (e) => renderConferenciaPedido(pedidoId, e.target.value); },
+      willClose: () => { abrirPedido(pedidoId); }   // reabre o pedido com os status atualizados
+    });
+  }
+
+  // --- sugestão de casamento por nome (best-effort): compara o nome do item do pedido com a descrição da NF ---
+  function _normNome(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+  function _tokensNome(s){ return _normNome(s).split(' ').filter(t => t.length >= 3); }
+  function _scoreNome(nomePedido, descNf){
+    const a = _tokensNome(nomePedido), b = _tokensNome(descNf);
+    if (!a.length || !b.length) return 0;
+    let n = 0;
+    for (const ta of a) { if (b.some(tb => ta === tb || tb.startsWith(ta) || ta.startsWith(tb))) n++; }
+    return n;
+  }
+  function _sugereCprod(nomePedido, nfItens){
+    let best = null, bestScore = 0;
+    for (const it of (nfItens||[])) {
+      const sc = _scoreNome(nomePedido, it.descricao || it.produto_nome || '');
+      if (sc > bestScore) { bestScore = sc; best = it.cprod; }
+    }
+    return bestScore >= 1 ? best : null;
+  }
+
+  async function renderConferenciaPedido(pedidoId, nfId){
+    const cont = document.getElementById('cp-conteudo');
+    if (!nfId) { cont.innerHTML = 'Escolha uma NF pra conferir.'; return; }
+    const [pr, cr] = await Promise.all([ Auth.apiFetch('/api/demanda/'+pedidoId), Auth.apiFetch('/api/demanda/nf/'+nfId+'/conferir') ]);
+    const p = await pr.json(); const conf = await cr.json();
+    const veio = p.itens.filter(i => i.status==='veio').length;
+    const parcial = p.itens.filter(i => i.status==='parcial').length;
+    const faltou = p.itens.filter(i => i.status!=='veio' && i.status!=='parcial').length;
+    const linhas = p.itens.map(i => {
+      const badge = i.status==='veio' ? '<span class="badge bg-success">veio</span>'
+        : (i.status==='parcial' ? '<span class="badge bg-warning text-dark">parcial</span>' : '<span class="badge bg-secondary">faltou</span>');
+      let acao = '';
+      if (i.status !== 'veio') {
+        const sug = _sugereCprod(i.nome, conf.itens || []);   // pré-seleciona o item da NF cuja descrição mais parece
+        const opts = (conf.itens || []).map(it => {
+          const sel = (sug && String(it.cprod) === String(sug)) ? ' selected' : '';
+          return `<option value="${esc(it.cprod)}"${sel}>${esc(it.cprod)} — ${esc(it.descricao||it.produto_nome||'')} (qtd ${it.quantidade})${sel ? ' (sugestão)' : ''}</option>`;
+        }).join('');
+        acao = `
+        <select class="form-select form-select-sm d-inline-block" style="max-width:340px" id="cp-link-${i.id}"><option value="">Ligar ao produto da NF…</option>${opts}</select>
+        <button class="btn btn-sm btn-primary" onclick="ligarNoPedido(${i.id}, '${esc(i.codigo)}', ${nfId}, ${pedidoId})">Ligar</button>`;
+      }
+      return `<tr><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td><td>${i.qtd_pedida}</td><td>${i.qtd_recebida}</td><td>${badge}</td><td>${acao}</td></tr>`;
+    }).join('');
+    cont.innerHTML = `
+      <div class="mb-2 text-start">✅ Vieram: <b>${veio}</b> &nbsp;·&nbsp; 🟡 Parcial: <b>${parcial}</b> &nbsp;·&nbsp; ❌ Faltaram: <b>${faltou}</b></div>
+      <table class="table table-sm"><thead><tr><th>Cód.</th><th>Produto</th><th>Ped.</th><th>Rec.</th><th>Status</th><th>Conferir</th></tr></thead>
+      <tbody>${linhas || '<tr><td colspan=6 class="text-muted">Sem itens</td></tr>'}</tbody></table>`;
+  }
+
+  async function ligarNoPedido(itemId, codigo, nfId, pedidoId){
+    const sel = document.getElementById('cp-link-'+itemId);
+    const cprod = sel ? sel.value : '';
+    if (!cprod) return Swal.fire('Escolha o produto da NF', 'Selecione qual item da NF corresponde a esse produto.', 'warning');
+    const r = await Auth.apiFetch('/api/demanda/conciliar-manual', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nf_id: nfId, cprod, codigo_pedido: codigo }) });
+    const d = await r.json();
+    if (!r.ok) return Swal.fire('Erro', d.error || '', 'error');
+    renderConferenciaPedido(pedidoId, nfId);   // recarrega: o item vira veio/parcial e o resumo atualiza
+  }
+
   async function ajustarRecebido(itemId, val, pedidoId){
     const rr = await Auth.apiFetch('/api/demanda/itens/'+itemId+'/alocacao', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ qtd_recebida: val }) });
     if (!rr.ok) { Swal.fire('Erro', (await rr.json()).error || '', 'error'); }

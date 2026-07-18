@@ -189,22 +189,31 @@ async function aplicarConciliacao(conn, nfId, emitenteCnpj) {
     "SELECT id, codigo, qtd_pedida, qtd_recebida, created_at, product_id, pedido_id FROM demanda_itens WHERE fornecedor_cnpj = ? AND status IN ('pendente','parcial') ORDER BY created_at, id", [emitenteCnpj]);
   if (!linhas.length || !nfItensRows.length) return;
 
-  const nfItens = nfItensRows.map(r => ({ codigo: r.codigo, qtd: Number(r.qtd) }));
+  // vínculos aprendidos: traduz o cProd da NF -> código do pedido (se houver vínculo p/ este fornecedor)
+  const [vincs] = await conn.query('SELECT cprod, codigo_pedido FROM demanda_cod_vinculos WHERE fornecedor_cnpj = ?', [emitenteCnpj]);
+  const mapCprod = new Map(vincs.map(v => [String(v.cprod).trim().toLowerCase(), v.codigo_pedido]));
+  const traduz = (cprod) => mapCprod.get(String(cprod).trim().toLowerCase()) || cprod;
+
+  const nfItens = nfItensRows.map(r => ({ codigo: traduz(r.codigo), qtd: Number(r.qtd) }));
   const { alocacoes } = conciliar(nfItens, linhas);
 
-  const prodPorCod = new Map(nfItensRows.map(r => [String(r.codigo).trim().toLowerCase(), r.product_id]));
+  // product_id chaveado pelo código TRADUZIDO, para o backfill cair na linha certa
+  const prodPorCod = new Map(nfItensRows.map(r => [String(traduz(r.codigo)).trim().toLowerCase(), r.product_id]));
   const linhaPorId = new Map(linhas.map(l => [l.id, l]));
   const pedidosAfetados = new Set();
 
-  for (const a of alocacoes) {
-    const [ins] = await conn.query('INSERT IGNORE INTO demanda_conciliacoes (nf_id, demanda_item_id, qtd) VALUES (?, ?, ?)', [nfId, a.demanda_item_id, a.qtd]);
+  // agrega as alocações por item (dois cProd podem traduzir p/ o mesmo código na mesma NF)
+  const somaPorItem = new Map();
+  for (const a of alocacoes) somaPorItem.set(a.demanda_item_id, (somaPorItem.get(a.demanda_item_id) || 0) + a.qtd);
+  for (const [demandaItemId, qtd] of somaPorItem) {
+    const [ins] = await conn.query('INSERT IGNORE INTO demanda_conciliacoes (nf_id, demanda_item_id, qtd) VALUES (?, ?, ?)', [nfId, demandaItemId, qtd]);
     if (ins.affectedRows === 0) continue; // já contado numa importação anterior (idempotência)
-    const linha = linhaPorId.get(a.demanda_item_id);
-    const novoRecebido = (Number(linha.qtd_recebida) || 0) + a.qtd;
+    const linha = linhaPorId.get(demandaItemId);
+    const novoRecebido = (Number(linha.qtd_recebida) || 0) + qtd;
     const novoStatus = novoRecebido >= Number(linha.qtd_pedida) ? 'veio' : 'parcial';
     const pid = linha.product_id || prodPorCod.get(String(linha.codigo).trim().toLowerCase()) || null;
     await conn.query('UPDATE demanda_itens SET qtd_recebida = ?, status = ?, product_id = COALESCE(product_id, ?) WHERE id = ?',
-      [novoRecebido, novoStatus, pid, a.demanda_item_id]);
+      [novoRecebido, novoStatus, pid, demandaItemId]);
     linha.qtd_recebida = novoRecebido;
     pedidosAfetados.add(linha.pedido_id);
   }
@@ -263,7 +272,79 @@ async function remanejarAlocacao(req, res) {
   finally { conn.release(); }
 }
 
+// GET /api/demanda/nf/:nfId/conferir — itens da NF + pedidos pendentes do fornecedor (p/ ligar na mão)
+async function conferirNf(req, res) {
+  const nfId = parseInt(req.params.nfId, 10);
+  if (!Number.isInteger(nfId)) return res.status(400).json({ error: 'NF inválida.' });
+  try {
+    const [[nf]] = await db.query('SELECT id, emitente_nome, emitente_cnpj, numero FROM nf_entradas WHERE id = ?', [nfId]);
+    if (!nf) return res.status(404).json({ error: 'NF não encontrada.' });
+    const cnpj = nf.emitente_cnpj;
+    const [itens] = await db.query(
+      `SELECT i.cprod, MAX(i.descricao) AS descricao, SUM(i.quantidade) AS quantidade,
+              MAX(i.product_id) AS product_id, MAX(p.name) AS produto_nome,
+              (SELECT v.codigo_pedido FROM demanda_cod_vinculos v WHERE v.fornecedor_cnpj = ? AND v.cprod = i.cprod) AS codigo_vinculado
+       FROM nf_entrada_itens i LEFT JOIN products p ON p.id = i.product_id
+       WHERE i.nf_id = ? GROUP BY i.cprod ORDER BY i.cprod`, [cnpj, nfId]);
+    const [pendentes] = await db.query(
+      // mostra as pendentes deste fornecedor E as ainda sem fornecedor (que são justamente as que
+      // precisam ser ligadas — ao ligar, o conciliar-manual grava o CNPJ nelas)
+      `SELECT di.id AS demanda_item_id, di.codigo, di.nome, c.name AS cliente, di.qtd_pedida, di.qtd_recebida
+       FROM demanda_itens di JOIN demanda_pedidos dp ON dp.id = di.pedido_id JOIN clients c ON c.id = dp.client_id
+       WHERE (di.fornecedor_cnpj = ? OR di.fornecedor_cnpj IS NULL OR di.fornecedor_cnpj = '')
+         AND di.status IN ('pendente','parcial') ORDER BY di.codigo, di.created_at`, [cnpj]);
+    return res.json({ nf, itens, pendentes });
+  } catch (e) { console.error('conferirNf', e); return res.status(500).json({ error: 'Erro ao conferir NF.' }); }
+}
+
+// POST /api/demanda/conciliar-manual — grava o vínculo cProd->código e reconcilia a NF
+async function conciliarManual(req, res) {
+  const nfId = parseInt(req.body.nf_id, 10);
+  const cprod = String(req.body.cprod || '').trim();
+  const codigoPedido = String(req.body.codigo_pedido || '').trim();
+  if (!Number.isInteger(nfId) || !cprod || !codigoPedido) return res.status(400).json({ error: 'Dados inválidos.' });
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[nf]] = await conn.query('SELECT emitente_cnpj FROM nf_entradas WHERE id = ? FOR UPDATE', [nfId]);
+    if (!nf) { await conn.rollback(); return res.status(404).json({ error: 'NF não encontrada.' }); }
+    const cnpj = nf.emitente_cnpj;
+    const [[temItem]] = await conn.query('SELECT 1 AS ok FROM nf_entrada_itens WHERE nf_id = ? AND cprod = ? LIMIT 1', [nfId, cprod]);
+    if (!temItem) { await conn.rollback(); return res.status(400).json({ error: 'Esse código não está nesta NF.' }); }
+    await conn.query(
+      'INSERT INTO demanda_cod_vinculos (fornecedor_cnpj, cprod, codigo_pedido) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE codigo_pedido = VALUES(codigo_pedido)',
+      [cnpj, cprod, codigoPedido]);
+    // aprende o fornecedor nas linhas com esse código que ainda não tinham CNPJ (entram no escopo)
+    await conn.query("UPDATE demanda_itens SET fornecedor_cnpj = ? WHERE codigo = ? AND (fornecedor_cnpj IS NULL OR fornecedor_cnpj = '')", [cnpj, codigoPedido]);
+    await aplicarConciliacao(conn, nfId, cnpj);
+    await conn.commit();
+    return res.json({ ok: true });
+  } catch (e) { await conn.rollback(); console.error('conciliarManual', e); return res.status(500).json({ error: 'Erro ao conciliar.' }); }
+  finally { conn.release(); }
+}
+
+// DELETE /api/demanda/:id — exclui um pedido criado por engano (bloqueia se já virou venda)
+async function excluirPedido(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'ID inválido.' });
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[ped]] = await conn.query('SELECT id FROM demanda_pedidos WHERE id = ? FOR UPDATE', [id]);
+    if (!ped) { await conn.rollback(); return res.status(404).json({ error: 'Pedido não encontrado.' }); }
+    const [[vend]] = await conn.query('SELECT COUNT(*) c FROM demanda_itens WHERE pedido_id = ? AND order_id IS NOT NULL', [id]);
+    if (vend.c > 0) { await conn.rollback(); return res.status(409).json({ error: 'Este pedido já gerou venda; não pode ser excluído.' }); }
+    await conn.query('DELETE c FROM demanda_conciliacoes c JOIN demanda_itens di ON di.id = c.demanda_item_id WHERE di.pedido_id = ?', [id]);
+    await conn.query('DELETE FROM demanda_itens WHERE pedido_id = ?', [id]);
+    await conn.query('DELETE FROM demanda_pedidos WHERE id = ?', [id]);
+    await conn.commit();
+    return res.json({ ok: true });
+  } catch (e) { await conn.rollback(); console.error('excluirPedido', e); return res.status(500).json({ error: 'Erro ao excluir.' }); }
+  finally { conn.release(); }
+}
+
 module.exports = {
   criarPedido, listarPedidos, getPedido, addItem, updateItem, deleteItem, listarFornecedores,
   listaCompra, relatorio, aplicarConciliacao, rascunhoVenda, marcarVenda, remanejarAlocacao,
+  conferirNf, conciliarManual, excluirPedido,
 };
