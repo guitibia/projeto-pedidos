@@ -202,15 +202,18 @@ async function aplicarConciliacao(conn, nfId, emitenteCnpj) {
   const linhaPorId = new Map(linhas.map(l => [l.id, l]));
   const pedidosAfetados = new Set();
 
-  for (const a of alocacoes) {
-    const [ins] = await conn.query('INSERT IGNORE INTO demanda_conciliacoes (nf_id, demanda_item_id, qtd) VALUES (?, ?, ?)', [nfId, a.demanda_item_id, a.qtd]);
+  // agrega as alocações por item (dois cProd podem traduzir p/ o mesmo código na mesma NF)
+  const somaPorItem = new Map();
+  for (const a of alocacoes) somaPorItem.set(a.demanda_item_id, (somaPorItem.get(a.demanda_item_id) || 0) + a.qtd);
+  for (const [demandaItemId, qtd] of somaPorItem) {
+    const [ins] = await conn.query('INSERT IGNORE INTO demanda_conciliacoes (nf_id, demanda_item_id, qtd) VALUES (?, ?, ?)', [nfId, demandaItemId, qtd]);
     if (ins.affectedRows === 0) continue; // já contado numa importação anterior (idempotência)
-    const linha = linhaPorId.get(a.demanda_item_id);
-    const novoRecebido = (Number(linha.qtd_recebida) || 0) + a.qtd;
+    const linha = linhaPorId.get(demandaItemId);
+    const novoRecebido = (Number(linha.qtd_recebida) || 0) + qtd;
     const novoStatus = novoRecebido >= Number(linha.qtd_pedida) ? 'veio' : 'parcial';
     const pid = linha.product_id || prodPorCod.get(String(linha.codigo).trim().toLowerCase()) || null;
     await conn.query('UPDATE demanda_itens SET qtd_recebida = ?, status = ?, product_id = COALESCE(product_id, ?) WHERE id = ?',
-      [novoRecebido, novoStatus, pid, a.demanda_item_id]);
+      [novoRecebido, novoStatus, pid, demandaItemId]);
     linha.qtd_recebida = novoRecebido;
     pedidosAfetados.add(linha.pedido_id);
   }

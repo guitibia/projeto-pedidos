@@ -97,6 +97,21 @@ test('conciliarManual grava vínculo, reconcilia e aprende p/ a próxima NF', as
   await cleanup();
 });
 
+test('dois cProd diferentes traduzem p/ o mesmo código na mesma NF: soma, não perde qtd', async () => {
+  const cli=await seedClient();
+  const { itemId }=await seedPedidoItem(cli,'160380',3);
+  const nfId=await seedNf('AAA111',2); // primeiro item da NF
+  await db.query('INSERT INTO nf_entrada_itens (nf_id, cprod, quantidade) VALUES (?,?,?)',[nfId,'BBB222',2]); // segundo item, mesma NF
+  await db.query('INSERT INTO demanda_cod_vinculos (fornecedor_cnpj, cprod, codigo_pedido) VALUES (?,?,?)',[CNPJ,'AAA111','160380']);
+  await db.query('INSERT INTO demanda_cod_vinculos (fornecedor_cnpj, cprod, codigo_pedido) VALUES (?,?,?)',[CNPJ,'BBB222','160380']);
+  const conn=await db.getConnection();
+  try{ await conn.beginTransaction(); await aplicarConciliacao(conn,nfId,CNPJ); await conn.commit(); } finally { conn.release(); }
+  const [[row]]=await db.query('SELECT qtd_recebida, status FROM demanda_itens WHERE id = ?',[itemId]);
+  assert.strictEqual(Number(row.qtd_recebida),3,'soma as duas alocações (2+1), não perde a segunda');
+  assert.strictEqual(row.status,'veio');
+  await cleanup();
+});
+
 test('conciliarManual: cprod que não está na NF → 400', async () => {
   const nfId=await seedNf('AAA',1);
   const res=mockRes();
