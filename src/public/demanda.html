@@ -235,21 +235,47 @@
     });
   }
 
+  // --- sugestão de casamento por nome (best-effort): compara o nome do item do pedido com a descrição da NF ---
+  function _normNome(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+  function _tokensNome(s){ return _normNome(s).split(' ').filter(t => t.length >= 3); }
+  function _scoreNome(nomePedido, descNf){
+    const a = _tokensNome(nomePedido), b = _tokensNome(descNf);
+    if (!a.length || !b.length) return 0;
+    let n = 0;
+    for (const ta of a) { if (b.some(tb => ta === tb || tb.startsWith(ta) || ta.startsWith(tb))) n++; }
+    return n;
+  }
+  function _sugereCprod(nomePedido, nfItens){
+    let best = null, bestScore = 0;
+    for (const it of (nfItens||[])) {
+      const sc = _scoreNome(nomePedido, it.descricao || it.produto_nome || '');
+      if (sc > bestScore) { bestScore = sc; best = it.cprod; }
+    }
+    return bestScore >= 1 ? best : null;
+  }
+
   async function renderConferenciaPedido(pedidoId, nfId){
     const cont = document.getElementById('cp-conteudo');
     if (!nfId) { cont.innerHTML = 'Escolha uma NF pra conferir.'; return; }
     const [pr, cr] = await Promise.all([ Auth.apiFetch('/api/demanda/'+pedidoId), Auth.apiFetch('/api/demanda/nf/'+nfId+'/conferir') ]);
     const p = await pr.json(); const conf = await cr.json();
-    const nfOpts = (conf.itens||[]).map(i => `<option value="${esc(i.cprod)}">${esc(i.cprod)} — ${esc(i.descricao||i.produto_nome||'')} (qtd ${i.quantidade})</option>`).join('');
     const veio = p.itens.filter(i => i.status==='veio').length;
     const parcial = p.itens.filter(i => i.status==='parcial').length;
     const faltou = p.itens.filter(i => i.status!=='veio' && i.status!=='parcial').length;
     const linhas = p.itens.map(i => {
       const badge = i.status==='veio' ? '<span class="badge bg-success">veio</span>'
         : (i.status==='parcial' ? '<span class="badge bg-warning text-dark">parcial</span>' : '<span class="badge bg-secondary">faltou</span>');
-      const acao = i.status==='veio' ? '' : `
-        <select class="form-select form-select-sm d-inline-block" style="max-width:320px" id="cp-link-${i.id}"><option value="">Ligar ao produto da NF…</option>${nfOpts}</select>
+      let acao = '';
+      if (i.status !== 'veio') {
+        const sug = _sugereCprod(i.nome, conf.itens || []);   // pré-seleciona o item da NF cuja descrição mais parece
+        const opts = (conf.itens || []).map(it => {
+          const sel = (sug && String(it.cprod) === String(sug)) ? ' selected' : '';
+          return `<option value="${esc(it.cprod)}"${sel}>${esc(it.cprod)} — ${esc(it.descricao||it.produto_nome||'')} (qtd ${it.quantidade})${sel ? ' (sugestão)' : ''}</option>`;
+        }).join('');
+        acao = `
+        <select class="form-select form-select-sm d-inline-block" style="max-width:340px" id="cp-link-${i.id}"><option value="">Ligar ao produto da NF…</option>${opts}</select>
         <button class="btn btn-sm btn-primary" onclick="ligarNoPedido(${i.id}, '${esc(i.codigo)}', ${nfId}, ${pedidoId})">Ligar</button>`;
+      }
       return `<tr><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td><td>${i.qtd_pedida}</td><td>${i.qtd_recebida}</td><td>${badge}</td><td>${acao}</td></tr>`;
     }).join('');
     cont.innerHTML = `
