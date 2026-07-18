@@ -61,7 +61,7 @@
       <ul class="nav nav-tabs mb-3" id="demandaTabs">
         <li class="nav-item"><button class="nav-link active" data-tab="pedidos">Pedidos</button></li>
         <li class="nav-item"><button class="nav-link" data-tab="comprar">Comprar</button></li>
-        <li class="nav-item"><button class="nav-link" data-tab="relatorio">Conciliação / Relatório</button></li>
+        <li class="nav-item"><button class="nav-link" data-tab="relatorio">Relatório</button></li>
       </ul>
 
       <section id="tab-pedidos">
@@ -75,14 +75,6 @@
 
       <section id="tab-comprar" class="d-none"><div id="lista-compra"></div></section>
       <section id="tab-relatorio" class="d-none">
-        <div class="card mb-3"><div class="card-body">
-          <h5>Conferir NF importada</h5>
-          <div class="d-flex gap-2 mb-2">
-            <select id="conf-nf" class="form-select" style="max-width:420px"><option value="">Escolha uma NF…</option></select>
-            <button id="conf-carregar" class="btn btn-outline-primary">Conferir</button>
-          </div>
-          <div id="conf-resultado"></div>
-        </div></div>
         <div id="conteudo-relatorio"></div>
       </section>
     </div>
@@ -112,7 +104,7 @@
     for (const s of ['pedidos','comprar','relatorio']) $('#tab-'+s).classList.toggle('d-none', s!==tab);
     document.querySelectorAll('#demandaTabs .nav-link').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
     if (tab==='comprar') carregarCompra();
-    if (tab==='relatorio') { carregarRelatorio(); carregarNfsConferencia(); }
+    if (tab==='relatorio') { carregarRelatorio(); }
   }
   document.querySelectorAll('#demandaTabs .nav-link').forEach(b => b.onclick = () => show(b.dataset.tab));
 
@@ -296,48 +288,6 @@
         <tbody>${f.itens.map(i => `<tr><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td><td>${i.qtd_total}</td>
           <td>${i.clientes.map(c => esc(c.client_name)+' ('+c.qtd+')').join(', ')}</td></tr>`).join('')}</tbody></table>
       </div></div>`).join('') || '<p class="text-muted">Nada pendente para comprar.</p>';
-  }
-
-  async function carregarNfsConferencia(){
-    const r = await Auth.apiFetch('/api/nf');
-    const nfs = await r.json();
-    const sel = document.getElementById('conf-nf');
-    sel.innerHTML = '<option value="">Escolha uma NF…</option>' +
-      nfs.map(n => `<option value="${n.id}">#${n.id} — ${esc(n.emitente_nome||'')} (nota ${esc(String(n.numero||''))})</option>`).join('');
-  }
-  document.getElementById('conf-carregar').onclick = carregarConferencia;
-
-  async function carregarConferencia(){
-    const nfId = document.getElementById('conf-nf').value;
-    if (!nfId) return;
-    const r = await Auth.apiFetch('/api/demanda/nf/'+nfId+'/conferir');
-    const d = await r.json();
-    if (!r.ok) { document.getElementById('conf-resultado').innerHTML = '<p class="text-danger">'+esc(d.error||'Erro')+'</p>'; return; }
-    const optsPend = d.pendentes.map(p => `<option value="${esc(p.codigo)}">${esc(p.codigo)} — ${esc(p.nome||'')} (${esc(p.cliente)}) [pediu ${p.qtd_pedida}, veio ${p.qtd_recebida}]</option>`).join('');
-    const linhas = d.itens.map(i => {
-      const casou = i.codigo_vinculado ? `<span class="badge bg-success">casa com ${esc(i.codigo_vinculado)}</span>` : '<span class="badge bg-secondary">não casou</span>';
-      const seletor = i.codigo_vinculado ? '' : `
-        <select class="form-select form-select-sm d-inline-block" style="max-width:340px" id="link-${esc(i.cprod)}">
-          <option value="">Ligar a um pedido pendente…</option>${optsPend}
-        </select>
-        <button class="btn btn-sm btn-primary" onclick="ligarItem('${esc(i.cprod)}', ${nfId})">Ligar</button>`;
-      return `<tr><td>${esc(i.cprod)}</td><td>${esc(i.descricao||i.produto_nome||'')}</td><td>${i.quantidade}</td><td>${casou}</td><td>${seletor}</td></tr>`;
-    }).join('');
-    document.getElementById('conf-resultado').innerHTML = `
-      <table class="table table-sm"><thead><tr><th>Cód. NF (cProd)</th><th>Descrição</th><th>Qtd</th><th>Status</th><th>Conferir</th></tr></thead>
-      <tbody>${linhas || '<tr><td colspan=5 class="text-muted">Sem itens</td></tr>'}</tbody></table>`;
-  }
-
-  async function ligarItem(cprod, nfId){
-    const sel = document.getElementById('link-'+cprod);
-    const codigoPedido = sel ? sel.value : '';
-    if (!codigoPedido) return Swal.fire('Escolha o pedido', 'Selecione a qual código de pedido esse item corresponde.', 'warning');
-    const r = await Auth.apiFetch('/api/demanda/conciliar-manual', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ nf_id: nfId, cprod, codigo_pedido: codigoPedido }) });
-    const d = await r.json();
-    if (!r.ok) return Swal.fire('Erro', d.error || '', 'error');
-    await carregarConferencia();   // recarrega: o item passa a "casa com ..."
-    carregarRelatorio();           // atualiza o relatório veio×faltou
   }
 
   async function carregarRelatorio(){
