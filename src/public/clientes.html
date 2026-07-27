@@ -332,6 +332,12 @@
   }
 
   const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtTelefone = v => {
+    const d = String(v || '').replace(/\D/g, '');
+    if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;   // (19) 99544-4947
+    if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;   // (19) 3544-4947
+    return v ? String(v) : '—';
+  };
 
   function esc(v) {
     return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -482,7 +488,7 @@
             <div class="cp-sub">
               <div class="cp-sub-title"><i class="bi bi-person-lines-fill"></i> Contato &amp; Endereço</div>
               <div class="cp-row"><i class="bi bi-envelope"></i><div>${esc(c.email || '—')}</div></div>
-              <div class="cp-row"><i class="bi bi-telephone"></i><div>${esc(c.phone || '—')}</div></div>
+              <div class="cp-row"><i class="bi bi-telephone"></i><div>${esc(fmtTelefone(c.phone))}</div></div>
               <div class="cp-row"><i class="bi bi-person-vcard"></i><div><span class="k">CPF</span> ${esc(c.cpf || '—')}</div></div>
               <div class="cp-row"><i class="bi bi-gift"></i><div><span class="k">Nasc.</span> ${dtDate(c.birthdate)}</div></div>
               <div class="cp-row"><i class="bi bi-geo-alt"></i><div>${enderecoTxt}</div></div>
@@ -492,12 +498,21 @@
               <div class="cp-row"><i class="bi bi-clock-history"></i><div><span class="k">Primeira compra:</span> ${dt(s.primeiraCompra)}</div></div>
               <div class="cp-row"><i class="bi bi-credit-card"></i><div><span class="k">Pagamento preferido:</span> <b>${esc(s.pagamentoPreferido || '—')}</b></div></div>
               <div style="margin-top:.2rem">${statusChips}</div>
-              <div class="input-group input-group-sm mt-2" style="max-width:260px">
-                <span class="input-group-text">Desconto PIX (%)</span>
-                <input type="number" min="0" max="99.99" step="0.01" class="form-control" id="cli-pix-percent" placeholder="usa o global" value="${esc(String(pixPercentVal))}">
-                <button class="btn btn-outline-primary" id="cli-pix-salvar" type="button" onclick="salvarClientePix()">Salvar</button>
+              <div style="margin-top:.7rem;border-top:1px solid var(--border-color);padding-top:.65rem">
+                <label for="cli-pix-percent" style="display:block;font-size:.74rem;font-weight:600;color:var(--text-color);margin-bottom:.4rem">
+                  <i class="bi bi-percent" style="color:#0d9488"></i> Desconto PIX deste cliente
+                </label>
+                <div style="display:flex;gap:.45rem;align-items:center">
+                  <div style="position:relative;width:120px;flex:0 0 auto">
+                    <input type="number" min="0" max="99.99" step="0.01" class="form-control form-control-sm" id="cli-pix-percent"
+                           placeholder="Ex.: 5" value="${esc(String(pixPercentVal))}" style="padding-right:1.5rem">
+                    <span style="position:absolute;right:.55rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.8rem;pointer-events:none">%</span>
+                  </div>
+                  <button class="btn btn-sm" id="cli-pix-salvar" type="button" onclick="salvarClientePix()"
+                          style="background:#0d9488;color:#fff;border:none;font-weight:600;padding:.3rem .9rem"><i class="bi bi-check-lg"></i> Salvar</button>
+                </div>
+                <div style="font-size:.72rem;color:var(--text-muted);margin-top:.4rem">Deixe vazio para usar o desconto global do PIX.</div>
               </div>
-              <div class="form-text">Vazio = usa o desconto global do PIX.</div>
             </div>
           </div>
 
