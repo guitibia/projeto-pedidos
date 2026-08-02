@@ -319,6 +319,7 @@
     div.innerHTML = `
       <input type="date" class="form-control form-control-sm prom-data" required style="flex:1">
       <input type="number" step="0.01" class="form-control form-control-sm prom-valor" placeholder="Valor" required style="flex:1">
+      <input type="text" class="form-control form-control-sm prom-boleto" placeholder="Nº boleto (opcional)" style="flex:1.2">
       <button type="button" class="btn-remover-linha" title="Remover" style="padding:.3rem .5rem;border-radius:7px;border:1px solid rgba(248,81,73,.3);background:rgba(248,81,73,.06);color:#f85149;cursor:pointer;font-size:.85rem;flex-shrink:0">
         <i class="bi bi-x-lg"></i>
       </button>`;
@@ -341,7 +342,8 @@
 
     const itens = Array.from(document.querySelectorAll('.linha-prom')).map(linha => ({
       data_vencimento: linha.querySelector('.prom-data').value,
-      valor:           parseFloat(linha.querySelector('.prom-valor').value)
+      valor:           parseFloat(linha.querySelector('.prom-valor').value),
+      numero_boleto:   linha.querySelector('.prom-boleto').value
     }));
 
     if (itens.some(i => !i.data_vencimento || !i.valor || isNaN(i.valor))) {
@@ -431,6 +433,7 @@
                   : vencida ? `<span class="badge bg-danger" style="font-size:.65rem"><i class="bi bi-exclamation-circle"></i> Vencida</span>`
                   : `<span class="badge bg-warning text-dark" style="font-size:.65rem">Pendente</span>`}
               </div>
+              ${parc.numeroBoleto ? `<div style="font-size:.68rem;color:var(--text-muted);margin-top:.15rem"><i class="bi bi-upc-scan"></i> Boleto ${String(parc.numeroBoleto).replace(/[<>]/g,'')}</div>` : ''}
               <div style="display:flex;gap:.3rem;margin-top:.1rem">
                 ${paga
                   ? `<button class="btn-desfazer" style="flex:1" onclick="alterarStatus(${parc.promId},${parc.numParcela},'Pendente')"><i class="bi bi-arrow-counterclockwise"></i> Desfazer</button>`
@@ -510,7 +513,8 @@
           numParcela: parc.numero,
           valor:      parc.valor,
           status:     parc.status,
-          vencimento: parc.data_vencimento
+          vencimento: parc.data_vencimento,
+          numeroBoleto: parc.numero_boleto || null
         });
       });
     });
