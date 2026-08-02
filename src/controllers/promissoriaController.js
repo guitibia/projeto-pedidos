@@ -26,9 +26,10 @@ async function createPromissoria(req, res) {
         'INSERT INTO promissorias (nota_fiscal_id, valor, data_vencimento, parcelas) VALUES (?, ?, ?, ?)',
         [nfResult.insertId, item.valor, item.data_vencimento, 1]
       );
+      const numBoleto = String(item.numero_boleto || '').trim().slice(0, 60) || null;
       await conn.query(
-        'INSERT INTO parcelas (promissoria_id, numero_parcela, data_vencimento, valor) VALUES (?, ?, ?, ?)',
-        [promResult.insertId, 1, item.data_vencimento, item.valor]
+        'INSERT INTO parcelas (promissoria_id, numero_parcela, data_vencimento, valor, numero_boleto) VALUES (?, ?, ?, ?, ?)',
+        [promResult.insertId, 1, item.data_vencimento, item.valor, numBoleto]
       );
     }
 
@@ -50,7 +51,8 @@ async function listPromissorias(req, res) {
       SELECT p.*, nf.numero AS numero_nf, nf.fornecedor, nf.data_emissao,
              parc.numero_parcela, parc.status AS parcela_status,
              parc.data_vencimento AS parcela_vencimento,
-             parc.valor AS parcela_valor
+             parc.valor AS parcela_valor,
+             parc.numero_boleto
       FROM promissorias p
       JOIN notas_fiscais nf ON nf.id = p.nota_fiscal_id
       LEFT JOIN parcelas parc ON parc.promissoria_id = p.id
@@ -68,7 +70,8 @@ async function listPromissorias(req, res) {
           numero:          row.numero_parcela,
           status:          row.parcela_status,
           data_vencimento: row.parcela_vencimento,
-          valor:           parseFloat(row.parcela_valor || 0)
+          valor:           parseFloat(row.parcela_valor || 0),
+          numero_boleto:   row.numero_boleto
         });
       }
       return acc;

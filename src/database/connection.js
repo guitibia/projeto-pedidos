@@ -227,6 +227,11 @@ pool.getConnection()
       'CREATE TABLE IF NOT EXISTS demanda_cod_vinculos (id INT AUTO_INCREMENT PRIMARY KEY, fornecedor_cnpj VARCHAR(14) NOT NULL, cprod VARCHAR(60) NOT NULL, codigo_pedido VARCHAR(60) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY uq_forn_cprod (fornecedor_cnpj, cprod))',
     ]) { try { await conn.query(sql); } catch (_) {} }
 
+    // Migração: número do boleto na parcela da promissória
+    for (const sql of [
+      'ALTER TABLE parcelas ADD COLUMN numero_boleto VARCHAR(60) NULL',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     // Backfill one-shot: nomes de produto "gritando" (CAIXA ALTA) viram Title Case.
     // Só mexe nos 100% maiúsculos; nomes já formatados ficam intactos.
     try {
