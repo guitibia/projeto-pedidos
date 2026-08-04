@@ -157,21 +157,35 @@
   async function abrirPedido(id){
     const r = await Auth.apiFetch('/api/demanda/'+id); const p = await r.json();
     const fornOpts = fornecedores.map(f => `<option value="${esc(f.cnpj)}" data-nome="${esc(f.nome)}">${esc(f.nome)}</option>`).join('');
-    const linhas = p.itens.map(i => `
+    const nVeio = p.itens.filter(i => i.status==='veio').length;
+    const nParcial = p.itens.filter(i => i.status==='parcial').length;
+    const nFaltou = p.itens.filter(i => i.status!=='veio' && i.status!=='parcial').length;
+    const linhas = p.itens.map(i => {
+      const badge = i.status==='veio' ? '<span class="badge bg-success">veio</span>'
+        : (i.status==='parcial' ? '<span class="badge bg-warning text-dark">parcial</span>' : '<span class="badge bg-secondary">faltou</span>');
+      return `
       <tr>
-        <td>${esc(i.fornecedor_nome||'')}</td><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td>
-        <td>${i.qtd_pedida}</td>
-        <td><input type="number" min="0" value="${i.qtd_recebida}" style="width:64px" class="form-control form-control-sm"
-            onchange="ajustarRecebido(${i.id}, this.value, ${id})"></td>
-        <td>${esc(i.status)}</td>
-        <td><button class="btn btn-sm btn-outline-danger" onclick="removerItem(${i.id}, ${id})">×</button></td>
-      </tr>`).join('');
+        <td>${esc(i.nome || i.codigo || '')}</td>
+        <td class="text-center">${i.qtd_pedida}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-success" title="Chegou tudo" onclick="ajustarRecebido(${i.id}, ${i.qtd_pedida}, ${id})">✓ Chegou</button>
+          <button class="btn btn-sm btn-outline-secondary" title="Não veio" onclick="ajustarRecebido(${i.id}, 0, ${id})">✗ Não veio</button>
+          <input type="number" min="0" max="${i.qtd_pedida}" value="${i.qtd_recebida}" style="width:56px" class="form-control form-control-sm d-inline-block ms-1" title="quantidade recebida (parcial)"
+                 onchange="ajustarRecebido(${i.id}, this.value, ${id})">
+          ${badge}
+        </td>
+        <td><button class="btn btn-sm btn-outline-danger" title="Remover item" onclick="removerItem(${i.id}, ${id})">×</button></td>
+      </tr>`;
+    }).join('');
     Swal.fire({
       title: esc(p.client_name), width: 800,
       html: `
-        <div class="text-end mb-2"><button id="btn-conferir-nf" class="btn btn-sm btn-success">Conferir com a NF</button></div>
-        <table class="table table-sm"><thead><tr><th>Fornecedor</th><th>Cód.</th><th>Produto</th><th>Ped.</th><th>Rec.</th><th>Status</th><th></th></tr></thead>
-        <tbody>${linhas || '<tr><td colspan=7 class="text-muted">Sem itens</td></tr>'}</tbody></table>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="small">✅ Vieram: <b>${nVeio}</b> &nbsp;·&nbsp; 🟡 Parcial: <b>${nParcial}</b> &nbsp;·&nbsp; ❌ Faltaram: <b>${nFaltou}</b></div>
+          <button id="btn-conferir-nf" class="btn btn-sm btn-success">Conferir com a NF</button>
+        </div>
+        <table class="table table-sm align-middle"><thead><tr><th>Produto</th><th class="text-center">Pediu</th><th>Conferência</th><th></th></tr></thead>
+        <tbody>${linhas || '<tr><td colspan=4 class="text-muted">Sem itens</td></tr>'}</tbody></table>
         <hr>
         <div class="row g-2">
           <div class="col"><select id="it-forn" class="form-select form-select-sm"><option value="">Fornecedor…</option>${fornOpts}</select></div>
