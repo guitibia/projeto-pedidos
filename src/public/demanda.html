@@ -182,7 +182,7 @@
       html: `
         <div class="d-flex justify-content-between align-items-center mb-2">
           <div class="small">✅ Vieram: <b>${nVeio}</b> &nbsp;·&nbsp; 🟡 Parcial: <b>${nParcial}</b> &nbsp;·&nbsp; ❌ Faltaram: <b>${nFaltou}</b></div>
-          <button id="btn-conferir-nf" class="btn btn-sm btn-success">Conferir com a NF</button>
+          <button id="btn-conferir-nf" class="btn btn-sm btn-success">Puxar da NF</button>
         </div>
         <table class="table table-sm align-middle"><thead><tr><th>Produto</th><th class="text-center">Pediu</th><th>Conferência</th><th></th></tr></thead>
         <tbody>${linhas || '<tr><td colspan=4 class="text-muted">Sem itens</td></tr>'}</tbody></table>
@@ -240,10 +240,10 @@
     const r = await Auth.apiFetch('/api/nf'); const nfs = await r.json();
     const nfOpts = nfs.map(n => `<option value="${n.id}">#${n.id} — ${esc(n.emitente_nome||'')} (nota ${esc(String(n.numero||''))})</option>`).join('');
     Swal.fire({
-      title: 'Conferir com a NF', width: 820, showConfirmButton: false, showCloseButton: true,
+      title: 'Puxar da NF', width: 820, showConfirmButton: false, showCloseButton: true,
       html: `
         <select id="cp-nf" class="form-select form-select-sm mb-2"><option value="">Escolha a NF importada…</option>${nfOpts}</select>
-        <div id="cp-conteudo" class="text-muted small">Escolha uma NF pra conferir.</div>`,
+        <div id="cp-conteudo" class="text-muted small">Escolha a NF que você importou.</div>`,
       didOpen: () => { document.getElementById('cp-nf').onchange = (e) => renderConferenciaPedido(pedidoId, e.target.value); },
       willClose: () => { abrirPedido(pedidoId); }   // reabre o pedido com os status atualizados
     });
@@ -271,42 +271,26 @@
   async function renderConferenciaPedido(pedidoId, nfId){
     const cont = document.getElementById('cp-conteudo');
     if (!nfId) { cont.innerHTML = 'Escolha uma NF pra conferir.'; return; }
+    cont.innerHTML = 'Conferindo pela NF…';
     const [pr, cr] = await Promise.all([ Auth.apiFetch('/api/demanda/'+pedidoId), Auth.apiFetch('/api/demanda/nf/'+nfId+'/conferir') ]);
     const p = await pr.json(); const conf = await cr.json();
-    const veio = p.itens.filter(i => i.status==='veio').length;
-    const parcial = p.itens.filter(i => i.status==='parcial').length;
-    const faltou = p.itens.filter(i => i.status!=='veio' && i.status!=='parcial').length;
-    const linhas = p.itens.map(i => {
-      const badge = i.status==='veio' ? '<span class="badge bg-success">veio</span>'
-        : (i.status==='parcial' ? '<span class="badge bg-warning text-dark">parcial</span>' : '<span class="badge bg-secondary">faltou</span>');
-      let acao = '';
-      if (i.status !== 'veio') {
-        const sug = _sugereCprod(i.nome, conf.itens || []);   // pré-seleciona o item da NF cuja descrição mais parece
-        const opts = (conf.itens || []).map(it => {
-          const sel = (sug && String(it.cprod) === String(sug)) ? ' selected' : '';
-          return `<option value="${esc(it.cprod)}"${sel}>${esc(it.cprod)} — ${esc(it.descricao||it.produto_nome||'')} (qtd ${it.quantidade})${sel ? ' (sugestão)' : ''}</option>`;
-        }).join('');
-        acao = `
-        <select class="form-select form-select-sm d-inline-block" style="max-width:340px" id="cp-link-${i.id}"><option value="">Ligar ao produto da NF…</option>${opts}</select>
-        <button class="btn btn-sm btn-primary" onclick="ligarNoPedido(${i.id}, '${esc(i.codigo)}', ${nfId}, ${pedidoId})">Ligar</button>`;
-      }
-      return `<tr><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td><td>${i.qtd_pedida}</td><td>${i.qtd_recebida}</td><td>${badge}</td><td>${acao}</td></tr>`;
-    }).join('');
-    cont.innerHTML = `
-      <div class="mb-2 text-start">✅ Vieram: <b>${veio}</b> &nbsp;·&nbsp; 🟡 Parcial: <b>${parcial}</b> &nbsp;·&nbsp; ❌ Faltaram: <b>${faltou}</b></div>
-      <table class="table table-sm"><thead><tr><th>Cód.</th><th>Produto</th><th>Ped.</th><th>Rec.</th><th>Status</th><th>Conferir</th></tr></thead>
-      <tbody>${linhas || '<tr><td colspan=6 class="text-muted">Sem itens</td></tr>'}</tbody></table>`;
-  }
-
-  async function ligarNoPedido(itemId, codigo, nfId, pedidoId){
-    const sel = document.getElementById('cp-link-'+itemId);
-    const cprod = sel ? sel.value : '';
-    if (!cprod) return Swal.fire('Escolha o produto da NF', 'Selecione qual item da NF corresponde a esse produto.', 'warning');
-    const r = await Auth.apiFetch('/api/demanda/conciliar-manual', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ nf_id: nfId, cprod, codigo_pedido: codigo }) });
-    const d = await r.json();
-    if (!r.ok) return Swal.fire('Erro', d.error || '', 'error');
-    renderConferenciaPedido(pedidoId, nfId);   // recarrega: o item vira veio/parcial e o resumo atualiza
+    const nfItens = conf.itens || [];
+    let marcados = 0, semMatch = 0;
+    for (const i of p.itens) {
+      if (i.status === 'veio') continue;
+      // acha o item da NF de nome mais parecido
+      let best = null, bestScore = 0;
+      for (const it of nfItens) { const sc = _scoreNome(i.nome, it.descricao || it.produto_nome || ''); if (sc > bestScore) { bestScore = sc; best = it; } }
+      if (best && bestScore >= 1) {
+        const nfQ = Math.floor(Number(best.quantidade) || 0);
+        const qtd = nfQ > 0 ? Math.min(Number(i.qtd_pedida) || 0, nfQ) : (Number(i.qtd_pedida) || 0);
+        const rr = await Auth.apiFetch('/api/demanda/itens/'+i.id+'/alocacao', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ qtd_recebida: qtd }) });
+        if (rr.ok) marcados++;
+      } else { semMatch++; }
+    }
+    cont.innerHTML = `Pré-marquei <b>${marcados}</b> item(ns) que a NF trouxe (por semelhança de nome).`
+      + (semMatch ? ` <b>${semMatch}</b> não deu pra adivinhar — marque na mão no pedido.` : '')
+      + `<div class="mt-2"><button class="btn btn-sm btn-primary" onclick="Swal.close()">Voltar ao pedido e conferir</button></div>`;
   }
 
   async function ajustarRecebido(itemId, val, pedidoId){
