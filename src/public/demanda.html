@@ -288,14 +288,6 @@
     for (const ta of a) { if (b.some(tb => ta === tb || tb.startsWith(ta) || ta.startsWith(tb))) n++; }
     return n;
   }
-  function _sugereCprod(nomePedido, nfItens){
-    let best = null, bestScore = 0;
-    for (const it of (nfItens||[])) {
-      const sc = _scoreNome(nomePedido, it.descricao || it.produto_nome || '');
-      if (sc > bestScore) { bestScore = sc; best = it.cprod; }
-    }
-    return bestScore >= 1 ? best : null;
-  }
 
   async function renderConferenciaPedido(pedidoId, nfId){
     const cont = document.getElementById('cp-conteudo');
