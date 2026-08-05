@@ -198,6 +198,7 @@
         <div class="d-flex gap-2 mt-2">
           <button id="btn-gerar-venda" class="btn btn-sm btn-success">Gerar venda do que veio</button>
           <button id="btn-whats" class="btn btn-sm btn-outline-success">Avisar no WhatsApp</button>
+          <button id="btn-imprimir-sep" class="btn btn-sm btn-outline-primary" onclick="imprimirSeparacao(${id})"><i class="bi bi-printer"></i> Imprimir separação</button>
         </div>`,
       showConfirmButton: false, showCloseButton: true,
       didOpen: () => {
@@ -235,6 +236,34 @@
         };
       }
     });
+  }
+
+  async function imprimirSeparacao(pedidoId){
+    const r = await Auth.apiFetch('/api/demanda/'+pedidoId); const p = await r.json();
+    const vieram   = p.itens.filter(i => Number(i.qtd_recebida) > 0);
+    const faltaram = p.itens.filter(i => Number(i.qtd_recebida) < Number(i.qtd_pedida));
+    const linhasVeio = vieram.map(i => `<tr><td>${esc(i.nome || i.codigo || '')}</td><td style="text-align:center">${i.qtd_recebida}</td></tr>`).join('')
+      || '<tr><td colspan="2">Nenhum item recebido ainda.</td></tr>';
+    const linhasFalta = faltaram.map(i => `<li>${esc(i.nome || i.codigo || '')} — faltou ${Number(i.qtd_pedida) - Number(i.qtd_recebida)}</li>`).join('');
+    const w = window.open('', '_blank', 'width=720,height=860');
+    if (!w) { Swal.fire('Bloqueado', 'O navegador bloqueou a janela de impressão. Permita pop-ups pra este site.', 'warning'); return; }
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Separação — ${esc(p.client_name)}</title>
+      <style>
+        body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:24px}
+        h1{font-size:20px;margin:0 0 2px} .sub{color:#555;font-size:13px;margin-bottom:16px}
+        h2{font-size:15px;margin:18px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}
+        table{width:100%;border-collapse:collapse} td,th{padding:6px 8px;border-bottom:1px solid #eee;font-size:14px;text-align:left}
+        th:last-child,td:last-child{text-align:center;width:70px}
+        ul{margin:.3rem 0;padding-left:20px} li{font-size:13px;color:#333}
+        @media print{body{margin:0}}
+      </style></head><body>
+      <h1>Separação — ${esc(p.client_name)}</h1>
+      <div class="sub">Data: ${new Date().toLocaleDateString('pt-BR')}</div>
+      <h2>Separar / entregar</h2>
+      <table><thead><tr><th>Produto</th><th>Qtd</th></tr></thead><tbody>${linhasVeio}</tbody></table>
+      ${linhasFalta ? `<h2>Faltou (avisar a cliente)</h2><ul>${linhasFalta}</ul>` : ''}
+      </body></html>`);
+    w.document.close(); w.focus(); setTimeout(() => { w.print(); }, 300);
   }
   async function conferirPedido(pedidoId){
     const r = await Auth.apiFetch('/api/nf'); const nfs = await r.json();
