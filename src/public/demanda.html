@@ -157,21 +157,35 @@
   async function abrirPedido(id){
     const r = await Auth.apiFetch('/api/demanda/'+id); const p = await r.json();
     const fornOpts = fornecedores.map(f => `<option value="${esc(f.cnpj)}" data-nome="${esc(f.nome)}">${esc(f.nome)}</option>`).join('');
-    const linhas = p.itens.map(i => `
+    const nVeio = p.itens.filter(i => i.status==='veio').length;
+    const nParcial = p.itens.filter(i => i.status==='parcial').length;
+    const nFaltou = p.itens.filter(i => i.status!=='veio' && i.status!=='parcial').length;
+    const linhas = p.itens.map(i => {
+      const badge = i.status==='veio' ? '<span class="badge bg-success">veio</span>'
+        : (i.status==='parcial' ? '<span class="badge bg-warning text-dark">parcial</span>' : '<span class="badge bg-secondary">faltou</span>');
+      return `
       <tr>
-        <td>${esc(i.fornecedor_nome||'')}</td><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td>
-        <td>${i.qtd_pedida}</td>
-        <td><input type="number" min="0" value="${i.qtd_recebida}" style="width:64px" class="form-control form-control-sm"
-            onchange="ajustarRecebido(${i.id}, this.value, ${id})"></td>
-        <td>${esc(i.status)}</td>
-        <td><button class="btn btn-sm btn-outline-danger" onclick="removerItem(${i.id}, ${id})">×</button></td>
-      </tr>`).join('');
+        <td>${esc(i.nome || i.codigo || '')}</td>
+        <td class="text-center">${i.qtd_pedida}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-success" title="Chegou tudo" onclick="ajustarRecebido(${i.id}, ${i.qtd_pedida}, ${id})">✓ Chegou</button>
+          <button class="btn btn-sm btn-outline-secondary" title="Não veio" onclick="ajustarRecebido(${i.id}, 0, ${id})">✗ Não veio</button>
+          <input type="number" min="0" max="${i.qtd_pedida}" value="${i.qtd_recebida}" style="width:56px" class="form-control form-control-sm d-inline-block ms-1" title="quantidade recebida (parcial)"
+                 onchange="ajustarRecebido(${i.id}, this.value, ${id})">
+          ${badge}
+        </td>
+        <td><button class="btn btn-sm btn-outline-danger" title="Remover item" onclick="removerItem(${i.id}, ${id})">×</button></td>
+      </tr>`;
+    }).join('');
     Swal.fire({
       title: esc(p.client_name), width: 800,
       html: `
-        <div class="text-end mb-2"><button id="btn-conferir-nf" class="btn btn-sm btn-success">Conferir com a NF</button></div>
-        <table class="table table-sm"><thead><tr><th>Fornecedor</th><th>Cód.</th><th>Produto</th><th>Ped.</th><th>Rec.</th><th>Status</th><th></th></tr></thead>
-        <tbody>${linhas || '<tr><td colspan=7 class="text-muted">Sem itens</td></tr>'}</tbody></table>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="small">✅ Vieram: <b>${nVeio}</b> &nbsp;·&nbsp; 🟡 Parcial: <b>${nParcial}</b> &nbsp;·&nbsp; ❌ Faltaram: <b>${nFaltou}</b></div>
+          <button id="btn-conferir-nf" class="btn btn-sm btn-success">Puxar da NF</button>
+        </div>
+        <table class="table table-sm align-middle"><thead><tr><th>Produto</th><th class="text-center">Pediu</th><th>Conferência</th><th></th></tr></thead>
+        <tbody>${linhas || '<tr><td colspan=4 class="text-muted">Sem itens</td></tr>'}</tbody></table>
         <hr>
         <div class="row g-2">
           <div class="col"><select id="it-forn" class="form-select form-select-sm"><option value="">Fornecedor…</option>${fornOpts}</select></div>
@@ -184,6 +198,7 @@
         <div class="d-flex gap-2 mt-2">
           <button id="btn-gerar-venda" class="btn btn-sm btn-success">Gerar venda do que veio</button>
           <button id="btn-whats" class="btn btn-sm btn-outline-success">Avisar no WhatsApp</button>
+          <button id="btn-imprimir-sep" class="btn btn-sm btn-outline-primary" onclick="imprimirSeparacao(${id})"><i class="bi bi-printer"></i> Imprimir separação</button>
         </div>`,
       showConfirmButton: false, showCloseButton: true,
       didOpen: () => {
@@ -222,14 +237,42 @@
       }
     });
   }
+
+  async function imprimirSeparacao(pedidoId){
+    const r = await Auth.apiFetch('/api/demanda/'+pedidoId); const p = await r.json();
+    const vieram   = p.itens.filter(i => Number(i.qtd_recebida) > 0);
+    const faltaram = p.itens.filter(i => Number(i.qtd_recebida) < Number(i.qtd_pedida));
+    const linhasVeio = vieram.map(i => `<tr><td>${esc(i.nome || i.codigo || '')}</td><td style="text-align:center">${i.qtd_recebida}</td></tr>`).join('')
+      || '<tr><td colspan="2">Nenhum item recebido ainda.</td></tr>';
+    const linhasFalta = faltaram.map(i => `<li>${esc(i.nome || i.codigo || '')} — faltou ${Number(i.qtd_pedida) - Number(i.qtd_recebida)}</li>`).join('');
+    const w = window.open('', '_blank', 'width=720,height=860');
+    if (!w) { Swal.fire('Bloqueado', 'O navegador bloqueou a janela de impressão. Permita pop-ups pra este site.', 'warning'); return; }
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Separação — ${esc(p.client_name)}</title>
+      <style>
+        body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:24px}
+        h1{font-size:20px;margin:0 0 2px} .sub{color:#555;font-size:13px;margin-bottom:16px}
+        h2{font-size:15px;margin:18px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}
+        table{width:100%;border-collapse:collapse} td,th{padding:6px 8px;border-bottom:1px solid #eee;font-size:14px;text-align:left}
+        th:last-child,td:last-child{text-align:center;width:70px}
+        ul{margin:.3rem 0;padding-left:20px} li{font-size:13px;color:#333}
+        @media print{body{margin:0}}
+      </style></head><body>
+      <h1>Separação — ${esc(p.client_name)}</h1>
+      <div class="sub">Data: ${new Date().toLocaleDateString('pt-BR')}</div>
+      <h2>Separar / entregar</h2>
+      <table><thead><tr><th>Produto</th><th>Qtd</th></tr></thead><tbody>${linhasVeio}</tbody></table>
+      ${linhasFalta ? `<h2>Faltou (avisar a cliente)</h2><ul>${linhasFalta}</ul>` : ''}
+      </body></html>`);
+    w.document.close(); w.focus(); setTimeout(() => { w.print(); }, 300);
+  }
   async function conferirPedido(pedidoId){
     const r = await Auth.apiFetch('/api/nf'); const nfs = await r.json();
     const nfOpts = nfs.map(n => `<option value="${n.id}">#${n.id} — ${esc(n.emitente_nome||'')} (nota ${esc(String(n.numero||''))})</option>`).join('');
     Swal.fire({
-      title: 'Conferir com a NF', width: 820, showConfirmButton: false, showCloseButton: true,
+      title: 'Puxar da NF', width: 820, showConfirmButton: false, showCloseButton: true,
       html: `
         <select id="cp-nf" class="form-select form-select-sm mb-2"><option value="">Escolha a NF importada…</option>${nfOpts}</select>
-        <div id="cp-conteudo" class="text-muted small">Escolha uma NF pra conferir.</div>`,
+        <div id="cp-conteudo" class="text-muted small">Escolha a NF que você importou.</div>`,
       didOpen: () => { document.getElementById('cp-nf').onchange = (e) => renderConferenciaPedido(pedidoId, e.target.value); },
       willClose: () => { abrirPedido(pedidoId); }   // reabre o pedido com os status atualizados
     });
@@ -245,54 +288,30 @@
     for (const ta of a) { if (b.some(tb => ta === tb || tb.startsWith(ta) || ta.startsWith(tb))) n++; }
     return n;
   }
-  function _sugereCprod(nomePedido, nfItens){
-    let best = null, bestScore = 0;
-    for (const it of (nfItens||[])) {
-      const sc = _scoreNome(nomePedido, it.descricao || it.produto_nome || '');
-      if (sc > bestScore) { bestScore = sc; best = it.cprod; }
-    }
-    return bestScore >= 1 ? best : null;
-  }
 
   async function renderConferenciaPedido(pedidoId, nfId){
     const cont = document.getElementById('cp-conteudo');
     if (!nfId) { cont.innerHTML = 'Escolha uma NF pra conferir.'; return; }
+    cont.innerHTML = 'Conferindo pela NF…';
     const [pr, cr] = await Promise.all([ Auth.apiFetch('/api/demanda/'+pedidoId), Auth.apiFetch('/api/demanda/nf/'+nfId+'/conferir') ]);
     const p = await pr.json(); const conf = await cr.json();
-    const veio = p.itens.filter(i => i.status==='veio').length;
-    const parcial = p.itens.filter(i => i.status==='parcial').length;
-    const faltou = p.itens.filter(i => i.status!=='veio' && i.status!=='parcial').length;
-    const linhas = p.itens.map(i => {
-      const badge = i.status==='veio' ? '<span class="badge bg-success">veio</span>'
-        : (i.status==='parcial' ? '<span class="badge bg-warning text-dark">parcial</span>' : '<span class="badge bg-secondary">faltou</span>');
-      let acao = '';
-      if (i.status !== 'veio') {
-        const sug = _sugereCprod(i.nome, conf.itens || []);   // pré-seleciona o item da NF cuja descrição mais parece
-        const opts = (conf.itens || []).map(it => {
-          const sel = (sug && String(it.cprod) === String(sug)) ? ' selected' : '';
-          return `<option value="${esc(it.cprod)}"${sel}>${esc(it.cprod)} — ${esc(it.descricao||it.produto_nome||'')} (qtd ${it.quantidade})${sel ? ' (sugestão)' : ''}</option>`;
-        }).join('');
-        acao = `
-        <select class="form-select form-select-sm d-inline-block" style="max-width:340px" id="cp-link-${i.id}"><option value="">Ligar ao produto da NF…</option>${opts}</select>
-        <button class="btn btn-sm btn-primary" onclick="ligarNoPedido(${i.id}, '${esc(i.codigo)}', ${nfId}, ${pedidoId})">Ligar</button>`;
-      }
-      return `<tr><td>${esc(i.codigo)}</td><td>${esc(i.nome||'')}</td><td>${i.qtd_pedida}</td><td>${i.qtd_recebida}</td><td>${badge}</td><td>${acao}</td></tr>`;
-    }).join('');
-    cont.innerHTML = `
-      <div class="mb-2 text-start">✅ Vieram: <b>${veio}</b> &nbsp;·&nbsp; 🟡 Parcial: <b>${parcial}</b> &nbsp;·&nbsp; ❌ Faltaram: <b>${faltou}</b></div>
-      <table class="table table-sm"><thead><tr><th>Cód.</th><th>Produto</th><th>Ped.</th><th>Rec.</th><th>Status</th><th>Conferir</th></tr></thead>
-      <tbody>${linhas || '<tr><td colspan=6 class="text-muted">Sem itens</td></tr>'}</tbody></table>`;
-  }
-
-  async function ligarNoPedido(itemId, codigo, nfId, pedidoId){
-    const sel = document.getElementById('cp-link-'+itemId);
-    const cprod = sel ? sel.value : '';
-    if (!cprod) return Swal.fire('Escolha o produto da NF', 'Selecione qual item da NF corresponde a esse produto.', 'warning');
-    const r = await Auth.apiFetch('/api/demanda/conciliar-manual', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ nf_id: nfId, cprod, codigo_pedido: codigo }) });
-    const d = await r.json();
-    if (!r.ok) return Swal.fire('Erro', d.error || '', 'error');
-    renderConferenciaPedido(pedidoId, nfId);   // recarrega: o item vira veio/parcial e o resumo atualiza
+    const nfItens = conf.itens || [];
+    let marcados = 0, semMatch = 0;
+    for (const i of p.itens) {
+      if (i.status === 'veio') continue;
+      // acha o item da NF de nome mais parecido
+      let best = null, bestScore = 0;
+      for (const it of nfItens) { const sc = _scoreNome(i.nome, it.descricao || it.produto_nome || ''); if (sc > bestScore) { bestScore = sc; best = it; } }
+      if (best && bestScore >= 1) {
+        const nfQ = Math.floor(Number(best.quantidade) || 0);
+        const qtd = nfQ > 0 ? Math.min(Number(i.qtd_pedida) || 0, nfQ) : (Number(i.qtd_pedida) || 0);
+        const rr = await Auth.apiFetch('/api/demanda/itens/'+i.id+'/alocacao', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ qtd_recebida: qtd }) });
+        if (rr.ok) marcados++;
+      } else { semMatch++; }
+    }
+    cont.innerHTML = `Pré-marquei <b>${marcados}</b> item(ns) que a NF trouxe (por semelhança de nome).`
+      + (semMatch ? ` <b>${semMatch}</b> não deu pra adivinhar — marque na mão no pedido.` : '')
+      + `<div class="mt-2"><button class="btn btn-sm btn-primary" onclick="Swal.close()">Voltar ao pedido e conferir</button></div>`;
   }
 
   async function ajustarRecebido(itemId, val, pedidoId){
