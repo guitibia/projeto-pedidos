@@ -257,6 +257,8 @@ async function remanejarAlocacao(req, res) {
   const nova = parseInt(req.body.qtd_recebida, 10);
   if (!Number.isInteger(itemId)) return res.status(400).json({ error: 'Item inválido.' });
   if (!Number.isInteger(nova) || nova < 0) return res.status(400).json({ error: 'Quantidade inválida.' });
+  const pidRaw = req.body.product_id;
+  const pid = (pidRaw === undefined || pidRaw === null || pidRaw === '') ? null : parseInt(pidRaw, 10);
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
@@ -264,7 +266,11 @@ async function remanejarAlocacao(req, res) {
     if (!item) { await conn.rollback(); return res.status(404).json({ error: 'Item não encontrado.' }); }
     if (nova > Number(item.qtd_pedida)) { await conn.rollback(); return res.status(400).json({ error: 'Não pode receber mais do que foi pedido.' }); }
     const status = nova >= Number(item.qtd_pedida) ? 'veio' : (nova > 0 ? 'parcial' : 'pendente');
-    await conn.query('UPDATE demanda_itens SET qtd_recebida = ?, status = ? WHERE id = ?', [nova, status, itemId]);
+    if (Number.isInteger(pid)) {
+      await conn.query('UPDATE demanda_itens SET qtd_recebida = ?, status = ?, product_id = ? WHERE id = ?', [nova, status, pid, itemId]);
+    } else {
+      await conn.query('UPDATE demanda_itens SET qtd_recebida = ?, status = ? WHERE id = ?', [nova, status, itemId]);
+    }
     await recalcularStatusPedido(conn, item.pedido_id);
     await conn.commit();
     return res.json({ ok: true });
