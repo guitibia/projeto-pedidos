@@ -223,6 +223,40 @@ async function aplicarConciliacao(conn, nfId, emitenteCnpj) {
   for (const pid of pedidosAfetados) await recalcularStatusPedido(conn, pid);
 }
 
+// --- vínculo automático de produto por nome (mesma lógica do "Puxar da NF", agora no backend) ---
+// Usado ao gerar a venda: itens recebidos sem produto são ligados ao produto que a NF abasteceu,
+// casando o nome do item com a descrição da NF. Assim o "Gerar venda" funciona mesmo que a conferência
+// tenha sido feita na mão (✓ Chegou), sem depender do passo "Puxar da NF".
+function _normNome(s){ return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+function _tokensNome(s){ return _normNome(s).split(' ').filter(t => t.length >= 3); }
+function _scoreNome(nomePedido, descNf){
+  const a = _tokensNome(nomePedido), b = _tokensNome(descNf);
+  if (!a.length || !b.length) return 0;
+  let n = 0;
+  for (const ta of a) { if (b.some(tb => ta === tb || tb.startsWith(ta) || ta.startsWith(tb))) n++; }
+  return n;
+}
+async function _nfItensComProduto() {
+  const [nf] = await db.query('SELECT descricao, product_id FROM nf_entrada_itens WHERE product_id IS NOT NULL');
+  return nf;
+}
+// Liga por nome os itens recebidos e ainda sem produto de UM pedido; devolve quantos ligou.
+async function autoLinkPedido(pedidoId, nfItens) {
+  const [pend] = await db.query(
+    'SELECT id, nome FROM demanda_itens WHERE pedido_id = ? AND qtd_recebida > 0 AND product_id IS NULL AND order_id IS NULL',
+    [pedidoId]);
+  let ligados = 0;
+  for (const it of pend) {
+    let best = null, bestScore = 0;
+    for (const nf of nfItens) { const sc = _scoreNome(it.nome, nf.descricao); if (sc > bestScore) { bestScore = sc; best = nf; } }
+    if (best && bestScore >= 1) {
+      await db.query('UPDATE demanda_itens SET product_id = ? WHERE id = ? AND product_id IS NULL', [best.product_id, it.id]);
+      ligados++;
+    }
+  }
+  return ligados;
+}
+
 // GET /api/demanda/:id/rascunho-venda
 async function rascunhoVenda(req, res) {
   const id = parseInt(req.params.id, 10);
@@ -230,6 +264,8 @@ async function rascunhoVenda(req, res) {
   try {
     const [[ped]] = await db.query('SELECT dp.id, dp.client_id, c.name AS client_name FROM demanda_pedidos dp JOIN clients c ON c.id = dp.client_id WHERE dp.id = ?', [id]);
     if (!ped) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    // Liga automaticamente por nome (via NF) os recebidos que ainda não têm produto, pra a venda funcionar.
+    await autoLinkPedido(id, await _nfItensComProduto());
     // Agrega por product_id: dois itens do pedido ligados ao MESMO produto viram uma linha só
     // (senão o carrinho geraria duas linhas de order_products com a mesma PK (order_id, product_id)).
     const [itens] = await db.query(
@@ -341,6 +377,10 @@ async function gerarVendas(req, res) {
   const paymentMethod = String(req.body.payment_method || 'DINHEIRO').toUpperCase();
   if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) return res.status(400).json({ error: 'Método de pagamento inválido.' });
   try {
+    // Liga automaticamente por nome (via NF) os recebidos sem produto de todos os pedidos, antes de gerar.
+    const nfItens = await _nfItensComProduto();
+    const [pedidosPend] = await db.query('SELECT DISTINCT pedido_id FROM demanda_itens WHERE qtd_recebida > 0 AND product_id IS NULL AND order_id IS NULL');
+    for (const { pedido_id } of pedidosPend) await autoLinkPedido(pedido_id, nfItens);
     const [linhas] = await db.query(
       `SELECT di.id AS demanda_item_id, di.pedido_id, dp.client_id, cl.name AS cliente,
               di.product_id, di.qtd_recebida, COALESCE(di.preco_venda, p.sale_value) AS preco, p.cost AS cost

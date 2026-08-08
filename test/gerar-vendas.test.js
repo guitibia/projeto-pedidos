@@ -4,6 +4,7 @@ require('dotenv').config();
 const db = require('../src/database/connection');
 const { remanejarAlocacao, gerarVendas, rascunhoVenda } = require('../src/controllers/demandaController');
 
+
 function mockRes(){ return { statusCode:200, body:null, status(c){this.statusCode=c;return this;}, json(b){this.body=b;return this;} }; }
 async function seedClient(){ const [r] = await db.query('INSERT INTO clients (name) VALUES (?)', ['zz_test_cli_'+Date.now()+Math.random()]); return r.insertId; }
 async function seedProduct(estoque){ const [r] = await db.query('INSERT INTO products (name, cost, sale_value, franchise, code, estoque) VALUES (?,?,?,?,?,?)', ['zz_test_prod', 5, 40, 'Outros', 'ZZP'+Date.now()+Math.floor(Math.random()*1e6), estoque != null ? estoque : 0]); return r.insertId; }
@@ -118,6 +119,32 @@ test('rascunhoVenda agrega dois itens do mesmo produto numa linha só (evita PK 
     const ids = String(res.body.itens[0].demanda_item_ids).split(',').map(Number).sort((a,b)=>a-b);
     assert.deepStrictEqual(ids, [i1.insertId, i2.insertId].sort((a,b)=>a-b));
   } finally {
+    await cleanup();
+  }
+});
+
+test('rascunhoVenda liga o produto por nome via NF quando o item veio sem produto', async () => {
+  let nfId;
+  try {
+    const cli = await seedClient();
+    const prod = await seedProduct(5);
+    // NF com um item ligado ao produto, descrição parecida com o nome do item do pedido
+    const [nf] = await db.query('INSERT INTO nf_entradas (chave, emitente_nome) VALUES (?,?)', ['zzchave'+Date.now()+Math.floor(Math.random()*1e6), 'zz_test_emit']);
+    nfId = nf.insertId;
+    await db.query('INSERT INTO nf_entrada_itens (nf_id, descricao, quantidade, product_id) VALUES (?,?,?,?)', [nfId, 'ZZTESTE XYZZY FLARGON UNICO', 1, prod]);
+    const [p] = await db.query('INSERT INTO demanda_pedidos (client_id) VALUES (?)', [cli]);
+    // item recebido na mão (✓ Chegou), SEM product_id
+    const [i] = await db.query('INSERT INTO demanda_itens (pedido_id, codigo, nome, qtd_pedida, qtd_recebida, status) VALUES (?,?,?,?,?,?)', [p.insertId, 'K1', 'Zzteste Xyzzy Flargon Unico', 1, 1, 'veio']);
+    const res = mockRes();
+    await rascunhoVenda({ params: { id: p.insertId } }, res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.itens.length, 1);
+    assert.strictEqual(res.body.itens[0].product_id, prod, 'ligou o produto por nome via NF');
+    // e persistiu no item
+    const [[row]] = await db.query('SELECT product_id FROM demanda_itens WHERE id = ?', [i.insertId]);
+    assert.strictEqual(row.product_id, prod);
+  } finally {
+    if (nfId) { await db.query('DELETE FROM nf_entrada_itens WHERE nf_id = ?', [nfId]); await db.query('DELETE FROM nf_entradas WHERE id = ?', [nfId]); }
     await cleanup();
   }
 });
