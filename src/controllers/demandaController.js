@@ -1,5 +1,8 @@
 const db = require('../database/connection');
 const { conciliar } = require('../services/conciliacaoNf');
+const { resolvePixPercent, aplicaPix, getDescontoPix } = require('../utils/pricing');
+const { inserirVendaTx } = require('./orderController');
+const VALID_PAYMENT_METHODS = ['PIX', 'DINHEIRO', 'CARTÃO DE CRÉDITO', 'PARCELADO', 'PAGAMENTO COMBINADO'];
 
 // POST /api/demanda
 async function criarPedido(req, res) {
@@ -329,6 +332,71 @@ async function conciliarManual(req, res) {
   finally { conn.release(); }
 }
 
+// POST /api/demanda/gerar-vendas — gera a venda de todos os pedidos elegíveis (recebidos + com produto ligado)
+async function gerarVendas(req, res) {
+  const paymentMethod = String(req.body.payment_method || 'DINHEIRO').toUpperCase();
+  if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) return res.status(400).json({ error: 'Método de pagamento inválido.' });
+  try {
+    const [linhas] = await db.query(
+      `SELECT di.id AS demanda_item_id, di.pedido_id, dp.client_id, cl.name AS cliente,
+              di.product_id, di.qtd_recebida, COALESCE(di.preco_venda, p.sale_value) AS preco, p.cost AS cost
+       FROM demanda_itens di
+       JOIN demanda_pedidos dp ON dp.id = di.pedido_id
+       JOIN clients cl ON cl.id = dp.client_id
+       LEFT JOIN products p ON p.id = di.product_id
+       WHERE di.qtd_recebida > 0 AND di.product_id IS NOT NULL AND di.order_id IS NULL
+       ORDER BY di.pedido_id`);
+    const [semProduto] = await db.query(
+      `SELECT cl.name AS cliente, di.nome
+       FROM demanda_itens di JOIN demanda_pedidos dp ON dp.id = di.pedido_id JOIN clients cl ON cl.id = dp.client_id
+       WHERE di.qtd_recebida > 0 AND di.product_id IS NULL AND di.order_id IS NULL`);
+
+    // agrupa por pedido; dentro do pedido, agrega por product_id (PK de order_products é (order_id, product_id))
+    const porPedido = new Map();
+    for (const l of linhas) {
+      if (!porPedido.has(l.pedido_id)) porPedido.set(l.pedido_id, { client_id: l.client_id, cliente: l.cliente, produtos: new Map() });
+      const g = porPedido.get(l.pedido_id);
+      if (!g.produtos.has(l.product_id)) g.produtos.set(l.product_id, { id: l.product_id, salePrice: Number(l.preco) || 0, quantity: 0, productCost: l.cost != null ? Number(l.cost) : null, itemIds: [] });
+      const pp = g.produtos.get(l.product_id);
+      pp.quantity += Number(l.qtd_recebida);
+      pp.itemIds.push(l.demanda_item_id);
+    }
+
+    const geradas = [], falhas = [];
+    let totalGeral = 0;
+    const pixGlobal = paymentMethod === 'PIX' ? await getDescontoPix() : 0;
+    for (const [, g] of porPedido) {
+      let effProducts = Array.from(g.produtos.values());
+      const demandaItemIds = effProducts.reduce((acc, pp) => acc.concat(pp.itemIds), []);
+      if (paymentMethod === 'PIX') {
+        const [[cli]] = await db.query('SELECT pix_discount_percent FROM clients WHERE id = ?', [g.client_id]);
+        const pixPct = resolvePixPercent(cli ? cli.pix_discount_percent : null, pixGlobal);
+        if (pixPct > 0) effProducts = effProducts.map(pp => Object.assign({}, pp, { salePrice: aplicaPix(pp.salePrice, pixPct) }));
+      }
+      const effTotal = Number(effProducts.reduce((s, pp) => s + pp.salePrice * pp.quantity, 0).toFixed(2));
+      const conn = await db.getConnection();
+      try {
+        await conn.beginTransaction();
+        const { orderId, total } = await inserirVendaTx(conn, {
+          clientId: g.client_id, paymentMethod, installments: null, combinedPaymentValue: null,
+          effProducts, effTotal, demandaItemIds
+        });
+        await conn.commit();
+        geradas.push({ cliente: g.cliente, order_id: orderId, total });
+        totalGeral += Number(total);
+      } catch (e) {
+        await conn.rollback();
+        falhas.push({ cliente: g.cliente, erro: e.message });
+      } finally { conn.release(); }
+    }
+    return res.json({
+      geradas, falhas,
+      sem_produto: semProduto.map(s => ({ cliente: s.cliente, nome: s.nome })),
+      total_geral: Number(totalGeral.toFixed(2))
+    });
+  } catch (e) { console.error('gerarVendas', e); return res.status(500).json({ error: 'Erro ao gerar vendas.' }); }
+}
+
 // DELETE /api/demanda/:id — exclui um pedido criado por engano (bloqueia se já virou venda)
 async function excluirPedido(req, res) {
   const id = parseInt(req.params.id, 10);
@@ -352,5 +420,5 @@ async function excluirPedido(req, res) {
 module.exports = {
   criarPedido, listarPedidos, getPedido, addItem, updateItem, deleteItem, listarFornecedores,
   listaCompra, relatorio, aplicarConciliacao, rascunhoVenda, marcarVenda, remanejarAlocacao,
-  conferirNf, conciliarManual, excluirPedido,
+  conferirNf, conciliarManual, excluirPedido, gerarVendas,
 };
