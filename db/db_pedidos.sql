@@ -1,177 +1,411 @@
 -- ============================================================
--- Sistema de Pedidos v2.0 — Schema atualizado
+-- Sistema de Pedidos — Schema completo (gerado de db_pedidos)
+-- Atualizado em: 2026-08-08
+--
+-- Como usar em outra máquina (XAMPP/MySQL):
+--   mysql -u root < db/db_pedidos.sql
+-- ou importe este arquivo pelo phpMyAdmin.
+--
+-- Depois: copie o .env (DB_USER/DB_PASSWORD) e rode `npm install && npm run dev`.
+-- Login inicial: admin / admin123  (troque após o primeiro acesso!)
+--
+-- Observação: o app roda migrações automáticas no boot (src/database/connection.js),
+-- então este arquivo é só o ponto de partida — ele NÃO apaga nada se o banco já existir.
+-- Para o banco de testes (branch Teste), veja o final do arquivo.
 -- ============================================================
-
-/*!40101 SET NAMES utf8mb4 */;
-/*!40014 SET FOREIGN_KEY_CHECKS=0 */;
 
 CREATE DATABASE IF NOT EXISTS `db_pedidos`
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_general_ci;
 USE `db_pedidos`;
 
--- ── Usuários (autenticação JWT/bcrypt) ───────────────────────
-CREATE TABLE IF NOT EXISTS `users` (
-  `id`            INT(11)      NOT NULL AUTO_INCREMENT,
-  `username`      VARCHAR(100) NOT NULL UNIQUE,
-  `password_hash` VARCHAR(255) NOT NULL,
-  `role`          ENUM('admin','user') DEFAULT 'user',
-  `created_at`    DATETIME     DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Usuário padrão: admin / admin123  (altere após o primeiro login!)
-INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`)
-VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin');
--- senha acima = "admin123" com bcrypt rounds=10
-
--- ── Clientes ─────────────────────────────────────────────────
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `clients` (
-  `id`           INT(11)      NOT NULL AUTO_INCREMENT,
-  `name`         VARCHAR(255) NOT NULL,
-  `address`      VARCHAR(255) NOT NULL,
-  `house_number` VARCHAR(50)  NOT NULL,
-  `neighborhood` VARCHAR(255) NOT NULL,
-  `phone`        VARCHAR(20)  DEFAULT NULL,
-  `created_at`   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `house_number` varchar(50) DEFAULT NULL,
+  `neighborhood` varchar(255) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `lat` decimal(10,8) DEFAULT NULL,
+  `lng` decimal(11,8) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `cpf` varchar(11) DEFAULT NULL,
+  `birthdate` date DEFAULT NULL,
+  `password_hash` varchar(255) DEFAULT NULL,
+  `email_verified` tinyint(1) NOT NULL DEFAULT 0,
+  `verification_token` varchar(64) DEFAULT NULL,
+  `verification_expires` datetime DEFAULT NULL,
+  `lgpd_consent_at` datetime DEFAULT NULL,
+  `cep` varchar(8) DEFAULT NULL,
+  `city` varchar(120) DEFAULT NULL,
+  `pix_discount_percent` decimal(5,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  INDEX `idx_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO `clients` (`id`,`name`,`address`,`house_number`,`neighborhood`,`phone`) VALUES
-  (1,'Guilherme Moraes','David Carvalho','233','Pratinha','1999544947'),
-  (2,'Teste','Teste teste teste','1','teste','1999544948'),
-  (3,'Guilherme Moraes Eleutério','David Carvalho Pinto','234','Pratinha','1999544947'),
-  (4,'Pedro','David Carvalho','233','Pratinha','1999544947'),
-  (5,'Marcelo','Rua Gil Cabral de Vasconcelos','445','Vila Valentin','19995444938'),
-  (6,'Guilherme Missaci','Rua Santa Elisa','100','Alto da Boa Vista','1999999999'),
-  (7,'Maria','Rua Doutor José Osório de Oliveira Azevedo','33','Alto da Boa Vista','1999544946'),
-  (8,'Erika','Rua David de Carvalho','255','Vila Valentin','1999544946'),
-  (9,'Camila','Rua David de Carvalho','234','Vila Valentin','1999544947'),
-  (10,'Thais','Rua David de Carvalho','266','Vila Valentin','1999544947'),
-  (11,'Luciana','Rua David de Carvalho','555','Vila Valentin','19995444945');
-
--- ── Produtos ─────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `products` (
-  `id`              INT(11)       NOT NULL AUTO_INCREMENT,
-  `name`            VARCHAR(255)  NOT NULL,
-  `cost`            DECIMAL(10,2) NOT NULL,
-  `franchise`       VARCHAR(255)  NOT NULL,
-  `code`            VARCHAR(50)   NOT NULL,
-  `promotion_price` DECIMAL(10,2) DEFAULT NULL,
-  `created_at`      DATETIME      DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_clients_email` (`email`),
+  UNIQUE KEY `uq_clients_cpf` (`cpf`),
+  KEY `idx_name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `delivery_zones` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `bairro` varchar(120) NOT NULL,
+  `fee` decimal(6,2) NOT NULL DEFAULT 0.00,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
-  INDEX `idx_code`      (`code`),
-  INDEX `idx_franchise` (`franchise`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO `products` (`id`,`name`,`cost`,`franchise`,`code`) VALUES
-  (1,'Gel para Cabelo',25.00,'Boticário','8080'),
-  (2,'Creme para Pés',15.00,'Eudora','5566'),
-  (3,'Shampoo',15.00,'Natura','5555'),
-  (4,'KAIK',25.00,'Natura','4444'),
-  (5,'Tadala',12.00,'Natura','6768'),
-  (7,'Creme para Pés',15.00,'Abelha Rainha','4341'),
-  (8,'Creme de Pentear Dr. Botica',29.17,'Boticário','48745'),
-  (9,'Refil Creme Liley Acetinado',67.91,'Boticário','48062'),
-  (10,'Colonia Comexion Masculina',65.28,'Boticário','27707'),
-  (11,'Colonia Coffe Seduction',169.91,'Boticário','48139'),
-  (12,'Body Spray Eudora',20.93,'Boticário','58633'),
-  (13,'Body Spray La Victoria',20.93,'Boticário','58640'),
-  (14,'Body Spray Lira',20.93,'Boticário','58639');
-
--- ── Pedidos ──────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `orders` (
-  `id`                    INT(11)       NOT NULL AUTO_INCREMENT,
-  `client_id`             INT(11)       NOT NULL,
-  `payment_method`        ENUM('PIX','DINHEIRO','CARTÃO DE CRÉDITO','PARCELADO','PAGAMENTO COMBINADO') NOT NULL,
-  `installments`          INT(11)       DEFAULT NULL,
-  `total_cost`            DECIMAL(10,2) NOT NULL,
-  `combined_payment_value` DECIMAL(10,2) DEFAULT NULL,
-  `status`                VARCHAR(50)   DEFAULT 'Pendente',
-  `created_at`            DATETIME      DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_bairro` (`bairro`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `demanda_cod_vinculos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `fornecedor_cnpj` varchar(14) NOT NULL,
+  `cprod` varchar(60) NOT NULL,
+  `codigo_pedido` varchar(60) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
-  INDEX `idx_status`     (`status`),
-  INDEX `idx_created_at` (`created_at`),
-  INDEX `idx_client_id`  (`client_id`),
-  CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO `orders` (`id`,`client_id`,`payment_method`,`installments`,`total_cost`,`combined_payment_value`,`status`) VALUES
-  (77,9,'PIX',1,68.64,NULL,'Pendente'),
-  (78,8,'PIX',1,79.90,NULL,'Pendente'),
-  (79,10,'PIX',1,76.80,NULL,'Pendente'),
-  (81,11,'PIX',1,199.90,NULL,'Pendente'),
-  (82,3,'PIX',1,179.40,NULL,'Pendente'),
-  (111,6,'PAGAMENTO COMBINADO',3,200.00,50.00,'Pendente');
-
--- ── Produtos por pedido ──────────────────────────────────────
+  UNIQUE KEY `uq_forn_cprod` (`fornecedor_cnpj`,`cprod`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `demanda_conciliacoes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nf_id` int(11) NOT NULL,
+  `demanda_item_id` int(11) NOT NULL,
+  `qtd` int(11) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_nf_item` (`nf_id`,`demanda_item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `demanda_itens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pedido_id` int(11) NOT NULL,
+  `fornecedor_cnpj` varchar(14) DEFAULT NULL,
+  `fornecedor_nome` varchar(160) DEFAULT NULL,
+  `codigo` varchar(60) NOT NULL,
+  `nome` varchar(200) DEFAULT NULL,
+  `qtd_pedida` int(11) NOT NULL,
+  `qtd_recebida` int(11) NOT NULL DEFAULT 0,
+  `preco_venda` decimal(10,2) DEFAULT NULL,
+  `product_id` int(11) DEFAULT NULL,
+  `status` varchar(12) NOT NULL DEFAULT 'pendente',
+  `order_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `pedido_id` (`pedido_id`),
+  KEY `fornecedor_cnpj` (`fornecedor_cnpj`,`codigo`)
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `demanda_pedidos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `client_id` int(11) NOT NULL,
+  `observacao` varchar(255) DEFAULT NULL,
+  `status` varchar(12) NOT NULL DEFAULT 'aberto',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `client_id` (`client_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `estoque_movimentacoes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `product_id` int(11) NOT NULL,
+  `tipo` enum('Entrada','Saída') NOT NULL,
+  `quantidade` int(11) NOT NULL,
+  `observacao` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `origem` enum('Manual','NF') NOT NULL DEFAULT 'Manual',
+  `nf_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `product_id` (`product_id`),
+  CONSTRAINT `estoque_movimentacoes_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=158 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `favorites` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `client_id` int(11) NOT NULL,
+  `product_id` int(11) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_fav` (`client_id`,`product_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `franchise_discounts` (
+  `franchise` varchar(255) NOT NULL,
+  `percent` decimal(5,2) NOT NULL DEFAULT 0.00,
+  PRIMARY KEY (`franchise`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `nf_entrada_itens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nf_id` int(11) NOT NULL,
+  `cprod` varchar(60) DEFAULT NULL,
+  `descricao` varchar(255) DEFAULT NULL,
+  `ncm` varchar(10) DEFAULT NULL,
+  `quantidade` decimal(12,3) DEFAULT NULL,
+  `valor_unit` decimal(12,4) DEFAULT NULL,
+  `valor_total` decimal(12,2) DEFAULT NULL,
+  `product_id` int(11) DEFAULT NULL,
+  `ean` varchar(14) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `nf_id` (`nf_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `nf_entradas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `chave` varchar(44) NOT NULL,
+  `emitente_nome` varchar(160) DEFAULT NULL,
+  `emitente_cnpj` varchar(14) DEFAULT NULL,
+  `numero` varchar(20) DEFAULT NULL,
+  `serie` varchar(10) DEFAULT NULL,
+  `valor_total` decimal(12,2) DEFAULT NULL,
+  `data_emissao` datetime DEFAULT NULL,
+  `xml` longtext DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `chave` (`chave`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `nf_item_vinculos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `emitente_cnpj` varchar(14) NOT NULL,
+  `cprod` varchar(60) NOT NULL,
+  `product_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_vinc` (`emitente_cnpj`,`cprod`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `notas_fiscais` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `numero` varchar(50) DEFAULT NULL,
+  `fornecedor` varchar(100) DEFAULT NULL,
+  `data_emissao` date DEFAULT NULL,
+  `valor` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=134 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `order_parcelas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` int(11) NOT NULL,
+  `numero` int(11) NOT NULL,
+  `valor` decimal(10,2) NOT NULL,
+  `status` enum('Pendente','Pago') DEFAULT 'Pendente',
+  `data_pagamento` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_order_parcela` (`order_id`,`numero`),
+  CONSTRAINT `op2_fk` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `order_products` (
-  `order_id`       INT(11)       NOT NULL,
-  `product_id`     INT(11)       NOT NULL,
-  `sale_price`     DECIMAL(10,2) NOT NULL,
-  `not_came`       TINYINT(1)    DEFAULT 0,
-  `promotion_price` DECIMAL(10,2) DEFAULT NULL,
-  `quantity`       INT(11)       DEFAULT 1,
+  `order_id` int(11) NOT NULL,
+  `product_id` int(11) NOT NULL,
+  `sale_price` decimal(10,2) NOT NULL,
+  `not_came` tinyint(1) DEFAULT 0,
+  `promotion_price` decimal(10,2) DEFAULT NULL,
+  `quantity` int(11) DEFAULT 1,
+  `cost_price` decimal(10,2) DEFAULT NULL,
   PRIMARY KEY (`order_id`,`product_id`),
   KEY `product_id` (`product_id`),
-  CONSTRAINT `op_ibfk_1` FOREIGN KEY (`order_id`)   REFERENCES `orders`  (`id`) ON DELETE CASCADE,
+  CONSTRAINT `op_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `op_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO `order_products` VALUES
-  (77,8,34.32,0,NULL,2),
-  (78,9,79.90,0,NULL,1),
-  (79,10,76.80,0,NULL,1),
-  (81,11,199.90,0,NULL,1),
-  (82,12,29.90,0,NULL,2),
-  (82,13,29.90,0,NULL,2),
-  (82,14,29.90,0,NULL,2),
-  (111,1,50.00,0,NULL,4);
-
--- ── Notas fiscais ────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `notas_fiscais` (
-  `id`           INT(11)       NOT NULL AUTO_INCREMENT,
-  `numero`       VARCHAR(50)   NOT NULL,
-  `data_emissao` DATE          NOT NULL,
-  `valor`        DECIMAL(10,2) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO `notas_fiscais` VALUES (16,'5554','2024-12-01',1000.00),(17,'4543','2024-12-02',900.00);
-
--- ── Promissórias ─────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `promissorias` (
-  `id`             INT(11)       NOT NULL AUTO_INCREMENT,
-  `nota_fiscal_id` INT(11)       NOT NULL,
-  `valor`          DECIMAL(10,2) NOT NULL,
-  `data_vencimento` DATE         NOT NULL,
-  `status`         ENUM('Pendente','Pago') DEFAULT 'Pendente',
-  `parcelas`       INT(11)       DEFAULT NULL,
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `client_id` int(11) NOT NULL,
+  `payment_method` enum('PIX','DINHEIRO','CARTÃO DE CRÉDITO','PARCELADO','PAGAMENTO COMBINADO','A COMBINAR') NOT NULL,
+  `installments` int(11) DEFAULT NULL,
+  `total_cost` decimal(10,2) NOT NULL,
+  `combined_payment_value` decimal(10,2) DEFAULT NULL,
+  `status` varchar(50) DEFAULT 'Pendente',
+  `created_at` datetime DEFAULT current_timestamp(),
+  `delivery_fee` decimal(6,2) NOT NULL DEFAULT 0.00,
+  `origin` varchar(20) NOT NULL DEFAULT 'painel',
+  `payment_status` varchar(20) DEFAULT NULL,
+  `mp_payment_id` varchar(64) DEFAULT NULL,
+  `delivery_method` varchar(20) NOT NULL DEFAULT 'entrega',
   PRIMARY KEY (`id`),
-  KEY `nota_fiscal_id` (`nota_fiscal_id`),
-  CONSTRAINT `prom_ibfk_1` FOREIGN KEY (`nota_fiscal_id`) REFERENCES `notas_fiscais` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO `promissorias` VALUES (17,16,1000.00,'2025-01-01','Pendente',4);
-
--- ── Parcelas ─────────────────────────────────────────────────
+  KEY `idx_status` (`status`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_client_id` (`client_id`),
+  CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=139 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `parcelas` (
-  `id`              INT(11)       NOT NULL AUTO_INCREMENT,
-  `promissoria_id`  INT(11)       NOT NULL,
-  `numero_parcela`  INT(11)       NOT NULL,
-  `data_vencimento` DATE          NOT NULL,
-  `valor`           DECIMAL(10,2) NOT NULL,
-  `status`          ENUM('Pendente','Pago') DEFAULT 'Pendente',
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `promissoria_id` int(11) NOT NULL,
+  `numero_parcela` int(11) NOT NULL,
+  `data_vencimento` date NOT NULL,
+  `valor` decimal(10,2) NOT NULL,
+  `status` enum('Pendente','Pago') DEFAULT 'Pendente',
+  `numero_boleto` varchar(60) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `promissoria_id` (`promissoria_id`),
   CONSTRAINT `parc_ibfk_1` FOREIGN KEY (`promissoria_id`) REFERENCES `promissorias` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=166 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `payment_intents` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `client_id` int(11) NOT NULL,
+  `external_reference` varchar(64) NOT NULL,
+  `items_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`items_json`)),
+  `address` varchar(255) DEFAULT NULL,
+  `house_number` varchar(30) DEFAULT NULL,
+  `neighborhood` varchar(120) DEFAULT NULL,
+  `cep` varchar(8) DEFAULT NULL,
+  `city` varchar(120) DEFAULT NULL,
+  `subtotal` decimal(10,2) NOT NULL,
+  `delivery_fee` decimal(6,2) NOT NULL DEFAULT 0.00,
+  `total` decimal(10,2) NOT NULL,
+  `mp_preference_id` varchar(64) DEFAULT NULL,
+  `mp_payment_id` varchar(64) DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'pendente',
+  `order_id` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `pix_qr_code` text DEFAULT NULL,
+  `pix_qr_base64` mediumtext DEFAULT NULL,
+  `pix_expiration` datetime DEFAULT NULL,
+  `delivery_method` varchar(20) NOT NULL DEFAULT 'entrega',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `external_reference` (`external_reference`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `products` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `cost` decimal(10,2) NOT NULL,
+  `franchise` varchar(255) NOT NULL,
+  `code` varchar(50) NOT NULL,
+  `promotion_price` decimal(10,2) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `estoque` int(11) NOT NULL DEFAULT 0,
+  `sale_value` decimal(10,2) DEFAULT NULL,
+  `image` varchar(255) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `ean` varchar(14) DEFAULT NULL,
+  `visivel_loja` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `idx_code` (`code`),
+  KEY `idx_franchise` (`franchise`)
+) ENGINE=InnoDB AUTO_INCREMENT=140 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `promissorias` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nota_fiscal_id` int(11) NOT NULL,
+  `valor` decimal(10,2) NOT NULL,
+  `data_vencimento` date NOT NULL,
+  `status` enum('Pendente','Pago') DEFAULT 'Pendente',
+  `parcelas` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `nota_fiscal_id` (`nota_fiscal_id`),
+  CONSTRAINT `prom_ibfk_1` FOREIGN KEY (`nota_fiscal_id`) REFERENCES `notas_fiscais` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=134 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `store_settings` (
+  `skey` varchar(60) NOT NULL,
+  `svalue` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`skey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(100) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `role` enum('admin','user') DEFAULT 'user',
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
-INSERT INTO `parcelas` VALUES
-  (13,17,1,'2025-01-01',250.00,'Pago'),
-  (14,17,2,'2025-02-01',250.00,'Pago'),
-  (15,17,3,'2025-03-04',250.00,'Pago'),
-  (16,17,4,'2025-04-01',250.00,'Pago');
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
-/*!40014 SET FOREIGN_KEY_CHECKS=1 */;
+
+-- ============================================================
+-- Dados iniciais (idempotentes)
+-- ============================================================
+
+-- Usuário padrão: admin / admin123  (bcrypt rounds=10) — ALTERE após o primeiro login!
+INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`)
+VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin');
+
+-- Percentuais de desconto por franquia
+INSERT IGNORE INTO `franchise_discounts` (`franchise`, `percent`) VALUES
+  ('Boticário', 15), ('Natura', 32), ('Avon', 32),
+  ('Abelha Rainha', 20), ('Eudora', 30), ('Outros', 0);
+
+-- Configurações da loja
+INSERT IGNORE INTO `store_settings` (`skey`, `svalue`) VALUES
+  ('cidade_entrega', 'São João da Boa Vista'),
+  ('frete_padrao', '15.00'),
+  ('endereco_retirada', ''),
+  ('desconto_global_ativo', '0'),
+  ('desconto_global_percent', '0');
+
+-- ============================================================
+-- Banco de testes (opcional — usado automaticamente na branch "Teste")
+-- Para criá-lo, rode no MySQL:
+--   CREATE DATABASE IF NOT EXISTS `db_pedidos_teste`
+--     DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+-- e depois importe este mesmo arquivo trocando o USE acima, ou:
+--   mysqldump -u root --no-data db_pedidos | mysql -u root db_pedidos_teste
+-- ============================================================
