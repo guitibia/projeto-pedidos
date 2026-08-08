@@ -182,7 +182,10 @@ async function updateOrderStatus(req, res) {
   // Pendente/Entregue: atualização simples sem transação
   if (status !== 'Cancelado') {
     try {
-      const [result] = await db.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+      // Entregue carimba a data (sem reescrever se ja houver); Pendente limpa.
+      const [result] = status === 'Entregue'
+        ? await db.query('UPDATE orders SET status = ?, delivered_at = COALESCE(delivered_at, NOW()) WHERE id = ?', [status, id])
+        : await db.query('UPDATE orders SET status = ?, delivered_at = NULL WHERE id = ?', [status, id]);
       if (result.affectedRows === 0) return res.status(404).json({ error: 'Pedido não encontrado.' });
       return res.json({ message: 'Status atualizado com sucesso!' });
     } catch (err) {
@@ -198,7 +201,7 @@ async function updateOrderStatus(req, res) {
     await conn.beginTransaction();
 
     const [result] = await conn.query(
-      "UPDATE orders SET status = ? WHERE id = ? AND status != 'Cancelado'",
+      "UPDATE orders SET status = ?, delivered_at = NULL WHERE id = ? AND status != 'Cancelado'",
       [status, id]
     );
     if (result.affectedRows === 0) {

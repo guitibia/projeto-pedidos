@@ -256,6 +256,11 @@ pool.getConnection()
     ]) { try { await conn.query(sql); } catch (_) {} }
     try { await conn.query("INSERT IGNORE INTO store_settings (skey, svalue) VALUES ('endereco_retirada', '')"); } catch (_) {}
 
+    // Migração: data em que a venda foi entregue (usada pela aba Entregues dos pedidos das clientes)
+    for (const sql of [
+      'ALTER TABLE orders ADD COLUMN delivered_at DATETIME NULL',
+    ]) { try { await conn.query(sql); } catch (_) {} }
+
     conn.release();
   })
   .catch(err => {

@@ -802,3 +802,10 @@ footer {
   background:var(--accent); color:#fff; font-size:.85rem; font-weight:600; text-decoration:none; border:none; cursor:pointer;
 }
 .empty-rich-action:hover { filter:brightness(1.08); color:#fff; }
+
+/* ── Texto secundário ── */
+/* O Bootstrap 5.3 resolve .text-muted pelo tema claro dele (o projeto não usa
+   data-bs-theme), o que joga um cinza quase preto em cima do card escuro e
+   deixa o texto ilegível. Amarrar a classe ao token do nosso tema corrige nos
+   dois temas de uma vez, já que --text-muted vira junto com [data-theme]. */
+.text-muted { color: var(--text-muted) !important; }
