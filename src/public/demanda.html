@@ -60,6 +60,7 @@
     <div class="card-section">
       <ul class="nav nav-tabs mb-3" id="demandaTabs">
         <li class="nav-item"><button class="nav-link active" data-tab="pedidos">Pedidos</button></li>
+        <li class="nav-item"><button class="nav-link" data-tab="entregues">Entregues</button></li>
         <li class="nav-item"><button class="nav-link" data-tab="comprar">Comprar</button></li>
         <li class="nav-item"><button class="nav-link" data-tab="relatorio">Relatório</button></li>
       </ul>
@@ -71,6 +72,13 @@
           <button id="btn-novo-pedido" class="btn btn-primary">Novo pedido</button>
         </div>
         <div id="lista-pedidos"></div>
+      </section>
+
+      <section id="tab-entregues" class="d-none">
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+          <input id="busca-entregues" class="form-control" placeholder="Buscar por cliente…" style="max-width:320px">
+        </div>
+        <div id="lista-entregues"></div>
       </section>
 
       <section id="tab-comprar" class="d-none"><div id="lista-compra"></div></section>
@@ -101,8 +109,9 @@
 
   const $ = s => document.querySelector(s);
   function show(tab){
-    for (const s of ['pedidos','comprar','relatorio']) $('#tab-'+s).classList.toggle('d-none', s!==tab);
+    for (const s of ['pedidos','entregues','comprar','relatorio']) $('#tab-'+s).classList.toggle('d-none', s!==tab);
     document.querySelectorAll('#demandaTabs .nav-link').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+    if (tab==='entregues') carregarEntregues();
     if (tab==='comprar') carregarCompra();
     if (tab==='relatorio') { carregarRelatorio(); }
   }
@@ -119,18 +128,35 @@
     const r = await Auth.apiFetch('/api/demanda/fornecedores'); fornecedores = await r.json();
   }
 
-  async function carregarPedidos(){
-    const r = await Auth.apiFetch('/api/demanda'); const pedidos = await r.json();
-    const cards = pedidos.map(p => `
+  function dataBr(v){
+    if (!v) return '';
+    const d = new Date(v);
+    return isNaN(d) ? '' : d.toLocaleDateString('pt-BR');
+  }
+
+  function cardPedido(p){
+    const pend = Number(p.itens_pendentes) > 0
+      ? `<span class="badge bg-warning text-dark ms-1"><i class="bi bi-exclamation-triangle"></i> ${p.itens_pendentes} item(ns) pendente(s)</span>`
+      : '';
+    const entrega = p.entregue && p.entregue_em
+      ? `<div class="text-muted small">Entregue em ${dataBr(p.entregue_em)}</div>`
+      : '';
+    return `
       <div class="card mb-2"><div class="card-body">
         <div class="d-flex justify-content-between">
           <strong>${esc(p.client_name)}</strong>
-          <span class="badge bg-secondary">${esc(p.status)} · ${p.qtd_itens} itens</span>
+          <div><span class="badge bg-secondary">${esc(p.status)} · ${p.qtd_itens} itens</span>${pend}</div>
         </div>
         ${p.observacao ? `<div class="text-muted small">${esc(p.observacao)}</div>` : ''}
+        ${entrega}
         <button class="btn btn-sm btn-outline-primary mt-2" onclick="abrirPedido(${p.id})">Abrir</button>
         <button class="btn btn-sm btn-outline-danger mt-2 ms-1" onclick="excluirPedido(${p.id})">Excluir</button>
-      </div></div>`).join('') || '<p class="text-muted">Nenhum pedido ainda.</p>';
+      </div></div>`;
+  }
+
+  async function carregarPedidos(){
+    const r = await Auth.apiFetch('/api/demanda'); const pedidos = await r.json();
+    const cards = pedidos.map(cardPedido).join('') || '<p class="text-muted">Nenhum pedido ainda.</p>';
     const topo = pedidos.length
       ? `<div class="mb-3"><button id="btn-gerar-todas" class="btn btn-success"><i class="bi bi-cash-coin"></i> Gerar todas as vendas</button>
            <span class="text-muted small ms-2">Gera a venda do que veio em todos os pedidos (baixa o estoque).</span></div>`
@@ -139,6 +165,23 @@
     const btnTodas = document.getElementById('btn-gerar-todas');
     if (btnTodas) btnTodas.onclick = gerarTodasVendas;
   }
+
+  async function carregarEntregues(){
+    const q = ($('#busca-entregues').value || '').trim();
+    const url = '/api/demanda?entregues=1' + (q ? '&q=' + encodeURIComponent(q) : '');
+    const r = await Auth.apiFetch(url);
+    const pedidos = await r.json();
+    const vazio = q
+      ? '<p class="text-muted">Nenhum pedido entregue para essa cliente.</p>'
+      : '<p class="text-muted">Nenhum pedido entregue nos últimos 90 dias. Busque pelo nome da cliente para ver os mais antigos.</p>';
+    $('#lista-entregues').innerHTML = pedidos.map(cardPedido).join('') || vazio;
+  }
+
+  let buscaEntreguesTimer = null;
+  document.getElementById('busca-entregues').oninput = () => {
+    clearTimeout(buscaEntreguesTimer);
+    buscaEntreguesTimer = setTimeout(carregarEntregues, 300);
+  };
 
   async function gerarTodasVendas(){
     const conf = await Swal.fire({
