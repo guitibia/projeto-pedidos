@@ -222,6 +222,9 @@ async function updateOrderStatus(req, res) {
       }
     }
 
+    // Desmarca os itens da demanda que originaram esta venda: cancelada, eles voltam a poder ser vendidos.
+    await conn.query('UPDATE demanda_itens SET order_id = NULL WHERE order_id = ?', [id]);
+
     await conn.commit();
     return res.json({ message: 'Pedido cancelado e estoque restaurado.' });
   } catch (err) {
@@ -271,6 +274,10 @@ async function deleteOrder(req, res) {
         }
       }
     }
+
+    // Desmarca os itens da demanda que originaram esta venda: excluída, eles voltam a poder ser vendidos
+    // (senão ficam presos apontando pra uma venda que não existe mais).
+    await conn.query('UPDATE demanda_itens SET order_id = NULL WHERE order_id = ?', [id]);
 
     const [result] = await conn.query('DELETE FROM orders WHERE id = ?', [id]);
     if (result.affectedRows === 0) {

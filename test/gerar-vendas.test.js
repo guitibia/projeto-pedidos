@@ -3,6 +3,7 @@ const assert = require('node:assert');
 require('dotenv').config();
 const db = require('../src/database/connection');
 const { remanejarAlocacao, gerarVendas, rascunhoVenda } = require('../src/controllers/demandaController');
+const { createOrder, deleteOrder } = require('../src/controllers/orderController');
 
 
 function mockRes(){ return { statusCode:200, body:null, status(c){this.statusCode=c;return this;}, json(b){this.body=b;return this;} }; }
@@ -145,6 +146,30 @@ test('rascunhoVenda liga o produto por nome via NF quando o item veio sem produt
     assert.strictEqual(row.product_id, prod);
   } finally {
     if (nfId) { await db.query('DELETE FROM nf_entrada_itens WHERE nf_id = ?', [nfId]); await db.query('DELETE FROM nf_entradas WHERE id = ?', [nfId]); }
+    await cleanup();
+  }
+});
+
+test('excluir a venda desmarca os itens da demanda (voltam a poder ser vendidos)', async () => {
+  try {
+    const cli = await seedClient();
+    const prod = await seedProduct(5);
+    const [p] = await db.query('INSERT INTO demanda_pedidos (client_id) VALUES (?)', [cli]);
+    const [i] = await db.query('INSERT INTO demanda_itens (pedido_id, codigo, qtd_pedida, qtd_recebida, product_id, status) VALUES (?,?,?,?,?,?)', [p.insertId, 'A', 1, 1, prod, 'veio']);
+    // cria a venda marcando o item
+    let res = mockRes();
+    await createOrder({ body: { clientId: cli, paymentMethod: 'DINHEIRO', totalValue: 40, products: [{ id: prod, salePrice: 40, quantity: 1 }], demandaItemIds: [i.insertId] } }, res);
+    assert.strictEqual(res.statusCode, 201);
+    const orderId = res.body.orderId;
+    let [[row]] = await db.query('SELECT order_id FROM demanda_itens WHERE id = ?', [i.insertId]);
+    assert.strictEqual(row.order_id, orderId);
+    // exclui a venda -> o item deve voltar a order_id NULL
+    res = mockRes();
+    await deleteOrder({ params: { id: String(orderId) } }, res);
+    assert.strictEqual(res.statusCode, 200);
+    [[row]] = await db.query('SELECT order_id FROM demanda_itens WHERE id = ?', [i.insertId]);
+    assert.strictEqual(row.order_id, null, 'item desmarcado após excluir a venda');
+  } finally {
     await cleanup();
   }
 });
