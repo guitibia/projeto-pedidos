@@ -17,15 +17,51 @@ async function criarPedido(req, res) {
   } catch (e) { console.error('criarPedido', e); return res.status(500).json({ error: 'Erro ao criar pedido.' }); }
 }
 
-// GET /api/demanda
+// GET /api/demanda?entregues=1&q=nome
+// "Entregue" e derivado do status das vendas: o pedido tem venda ligada e todas
+// elas estao Entregue. Cancelada nao conta, entao cancelar devolve o card p/ Pedidos.
 async function listarPedidos(req, res) {
+  const somenteEntregues = String((req.query && req.query.entregues) || '') === '1';
+  const busca = String((req.query && req.query.q) || '').trim();
+
+  const params = [];
+  let filtroNome = '';
+  if (busca) { filtroNome = ' AND c.name LIKE ?'; params.push('%' + busca + '%'); }
+
+  // Sem busca, a aba Entregues mostra os ultimos 90 dias. Com busca a janela e
+  // ignorada de proposito: filtrar por data anularia a busca justamente quando
+  // ela e usada — achar um pedido antigo.
+  const filtroEntrega = somenteEntregues
+    ? (busca
+        ? ' HAVING entregue_flag = 1'
+        : ' HAVING entregue_flag = 1 AND entregue_em >= (NOW() - INTERVAL 90 DAY)')
+    : ' HAVING entregue_flag = 0';
+
+  const ordem = somenteEntregues ? ' ORDER BY entregue_em DESC' : ' ORDER BY dp.created_at DESC';
+
   try {
     const [rows] = await db.query(
       `SELECT dp.id, dp.client_id, c.name AS client_name, dp.observacao, dp.status, dp.created_at,
-              (SELECT COUNT(*) FROM demanda_itens i WHERE i.pedido_id = dp.id) AS qtd_itens
+              (SELECT COUNT(*) FROM demanda_itens i WHERE i.pedido_id = dp.id) AS qtd_itens,
+              (SELECT COUNT(*) FROM demanda_itens i WHERE i.pedido_id = dp.id AND i.order_id IS NULL) AS itens_pendentes,
+              (SELECT MAX(COALESCE(o.delivered_at, o.created_at))
+                 FROM demanda_itens i JOIN orders o ON o.id = i.order_id
+                WHERE i.pedido_id = dp.id AND o.status = 'Entregue') AS entregue_em,
+              CASE WHEN
+                (SELECT COUNT(DISTINCT i.order_id) FROM demanda_itens i
+                  WHERE i.pedido_id = dp.id AND i.order_id IS NOT NULL) > 0
+                AND
+                (SELECT COUNT(DISTINCT i.order_id) FROM demanda_itens i
+                  WHERE i.pedido_id = dp.id AND i.order_id IS NOT NULL)
+                =
+                (SELECT COUNT(DISTINCT i.order_id) FROM demanda_itens i
+                   JOIN orders o ON o.id = i.order_id
+                  WHERE i.pedido_id = dp.id AND o.status = 'Entregue')
+              THEN 1 ELSE 0 END AS entregue_flag
        FROM demanda_pedidos dp JOIN clients c ON c.id = dp.client_id
-       ORDER BY dp.created_at DESC LIMIT 300`);
-    return res.json(rows);
+       WHERE 1=1${filtroNome}${filtroEntrega}${ordem} LIMIT 300`, params);
+
+    return res.json(rows.map(r => ({ ...r, entregue: Number(r.entregue_flag) === 1 })));
   } catch (e) { console.error('listarPedidos', e); return res.status(500).json({ error: 'Erro ao listar.' }); }
 }
 
