@@ -110,7 +110,7 @@ async function createOrder(req, res) {
 // GET /api/orders
 async function listOrders(req, res) {
   const statusFilter = req.query.status || 'Todos';
-  let query = `SELECT o.id, o.payment_method, o.payment_status, o.origin, o.total_cost, o.status, c.name AS client_name
+  let query = `SELECT o.id, o.payment_method, o.payment_status, o.origin, o.total_cost, o.status, o.delivery_method, c.name AS client_name
                FROM orders o JOIN clients c ON o.client_id = c.id`;
   const params = [];
 
