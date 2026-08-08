@@ -423,7 +423,7 @@ async function gerarVendas(req, res) {
         await conn.beginTransaction();
         const { orderId, total } = await inserirVendaTx(conn, {
           clientId: g.client_id, paymentMethod, installments: null, combinedPaymentValue: null,
-          effProducts, effTotal, demandaItemIds
+          effProducts, effTotal, demandaItemIds, deliveryMethod: 'retirada'
         });
         await conn.commit();
         geradas.push({ cliente: g.cliente, order_id: orderId, total });

@@ -5,7 +5,7 @@ const { getDescontoPix, resolvePixPercent, aplicaPix } = require('../utils/prici
 const VALID_PAYMENT_METHODS = ['PIX', 'DINHEIRO', 'CARTÃO DE CRÉDITO', 'PARCELADO', 'PAGAMENTO COMBINADO'];
 
 // Insere a venda dentro de uma transação já aberta (conn). Reaproveitado por createOrder e gerarVendas.
-async function inserirVendaTx(conn, { clientId, paymentMethod, installments, combinedPaymentValue, effProducts, effTotal, demandaItemIds }) {
+async function inserirVendaTx(conn, { clientId, paymentMethod, installments, combinedPaymentValue, effProducts, effTotal, demandaItemIds, deliveryMethod, deliveryFee }) {
   // Verificar que todos os produtos existem e têm estoque suficiente
   for (const product of effProducts) {
     const [[row]] = await conn.query('SELECT id, name, estoque FROM products WHERE id = ?', [product.id]);
@@ -15,10 +15,11 @@ async function inserirVendaTx(conn, { clientId, paymentMethod, installments, com
       throw new Error(`Estoque insuficiente para "${row.name}". Disponível: ${row.estoque}, solicitado: ${qtd}.`);
     }
   }
-  const fee = 0;
+  const method = deliveryMethod === 'retirada' ? 'retirada' : 'entrega';
+  const fee = method === 'retirada' ? 0 : Math.max(0, Number(deliveryFee) || 0);
   const [orderResult] = await conn.query(
-    'INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value, delivery_fee) VALUES (?, ?, ?, ?, ?, ?)',
-    [clientId, paymentMethod, installments || null, effTotal, combinedPaymentValue || null, fee]
+    'INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value, delivery_fee, delivery_method) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [clientId, paymentMethod, installments || null, effTotal, combinedPaymentValue || null, fee, method]
   );
   const orderId = orderResult.insertId;
   const productsValues = effProducts.map(p => [
@@ -45,7 +46,7 @@ async function inserirVendaTx(conn, { clientId, paymentMethod, installments, com
 
 // POST /api/orders  — usa transação para garantir consistência
 async function createOrder(req, res) {
-  const { clientId, paymentMethod, products, totalValue, combinedPaymentValue, installments, demandaItemIds } = req.body;
+  const { clientId, paymentMethod, products, totalValue, combinedPaymentValue, installments, demandaItemIds, deliveryMethod, deliveryFee } = req.body;
 
   const productArray = Array.isArray(products) ? products : [products];
 
@@ -55,6 +56,10 @@ async function createOrder(req, res) {
 
   if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) {
     return res.status(400).json({ error: 'Método de pagamento inválido.' });
+  }
+
+  if (deliveryMethod !== undefined && deliveryMethod !== 'retirada' && deliveryMethod !== 'entrega') {
+    return res.status(400).json({ error: 'Método de entrega inválido.' });
   }
 
   if (['PARCELADO', 'PAGAMENTO COMBINADO'].includes(paymentMethod) && !installments) {
@@ -89,7 +94,7 @@ async function createOrder(req, res) {
     await conn.beginTransaction();
     const { orderId, total, fee: usedFee } = await inserirVendaTx(conn, {
       clientId, paymentMethod, installments, combinedPaymentValue,
-      effProducts, effTotal, demandaItemIds
+      effProducts, effTotal, demandaItemIds, deliveryMethod, deliveryFee
     });
     await conn.commit();
     return res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue: total, deliveryFee: usedFee });
