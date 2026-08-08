@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 require('dotenv').config();
 const db = require('../src/database/connection');
-const { remanejarAlocacao, gerarVendas } = require('../src/controllers/demandaController');
+const { remanejarAlocacao, gerarVendas, rascunhoVenda } = require('../src/controllers/demandaController');
 
 function mockRes(){ return { statusCode:200, body:null, status(c){this.statusCode=c;return this;}, json(b){this.body=b;return this;} }; }
 async function seedClient(){ const [r] = await db.query('INSERT INTO clients (name) VALUES (?)', ['zz_test_cli_'+Date.now()+Math.random()]); return r.insertId; }
@@ -95,6 +95,28 @@ test('gerarVendas ignora item já vendido e reporta estoque insuficiente em falh
     assert.strictEqual(Number(pr.estoque), 1);
     const [[marc]] = await db.query('SELECT COUNT(*) n FROM demanda_itens WHERE pedido_id = ? AND order_id IS NOT NULL', [p.insertId]);
     assert.strictEqual(Number(marc.n), 0);
+  } finally {
+    await cleanup();
+  }
+});
+
+test('rascunhoVenda agrega dois itens do mesmo produto numa linha só (evita PK duplicada)', async () => {
+  try {
+    const cli = await seedClient();
+    const prod = await seedProduct(10);
+    const [p] = await db.query('INSERT INTO demanda_pedidos (client_id) VALUES (?)', [cli]);
+    const [i1] = await db.query('INSERT INTO demanda_itens (pedido_id, codigo, nome, qtd_pedida, qtd_recebida, product_id, status) VALUES (?,?,?,?,?,?,?)', [p.insertId, 'A', 'Linha 1', 2, 2, prod, 'veio']);
+    const [i2] = await db.query('INSERT INTO demanda_itens (pedido_id, codigo, nome, qtd_pedida, qtd_recebida, product_id, status) VALUES (?,?,?,?,?,?,?)', [p.insertId, 'B', 'Linha 2', 1, 1, prod, 'veio']);
+    const res = mockRes();
+    await rascunhoVenda({ params: { id: p.insertId } }, res);
+    assert.strictEqual(res.statusCode, 200);
+    // uma linha só (o mesmo produto), quantidade somada = 3
+    assert.strictEqual(res.body.itens.length, 1);
+    assert.strictEqual(res.body.itens[0].product_id, prod);
+    assert.strictEqual(Number(res.body.itens[0].qtd), 3);
+    // demanda_item_ids traz os dois ids (pra marcar ambos como vendidos)
+    const ids = String(res.body.itens[0].demanda_item_ids).split(',').map(Number).sort((a,b)=>a-b);
+    assert.deepStrictEqual(ids, [i1.insertId, i2.insertId].sort((a,b)=>a-b));
   } finally {
     await cleanup();
   }

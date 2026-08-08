@@ -602,7 +602,7 @@
           rascunhoAtual = rasc;
           if (rasc.client_id) cs.value = String(rasc.client_id);
           rasc.itens.forEach(it => {
-            adicionarItemAoCarrinho(it.product_id, it.nome || ('Produto #' + it.product_id), Number(it.preco) || 0, Number(it.qtd) || 1, false, null, it.demanda_item_id);
+            adicionarItemAoCarrinho(it.product_id, it.nome || ('Produto #' + it.product_id), Number(it.preco) || 0, Number(it.qtd) || 1, false, null, it.demanda_item_ids || it.demanda_item_id);
           });
           switchTab(document.querySelector('[data-tab="criar"]'));
           Swal.fire({ icon: 'info', title: 'Rascunho de venda carregado', text: 'Confira os itens recebidos da Demanda e finalize o pedido.', timer: 2500, showConfirmButton: false });
@@ -753,7 +753,9 @@
   // pelo pré-preenchimento vindo do rascunho de venda da Demanda).
   function adicionarItemAoCarrinho(productId, productName, salePrice, qty, isPromo, cost, demandaItemId) {
     const totalProduct = salePrice * qty;
-    const entry = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null, demandaItemId: demandaItemId || null };
+    // demandaItemId pode vir como um id só ou vários separados por vírgula (produtos agregados do rascunho)
+    const demandaItemIds = demandaItemId == null ? [] : String(demandaItemId).split(',').map(s => parseInt(s, 10)).filter(Number.isInteger);
+    const entry = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null, demandaItemIds };
 
     const li = document.createElement('li');
     li.className = 'product-item';
@@ -860,7 +862,7 @@
 
     const needsInstallments = method === 'PARCELADO' || method === 'PAGAMENTO COMBINADO';
     // Só os demanda_item_id dos itens que AINDA estão no carrinho (itens removidos não devem ser marcados).
-    const demandaItemIds = productsList.filter(p => p.demandaItemId).map(p => p.demandaItemId);
+    const demandaItemIds = productsList.flatMap(p => p.demandaItemIds || []);
     const payload = {
       clientId:             document.getElementById('clientId').value,
       paymentMethod:        method,

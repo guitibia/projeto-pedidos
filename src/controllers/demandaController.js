@@ -230,11 +230,15 @@ async function rascunhoVenda(req, res) {
   try {
     const [[ped]] = await db.query('SELECT dp.id, dp.client_id, c.name AS client_name FROM demanda_pedidos dp JOIN clients c ON c.id = dp.client_id WHERE dp.id = ?', [id]);
     if (!ped) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    // Agrega por product_id: dois itens do pedido ligados ao MESMO produto viram uma linha só
+    // (senão o carrinho geraria duas linhas de order_products com a mesma PK (order_id, product_id)).
     const [itens] = await db.query(
-      `SELECT di.id AS demanda_item_id, di.product_id, di.nome, di.qtd_recebida AS qtd,
-              COALESCE(di.preco_venda, p.sale_value) AS preco
+      `SELECT MIN(di.id) AS demanda_item_id, di.product_id, MAX(di.nome) AS nome,
+              SUM(di.qtd_recebida) AS qtd, MAX(COALESCE(di.preco_venda, p.sale_value)) AS preco,
+              GROUP_CONCAT(di.id) AS demanda_item_ids
        FROM demanda_itens di LEFT JOIN products p ON p.id = di.product_id
-       WHERE di.pedido_id = ? AND di.qtd_recebida > 0 AND di.product_id IS NOT NULL AND di.order_id IS NULL`, [id]);
+       WHERE di.pedido_id = ? AND di.qtd_recebida > 0 AND di.product_id IS NOT NULL AND di.order_id IS NULL
+       GROUP BY di.product_id`, [id]);
     return res.json({ client_id: ped.client_id, client_name: ped.client_name, itens });
   } catch (e) { console.error('rascunhoVenda', e); return res.status(500).json({ error: 'Erro.' }); }
 }
