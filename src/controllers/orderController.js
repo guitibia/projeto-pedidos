@@ -4,9 +4,49 @@ const { getDescontoPix, resolvePixPercent, aplicaPix } = require('../utils/prici
 
 const VALID_PAYMENT_METHODS = ['PIX', 'DINHEIRO', 'CARTÃO DE CRÉDITO', 'PARCELADO', 'PAGAMENTO COMBINADO'];
 
+// Insere a venda dentro de uma transação já aberta (conn). Reaproveitado por createOrder e gerarVendas.
+async function inserirVendaTx(conn, { clientId, paymentMethod, installments, combinedPaymentValue, effProducts, effTotal, demandaItemIds, deliveryMethod, deliveryFee }) {
+  // Verificar que todos os produtos existem e têm estoque suficiente
+  for (const product of effProducts) {
+    const [[row]] = await conn.query('SELECT id, name, estoque FROM products WHERE id = ?', [product.id]);
+    if (!row) throw new Error(`Produto ID "${product.id}" não encontrado.`);
+    const qtd = product.quantity || 1;
+    if (row.estoque < qtd) {
+      throw new Error(`Estoque insuficiente para "${row.name}". Disponível: ${row.estoque}, solicitado: ${qtd}.`);
+    }
+  }
+  const method = deliveryMethod === 'retirada' ? 'retirada' : 'entrega';
+  const fee = method === 'retirada' ? 0 : Math.max(0, Number(deliveryFee) || 0);
+  const [orderResult] = await conn.query(
+    'INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value, delivery_fee, delivery_method) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [clientId, paymentMethod, installments || null, effTotal, combinedPaymentValue || null, fee, method]
+  );
+  const orderId = orderResult.insertId;
+  const productsValues = effProducts.map(p => [
+    orderId, p.id, parseFloat(p.salePrice), p.quantity || 1,
+    p.productCost != null ? parseFloat(p.productCost) : null
+  ]);
+  await conn.query('INSERT INTO order_products (order_id, product_id, sale_price, quantity, cost_price) VALUES ?', [productsValues]);
+  for (const product of effProducts) {
+    const qtd = product.quantity || 1;
+    await conn.query('UPDATE products SET estoque = estoque - ? WHERE id = ?', [qtd, product.id]);
+    await conn.query(
+      'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)',
+      [product.id, 'Saída', qtd, `Pedido #${orderId}`]
+    );
+  }
+  if (Array.isArray(demandaItemIds) && demandaItemIds.length) {
+    const ids = demandaItemIds.map(v => parseInt(v, 10)).filter(v => Number.isInteger(v));
+    if (ids.length) {
+      await conn.query('UPDATE demanda_itens SET order_id = ? WHERE id IN (?) AND order_id IS NULL', [orderId, ids]);
+    }
+  }
+  return { orderId, total: effTotal, fee };
+}
+
 // POST /api/orders  — usa transação para garantir consistência
 async function createOrder(req, res) {
-  const { clientId, paymentMethod, products, totalValue, combinedPaymentValue, installments, demandaItemIds } = req.body;
+  const { clientId, paymentMethod, products, totalValue, combinedPaymentValue, installments, demandaItemIds, deliveryMethod, deliveryFee } = req.body;
 
   const productArray = Array.isArray(products) ? products : [products];
 
@@ -16,6 +56,10 @@ async function createOrder(req, res) {
 
   if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) {
     return res.status(400).json({ error: 'Método de pagamento inválido.' });
+  }
+
+  if (deliveryMethod !== undefined && deliveryMethod !== 'retirada' && deliveryMethod !== 'entrega') {
+    return res.status(400).json({ error: 'Método de entrega inválido.' });
   }
 
   if (['PARCELADO', 'PAGAMENTO COMBINADO'].includes(paymentMethod) && !installments) {
@@ -45,59 +89,15 @@ async function createOrder(req, res) {
     }
   }
 
-  const fee = 0;
-
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
-
-    // Verificar que todos os produtos existem e têm estoque suficiente
-    for (const product of productArray) {
-      const [[row]] = await conn.query('SELECT id, name, estoque FROM products WHERE id = ?', [product.id]);
-      if (!row) throw new Error(`Produto ID "${product.id}" não encontrado.`);
-      const qtd = product.quantity || 1;
-      if (row.estoque < qtd) {
-        throw new Error(`Estoque insuficiente para "${row.name}". Disponível: ${row.estoque}, solicitado: ${qtd}.`);
-      }
-    }
-
-    // Inserir pedido com taxa de entrega
-    const [orderResult] = await conn.query(
-      'INSERT INTO orders (client_id, payment_method, installments, total_cost, combined_payment_value, delivery_fee) VALUES (?, ?, ?, ?, ?, ?)',
-      [clientId, paymentMethod, installments || null, effTotal, combinedPaymentValue || null, fee]
-    );
-    const orderId = orderResult.insertId;
-
-    // Inserir produtos do pedido e descontar estoque
-    const productsValues = effProducts.map(p => [
-      orderId,
-      p.id,
-      parseFloat(p.salePrice),
-      p.quantity || 1,
-      p.productCost != null ? parseFloat(p.productCost) : null
-    ]);
-    await conn.query('INSERT INTO order_products (order_id, product_id, sale_price, quantity, cost_price) VALUES ?', [productsValues]);
-
-    for (const product of effProducts) {
-      const qtd = product.quantity || 1;
-      await conn.query('UPDATE products SET estoque = estoque - ? WHERE id = ?', [qtd, product.id]);
-      await conn.query(
-        'INSERT INTO estoque_movimentacoes (product_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)',
-        [product.id, 'Saída', qtd, `Pedido #${orderId}`]
-      );
-    }
-
-    // Marcação atômica das linhas de demanda que originaram esta venda (opcional, aditivo).
-    // Só quem tiver order_id ainda NULL é marcado — protege contra reclique/duplicidade.
-    if (Array.isArray(demandaItemIds) && demandaItemIds.length) {
-      const ids = demandaItemIds.map(v => parseInt(v, 10)).filter(v => Number.isInteger(v));
-      if (ids.length) {
-        await conn.query('UPDATE demanda_itens SET order_id = ? WHERE id IN (?) AND order_id IS NULL', [orderId, ids]);
-      }
-    }
-
+    const { orderId, total, fee: usedFee } = await inserirVendaTx(conn, {
+      clientId, paymentMethod, installments, combinedPaymentValue,
+      effProducts, effTotal, demandaItemIds, deliveryMethod, deliveryFee
+    });
     await conn.commit();
-    return res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue: effTotal, deliveryFee: fee });
+    return res.status(201).json({ message: 'Pedido criado com sucesso!', orderId, totalValue: total, deliveryFee: usedFee });
   } catch (err) {
     await conn.rollback();
     console.error('Erro ao criar pedido:', err);
@@ -110,7 +110,7 @@ async function createOrder(req, res) {
 // GET /api/orders
 async function listOrders(req, res) {
   const statusFilter = req.query.status || 'Todos';
-  let query = `SELECT o.id, o.payment_method, o.payment_status, o.origin, o.total_cost, o.status, c.name AS client_name
+  let query = `SELECT o.id, o.payment_method, o.payment_status, o.origin, o.total_cost, o.status, o.delivery_method, c.name AS client_name
                FROM orders o JOIN clients c ON o.client_id = c.id`;
   const params = [];
 
@@ -227,6 +227,9 @@ async function updateOrderStatus(req, res) {
       }
     }
 
+    // Desmarca os itens da demanda que originaram esta venda: cancelada, eles voltam a poder ser vendidos.
+    await conn.query('UPDATE demanda_itens SET order_id = NULL WHERE order_id = ?', [id]);
+
     await conn.commit();
     return res.json({ message: 'Pedido cancelado e estoque restaurado.' });
   } catch (err) {
@@ -276,6 +279,10 @@ async function deleteOrder(req, res) {
         }
       }
     }
+
+    // Desmarca os itens da demanda que originaram esta venda: excluída, eles voltam a poder ser vendidos
+    // (senão ficam presos apontando pra uma venda que não existe mais).
+    await conn.query('UPDATE demanda_itens SET order_id = NULL WHERE order_id = ?', [id]);
 
     const [result] = await conn.query('DELETE FROM orders WHERE id = ?', [id]);
     if (result.affectedRows === 0) {
@@ -384,4 +391,4 @@ async function updateOrderParcela(req, res) {
   }
 }
 
-module.exports = { createOrder, listOrders, getOrderById, updateOrderStatus, deleteOrder, updateNotCame, getOrderParcelas, updateOrderParcela };
+module.exports = { createOrder, listOrders, getOrderById, updateOrderStatus, deleteOrder, updateNotCame, getOrderParcelas, updateOrderParcela, inserirVendaTx };

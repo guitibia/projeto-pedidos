@@ -373,6 +373,24 @@
             </div>
             <input type="hidden" id="paymentMethod">
 
+            <div class="mb-3">
+              <label class="form-label">Entrega</label>
+              <div class="input-icon-wrap mb-1">
+                <i class="bi bi-truck"></i>
+                <select id="deliveryMethod" class="form-select">
+                  <option value="retirada">Retirada (grátis)</option>
+                  <option value="entrega">Entrega</option>
+                </select>
+              </div>
+              <div id="deliveryFeeDiv" style="display:none">
+                <label class="form-label">Taxa de entrega (R$)</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-cash"></i>
+                  <input type="number" step="0.01" min="0" id="deliveryFee" class="form-control" placeholder="0,00">
+                </div>
+              </div>
+            </div>
+
             <div id="combinedPaymentDiv" style="display:none" class="mb-3">
               <label class="form-label">Valor pago via PIX / Dinheiro</label>
               <div class="input-icon-wrap">
@@ -474,7 +492,8 @@
       <div class="modal-body" id="orderDetailsContent"></div>
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Fechar</button>
-        <button class="btn btn-outline-primary" id="printButton"><i class="bi bi-printer me-1"></i>Imprimir</button>
+        <button class="btn btn-outline-primary" id="printClientButton"><i class="bi bi-printer me-1"></i>Imprimir (cliente)</button>
+        <button class="btn btn-outline-secondary" id="printInternalButton"><i class="bi bi-printer me-1"></i>Imprimir (interno)</button>
         <button class="btn btn-success" id="markAsDeliveredButton"><i class="bi bi-check-circle me-1"></i>Marcar como Entregue</button>
         <button id="cancelOrderButton"
           style="border:1px solid rgba(248,81,73,.5);background:rgba(248,81,73,.08);color:#f85149;
@@ -514,9 +533,12 @@
     return ` <span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3);font-size:.66rem;vertical-align:middle"><i class="bi bi-check-circle-fill me-1"></i>Pago</span>`;
   }
   // Origem do pedido: 'loja' = venda pelo site; senão = venda presencial (criada no painel)
-  function badgeOrigem(origin) {
-    if (origin === 'loja') return ` <span class="badge" style="background:rgba(88,166,255,.12);color:#58a6ff;border:1px solid rgba(88,166,255,.3);font-size:.66rem;vertical-align:middle"><i class="bi bi-shop me-1"></i>Site</span>`;
-    return ` <span class="badge" style="background:rgba(210,153,34,.10);color:#d29922;border:1px solid rgba(210,153,34,.25);font-size:.66rem;vertical-align:middle"><i class="bi bi-house-door me-1"></i>Presencial</span>`;
+  function badgeOrigem(origin, deliveryMethod) {
+    const site = origin === 'loja' ? ` <span class="badge" style="background:rgba(88,166,255,.12);color:#58a6ff;border:1px solid rgba(88,166,255,.3);font-size:.66rem;vertical-align:middle"><i class="bi bi-shop me-1"></i>Site</span>` : '';
+    const entrega = deliveryMethod === 'entrega'
+      ? ` <span class="badge" style="background:rgba(240,136,62,.12);color:#f0883e;border:1px solid rgba(240,136,62,.3);font-size:.66rem;vertical-align:middle"><i class="bi bi-truck me-1"></i>Entregar</span>`
+      : ` <span class="badge" style="background:rgba(210,153,34,.10);color:#d29922;border:1px solid rgba(210,153,34,.25);font-size:.66rem;vertical-align:middle"><i class="bi bi-house-door me-1"></i>Presencial</span>`;
+    return site + entrega;
   }
   function badgeStatus(status) {
     if (status === 'Entregue')  return `<span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3);font-size:.72rem"><i class="bi bi-check-circle me-1"></i>${status}</span>`;
@@ -602,7 +624,7 @@
           rascunhoAtual = rasc;
           if (rasc.client_id) cs.value = String(rasc.client_id);
           rasc.itens.forEach(it => {
-            adicionarItemAoCarrinho(it.product_id, it.nome || ('Produto #' + it.product_id), Number(it.preco) || 0, Number(it.qtd) || 1, false, null, it.demanda_item_id);
+            adicionarItemAoCarrinho(it.product_id, it.nome || ('Produto #' + it.product_id), Number(it.preco) || 0, Number(it.qtd) || 1, false, null, it.demanda_item_ids || it.demanda_item_id);
           });
           switchTab(document.querySelector('[data-tab="criar"]'));
           Swal.fire({ icon: 'info', title: 'Rascunho de venda carregado', text: 'Confira os itens recebidos da Demanda e finalize o pedido.', timer: 2500, showConfirmButton: false });
@@ -753,7 +775,9 @@
   // pelo pré-preenchimento vindo do rascunho de venda da Demanda).
   function adicionarItemAoCarrinho(productId, productName, salePrice, qty, isPromo, cost, demandaItemId) {
     const totalProduct = salePrice * qty;
-    const entry = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null, demandaItemId: demandaItemId || null };
+    // demandaItemId pode vir como um id só ou vários separados por vírgula (produtos agregados do rascunho)
+    const demandaItemIds = demandaItemId == null ? [] : String(demandaItemId).split(',').map(s => parseInt(s, 10)).filter(Number.isInteger);
+    const entry = { id: productId, salePrice, quantity: qty, isPromotionalPrice: isPromo, productCost: isPromo ? cost : null, demandaItemIds };
 
     const li = document.createElement('li');
     li.className = 'product-item';
@@ -824,6 +848,10 @@
     updatePixDiscountHint();
   });
 
+  document.getElementById('deliveryMethod').addEventListener('change', (e) => {
+    document.getElementById('deliveryFeeDiv').style.display = e.target.value === 'entrega' ? 'block' : 'none';
+    if (e.target.value !== 'entrega') document.getElementById('deliveryFee').value = '';
+  });
   document.getElementById('installments').addEventListener('change', updateInstallmentAmount);
   document.getElementById('combinedPaymentValue').addEventListener('input', updateInstallmentAmount);
 
@@ -846,6 +874,9 @@
     document.querySelectorAll('.pay-option').forEach(r => r.checked = false);
     document.getElementById('installmentsDiv').style.display    = 'none';
     document.getElementById('combinedPaymentDiv').style.display = 'none';
+    document.getElementById('deliveryMethod').value = 'retirada';
+    document.getElementById('deliveryFeeDiv').style.display = 'none';
+    document.getElementById('deliveryFee').value = '';
     document.getElementById('installmentHint').style.display    = 'none';
     clientePixDiscount = null;
     productsList = []; totalValue = 0;
@@ -860,7 +891,7 @@
 
     const needsInstallments = method === 'PARCELADO' || method === 'PAGAMENTO COMBINADO';
     // Só os demanda_item_id dos itens que AINDA estão no carrinho (itens removidos não devem ser marcados).
-    const demandaItemIds = productsList.filter(p => p.demandaItemId).map(p => p.demandaItemId);
+    const demandaItemIds = productsList.flatMap(p => p.demandaItemIds || []);
     const payload = {
       clientId:             document.getElementById('clientId').value,
       paymentMethod:        method,
@@ -868,7 +899,9 @@
       totalValue,
       installments:         needsInstallments ? (document.getElementById('installments').value || null) : null,
       combinedPaymentValue: method === 'PAGAMENTO COMBINADO' ? (document.getElementById('combinedPaymentValue').value || null) : null,
-      demandaItemIds:       demandaItemIds.length ? demandaItemIds : undefined
+      demandaItemIds:       demandaItemIds.length ? demandaItemIds : undefined,
+      deliveryMethod:       document.getElementById('deliveryMethod').value,
+      deliveryFee:          document.getElementById('deliveryMethod').value === 'entrega' ? (document.getElementById('deliveryFee').value || 0) : 0
     };
 
     try {
@@ -945,7 +978,7 @@
       tbody.insertAdjacentHTML('beforeend', `
         <tr>
           <td class="order-id">#${o.id}</td>
-          <td style="font-weight:500">${esc(o.client_name)}${badgeOrigem(o.origin)}</td>
+          <td style="font-weight:500">${esc(o.client_name)}${badgeOrigem(o.origin, o.delivery_method)}</td>
           <td style="font-size:.82rem;color:var(--text-muted)">${esc(o.payment_method)}${badgePago(o.payment_status)}</td>
           <td>${badge}</td>
           <td class="order-value">${fmt(o.total_cost)}</td>
@@ -1041,7 +1074,7 @@
         <div style="font-size:1rem;font-weight:700;color:var(--text-heading)">Pedido #${order.id} &nbsp;·&nbsp; ${esc(order.client_name)}</div>
         <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem"><i class="bi bi-geo-alt-fill me-1" style="color:#39c5cf"></i>${order.delivery_method === 'retirada' ? `Retirada com o vendedor${order.enderecoRetirada ? ' — ' + esc(order.enderecoRetirada) : ''}` : `${esc(order.client_address)}, ${esc(order.client_house_number)} — ${esc(order.client_neighborhood)}`}</div>
         <div style="font-size:.82rem;color:var(--text-muted);margin-top:.15rem"><i class="bi bi-credit-card-fill me-1" style="color:#58a6ff"></i>${pagamento}</div>
-        <div style="margin-top:.4rem">${badgeOrigem(order.origin)}</div>
+        <div style="margin-top:.4rem">${badgeOrigem(order.origin, order.delivery_method)}</div>
         ${order.delivery_method === 'retirada' ? `<div style="font-size:.82rem;color:var(--success);margin-top:.15rem"><i class="bi bi-truck-front-fill me-1"></i>Frete: Grátis</div>` : (order.delivery_fee > 0 ? `<div style="font-size:.82rem;color:#f0883e;margin-top:.15rem"><i class="bi bi-truck-front-fill me-1"></i>Taxa de entrega: ${fmt(order.delivery_fee)}</div>` : '')}
       </div>
       <div style="border-top:1px solid var(--border);padding-top:.75rem;margin-bottom:.75rem">${prodHTML}</div>
@@ -1067,7 +1100,8 @@
     const btnCancel = document.getElementById('cancelOrderButton');
     btnCancel.onclick = () => cancelOrder(id);
     btnCancel.style.display = (order.status === 'Pendente') ? '' : 'none';
-    document.getElementById('printButton').onclick = () => printOrder(order);
+    document.getElementById('printClientButton').onclick = () => printOrder(order, 'cliente');
+    document.getElementById('printInternalButton').onclick = () => printOrder(order, 'interno');
 
     const modalEl = document.getElementById('orderDetailsModal');
     const existing = bootstrap.Modal.getInstance(modalEl);
@@ -1136,19 +1170,77 @@
     loadOrders();
   }
 
-  function printOrder(order) {
-    const w = window.open('', '', 'width=800,height=600');
-    const totalVenda = order.products.reduce((s,p) => s + p.sale_price * (p.quantity||1), 0).toFixed(2);
-    const totalCusto = order.products.reduce((s,p) => s + p.cost_price * (p.quantity||1), 0).toFixed(2);
+  function printOrder(order, modo) {
+    const interno = modo === 'interno';
+    const brl = v => 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',');
+    const itens = order.products || [];
+    const subtotal = itens.reduce((s,p) => s + p.sale_price * (p.quantity||1), 0);
+    const custo    = itens.reduce((s,p) => s + (p.cost_price||0) * (p.quantity||1), 0);
+    const frete    = Number(order.delivery_fee) || 0;
+    const total    = subtotal + frete;
+    const entrega  = order.delivery_method === 'entrega';
+    const dataStr  = new Date().toLocaleDateString('pt-BR');
+    let endereco;
+    if (entrega) {
+      const rua = [order.client_address, order.client_house_number].filter(Boolean).map(esc).join(', ');
+      const bairro = order.client_neighborhood ? ' — ' + esc(order.client_neighborhood) : '';
+      endereco = (rua + bairro).trim() || '(sem endereço cadastrado)';
+    } else {
+      endereco = `Retirada com o vendedor${order.enderecoRetirada ? ' — ' + esc(order.enderecoRetirada) : ''}`;
+    }
+
+    const linhas = itens.map(p => `
+      <tr>
+        <td>${esc(p.product_name)}${p.not_came ? ' <span style="color:#b91c1c;font-size:.8rem">(não veio)</span>' : ''}</td>
+        <td style="text-align:center">${esc(p.code || '-')}</td>
+        <td style="text-align:center">${p.quantity}</td>
+        <td style="text-align:right">${brl(p.sale_price)}</td>
+        <td style="text-align:right">${brl(p.sale_price * p.quantity)}</td>
+      </tr>`).join('');
+
+    const w = window.open('', '', 'width=800,height=700');
     w.document.write(`<html><head><title>Pedido #${order.id}</title>
-      <style>body{font-family:Arial,sans-serif;padding:20px;color:#333}h3{text-align:center}hr{border-color:#ccc}.row{display:flex;gap:8px;margin-bottom:4px}</style>
-    </head><body>
-      <h3>Pedido #${order.id}</h3>
-      <p><strong>Cliente:</strong> ${esc(order.client_name)}</p>
-      <p><strong>Endereço:</strong> ${order.delivery_method === 'retirada' ? `Retirada com o vendedor${order.enderecoRetirada ? ' — ' + esc(order.enderecoRetirada) : ''}` : `${esc(order.client_address)}, ${esc(order.client_house_number)} — ${esc(order.client_neighborhood)}`}</p>
-      <p><strong>Pagamento:</strong> ${esc(order.payment_method)}</p><hr>
-      ${order.products.map(p=>`<div class="row">${esc(p.product_name)} — COD ${esc(p.code)} — Qtd ${p.quantity} — R$ ${(p.sale_price*p.quantity).toFixed(2)}</div>`).join('')}
-      <hr><p><strong>Total Venda: R$ ${totalVenda}</strong> &nbsp; Total Custo: R$ ${totalCusto} &nbsp; Lucro: R$ ${(totalVenda-totalCusto).toFixed(2)}</p>
+      <style>
+        *{box-sizing:border-box}
+        body{font-family:'Segoe UI',Arial,sans-serif;color:#222;margin:0;padding:28px;max-width:720px}
+        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #8957e5;padding-bottom:10px;margin-bottom:6px}
+        .brand{font-size:1.3rem;font-weight:800;color:#8957e5;line-height:1.1}
+        .brand small{display:block;font-size:.68rem;font-weight:600;color:#999;letter-spacing:2px;margin-top:2px}
+        .meta{text-align:right;font-size:.82rem;color:#666}
+        .meta .num{font-size:1.1rem;font-weight:800;color:#222}
+        .banner{text-align:center;font-weight:700;border-radius:8px;padding:8px;margin:14px 0}
+        .banner.ent{color:#b45309;border:2px solid #b45309;background:#fff7ed}
+        .banner.ret{color:#555;border:1px dashed #aaa;background:#fafafa}
+        .info{font-size:.92rem;margin:5px 0}
+        .info b{color:#555;display:inline-block;min-width:82px}
+        table{width:100%;border-collapse:collapse;margin-top:14px;font-size:.88rem}
+        th{background:#f3f0fa;color:#5a3ea8;text-align:left;padding:8px;border-bottom:2px solid #d9cff0;font-size:.8rem;text-transform:uppercase;letter-spacing:.4px}
+        td{padding:8px;border-bottom:1px solid #eee}
+        .tot{margin-top:16px;margin-left:auto;width:280px;font-size:.92rem}
+        .tot .r{display:flex;justify-content:space-between;padding:3px 0}
+        .tot .grand{border-top:2px solid #333;margin-top:5px;padding-top:7px;font-size:1.1rem;font-weight:800}
+        .foot{margin-top:30px;text-align:center;font-size:.72rem;color:#bbb;border-top:1px solid #eee;padding-top:10px}
+        @media print{body{padding:6px}}
+      </style></head><body>
+      <div class="head">
+        <div class="brand">Beleza Multi Marcas<small>PEDIDO</small></div>
+        <div class="meta"><div class="num">#${order.id}</div><div>${dataStr}</div></div>
+      </div>
+      <div class="banner ${entrega ? 'ent' : 'ret'}">${entrega ? '🚚 PARA ENTREGA' + (frete > 0 ? ' — Taxa: ' + brl(frete) : '') : '🏠 RETIRADA COM O VENDEDOR'}</div>
+      <div class="info"><b>Cliente:</b> ${esc(order.client_name)}</div>
+      <div class="info"><b>${entrega ? 'Endereço:' : 'Entrega:'}</b> ${endereco}</div>
+      <div class="info"><b>Pagamento:</b> ${esc(order.payment_method)}</div>
+      <table>
+        <thead><tr><th>Produto</th><th style="text-align:center">Cód</th><th style="text-align:center">Qtd</th><th style="text-align:right">Unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+      <div class="tot">
+        <div class="r"><span>Subtotal</span><span>${brl(subtotal)}</span></div>
+        ${frete > 0 ? `<div class="r"><span>Taxa de entrega</span><span>${brl(frete)}</span></div>` : ''}
+        <div class="r grand"><span>TOTAL</span><span>${brl(total)}</span></div>
+        ${interno ? `<div class="r" style="margin-top:10px;color:#888"><span>Custo</span><span>${brl(custo)}</span></div><div class="r" style="color:#15803d;font-weight:700"><span>Lucro</span><span>${brl(subtotal - custo)}</span></div>` : ''}
+      </div>
+      <div class="foot">Beleza Multi Marcas${interno ? ' • via interna' : ' • Obrigada pela preferência 💜'}</div>
     </body></html>`);
     w.document.close(); w.print();
   }

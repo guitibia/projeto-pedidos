@@ -8,6 +8,7 @@ router.get('/compra', c.listaCompra);
 router.get('/relatorio', c.relatorio);
 router.get('/nf/:nfId/conferir', c.conferirNf);
 router.post('/conciliar-manual', c.conciliarManual);
+router.post('/gerar-vendas', c.gerarVendas);
 
 router.post('/', c.criarPedido);
 router.get('/', c.listarPedidos);

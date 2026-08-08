@@ -1,5 +1,8 @@
 const db = require('../database/connection');
 const { conciliar } = require('../services/conciliacaoNf');
+const { resolvePixPercent, aplicaPix, getDescontoPix } = require('../utils/pricing');
+const { inserirVendaTx } = require('./orderController');
+const VALID_PAYMENT_METHODS = ['PIX', 'DINHEIRO', 'CARTÃO DE CRÉDITO', 'PARCELADO', 'PAGAMENTO COMBINADO'];
 
 // POST /api/demanda
 async function criarPedido(req, res) {
@@ -220,6 +223,40 @@ async function aplicarConciliacao(conn, nfId, emitenteCnpj) {
   for (const pid of pedidosAfetados) await recalcularStatusPedido(conn, pid);
 }
 
+// --- vínculo automático de produto por nome (mesma lógica do "Puxar da NF", agora no backend) ---
+// Usado ao gerar a venda: itens recebidos sem produto são ligados ao produto que a NF abasteceu,
+// casando o nome do item com a descrição da NF. Assim o "Gerar venda" funciona mesmo que a conferência
+// tenha sido feita na mão (✓ Chegou), sem depender do passo "Puxar da NF".
+function _normNome(s){ return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+function _tokensNome(s){ return _normNome(s).split(' ').filter(t => t.length >= 3); }
+function _scoreNome(nomePedido, descNf){
+  const a = _tokensNome(nomePedido), b = _tokensNome(descNf);
+  if (!a.length || !b.length) return 0;
+  let n = 0;
+  for (const ta of a) { if (b.some(tb => ta === tb || tb.startsWith(ta) || ta.startsWith(tb))) n++; }
+  return n;
+}
+async function _nfItensComProduto() {
+  const [nf] = await db.query('SELECT descricao, product_id FROM nf_entrada_itens WHERE product_id IS NOT NULL');
+  return nf;
+}
+// Liga por nome os itens recebidos e ainda sem produto de UM pedido; devolve quantos ligou.
+async function autoLinkPedido(pedidoId, nfItens) {
+  const [pend] = await db.query(
+    'SELECT id, nome FROM demanda_itens WHERE pedido_id = ? AND qtd_recebida > 0 AND product_id IS NULL AND order_id IS NULL',
+    [pedidoId]);
+  let ligados = 0;
+  for (const it of pend) {
+    let best = null, bestScore = 0;
+    for (const nf of nfItens) { const sc = _scoreNome(it.nome, nf.descricao); if (sc > bestScore) { bestScore = sc; best = nf; } }
+    if (best && bestScore >= 1) {
+      await db.query('UPDATE demanda_itens SET product_id = ? WHERE id = ? AND product_id IS NULL', [best.product_id, it.id]);
+      ligados++;
+    }
+  }
+  return ligados;
+}
+
 // GET /api/demanda/:id/rascunho-venda
 async function rascunhoVenda(req, res) {
   const id = parseInt(req.params.id, 10);
@@ -227,11 +264,17 @@ async function rascunhoVenda(req, res) {
   try {
     const [[ped]] = await db.query('SELECT dp.id, dp.client_id, c.name AS client_name FROM demanda_pedidos dp JOIN clients c ON c.id = dp.client_id WHERE dp.id = ?', [id]);
     if (!ped) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    // Liga automaticamente por nome (via NF) os recebidos que ainda não têm produto, pra a venda funcionar.
+    await autoLinkPedido(id, await _nfItensComProduto());
+    // Agrega por product_id: dois itens do pedido ligados ao MESMO produto viram uma linha só
+    // (senão o carrinho geraria duas linhas de order_products com a mesma PK (order_id, product_id)).
     const [itens] = await db.query(
-      `SELECT di.id AS demanda_item_id, di.product_id, di.nome, di.qtd_recebida AS qtd,
-              COALESCE(di.preco_venda, p.sale_value) AS preco
+      `SELECT MIN(di.id) AS demanda_item_id, di.product_id, MAX(di.nome) AS nome,
+              SUM(di.qtd_recebida) AS qtd, MAX(COALESCE(di.preco_venda, p.sale_value)) AS preco,
+              GROUP_CONCAT(di.id) AS demanda_item_ids
        FROM demanda_itens di LEFT JOIN products p ON p.id = di.product_id
-       WHERE di.pedido_id = ? AND di.qtd_recebida > 0 AND di.product_id IS NOT NULL AND di.order_id IS NULL`, [id]);
+       WHERE di.pedido_id = ? AND di.qtd_recebida > 0 AND di.product_id IS NOT NULL AND di.order_id IS NULL
+       GROUP BY di.product_id`, [id]);
     return res.json({ client_id: ped.client_id, client_name: ped.client_name, itens });
   } catch (e) { console.error('rascunhoVenda', e); return res.status(500).json({ error: 'Erro.' }); }
 }
@@ -257,6 +300,8 @@ async function remanejarAlocacao(req, res) {
   const nova = parseInt(req.body.qtd_recebida, 10);
   if (!Number.isInteger(itemId)) return res.status(400).json({ error: 'Item inválido.' });
   if (!Number.isInteger(nova) || nova < 0) return res.status(400).json({ error: 'Quantidade inválida.' });
+  const pidRaw = req.body.product_id;
+  const pid = (pidRaw === undefined || pidRaw === null || pidRaw === '') ? null : parseInt(pidRaw, 10);
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
@@ -264,7 +309,11 @@ async function remanejarAlocacao(req, res) {
     if (!item) { await conn.rollback(); return res.status(404).json({ error: 'Item não encontrado.' }); }
     if (nova > Number(item.qtd_pedida)) { await conn.rollback(); return res.status(400).json({ error: 'Não pode receber mais do que foi pedido.' }); }
     const status = nova >= Number(item.qtd_pedida) ? 'veio' : (nova > 0 ? 'parcial' : 'pendente');
-    await conn.query('UPDATE demanda_itens SET qtd_recebida = ?, status = ? WHERE id = ?', [nova, status, itemId]);
+    if (Number.isInteger(pid)) {
+      await conn.query('UPDATE demanda_itens SET qtd_recebida = ?, status = ?, product_id = ? WHERE id = ?', [nova, status, pid, itemId]);
+    } else {
+      await conn.query('UPDATE demanda_itens SET qtd_recebida = ?, status = ? WHERE id = ?', [nova, status, itemId]);
+    }
     await recalcularStatusPedido(conn, item.pedido_id);
     await conn.commit();
     return res.json({ ok: true });
@@ -323,6 +372,75 @@ async function conciliarManual(req, res) {
   finally { conn.release(); }
 }
 
+// POST /api/demanda/gerar-vendas — gera a venda de todos os pedidos elegíveis (recebidos + com produto ligado)
+async function gerarVendas(req, res) {
+  const paymentMethod = String(req.body.payment_method || 'DINHEIRO').toUpperCase();
+  if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) return res.status(400).json({ error: 'Método de pagamento inválido.' });
+  try {
+    // Liga automaticamente por nome (via NF) os recebidos sem produto de todos os pedidos, antes de gerar.
+    const nfItens = await _nfItensComProduto();
+    const [pedidosPend] = await db.query('SELECT DISTINCT pedido_id FROM demanda_itens WHERE qtd_recebida > 0 AND product_id IS NULL AND order_id IS NULL');
+    for (const { pedido_id } of pedidosPend) await autoLinkPedido(pedido_id, nfItens);
+    const [linhas] = await db.query(
+      `SELECT di.id AS demanda_item_id, di.pedido_id, dp.client_id, cl.name AS cliente,
+              di.product_id, di.qtd_recebida, COALESCE(di.preco_venda, p.sale_value) AS preco, p.cost AS cost
+       FROM demanda_itens di
+       JOIN demanda_pedidos dp ON dp.id = di.pedido_id
+       JOIN clients cl ON cl.id = dp.client_id
+       LEFT JOIN products p ON p.id = di.product_id
+       WHERE di.qtd_recebida > 0 AND di.product_id IS NOT NULL AND di.order_id IS NULL
+       ORDER BY di.pedido_id`);
+    const [semProduto] = await db.query(
+      `SELECT cl.name AS cliente, di.nome
+       FROM demanda_itens di JOIN demanda_pedidos dp ON dp.id = di.pedido_id JOIN clients cl ON cl.id = dp.client_id
+       WHERE di.qtd_recebida > 0 AND di.product_id IS NULL AND di.order_id IS NULL`);
+
+    // agrupa por pedido; dentro do pedido, agrega por product_id (PK de order_products é (order_id, product_id))
+    const porPedido = new Map();
+    for (const l of linhas) {
+      if (!porPedido.has(l.pedido_id)) porPedido.set(l.pedido_id, { client_id: l.client_id, cliente: l.cliente, produtos: new Map() });
+      const g = porPedido.get(l.pedido_id);
+      if (!g.produtos.has(l.product_id)) g.produtos.set(l.product_id, { id: l.product_id, salePrice: Number(l.preco) || 0, quantity: 0, productCost: l.cost != null ? Number(l.cost) : null, itemIds: [] });
+      const pp = g.produtos.get(l.product_id);
+      pp.quantity += Number(l.qtd_recebida);
+      pp.itemIds.push(l.demanda_item_id);
+    }
+
+    const geradas = [], falhas = [];
+    let totalGeral = 0;
+    const pixGlobal = paymentMethod === 'PIX' ? await getDescontoPix() : 0;
+    for (const [, g] of porPedido) {
+      let effProducts = Array.from(g.produtos.values());
+      const demandaItemIds = effProducts.reduce((acc, pp) => acc.concat(pp.itemIds), []);
+      if (paymentMethod === 'PIX') {
+        const [[cli]] = await db.query('SELECT pix_discount_percent FROM clients WHERE id = ?', [g.client_id]);
+        const pixPct = resolvePixPercent(cli ? cli.pix_discount_percent : null, pixGlobal);
+        if (pixPct > 0) effProducts = effProducts.map(pp => Object.assign({}, pp, { salePrice: aplicaPix(pp.salePrice, pixPct) }));
+      }
+      const effTotal = Number(effProducts.reduce((s, pp) => s + pp.salePrice * pp.quantity, 0).toFixed(2));
+      const conn = await db.getConnection();
+      try {
+        await conn.beginTransaction();
+        const { orderId, total } = await inserirVendaTx(conn, {
+          clientId: g.client_id, paymentMethod, installments: null, combinedPaymentValue: null,
+          effProducts, effTotal, demandaItemIds, deliveryMethod: 'retirada'
+        });
+        await conn.commit();
+        geradas.push({ cliente: g.cliente, order_id: orderId, total });
+        totalGeral += Number(total);
+      } catch (e) {
+        await conn.rollback();
+        falhas.push({ cliente: g.cliente, erro: e.message });
+      } finally { conn.release(); }
+    }
+    return res.json({
+      geradas, falhas,
+      sem_produto: semProduto.map(s => ({ cliente: s.cliente, nome: s.nome })),
+      total_geral: Number(totalGeral.toFixed(2))
+    });
+  } catch (e) { console.error('gerarVendas', e); return res.status(500).json({ error: 'Erro ao gerar vendas.' }); }
+}
+
 // DELETE /api/demanda/:id — exclui um pedido criado por engano (bloqueia se já virou venda)
 async function excluirPedido(req, res) {
   const id = parseInt(req.params.id, 10);
@@ -346,5 +464,5 @@ async function excluirPedido(req, res) {
 module.exports = {
   criarPedido, listarPedidos, getPedido, addItem, updateItem, deleteItem, listarFornecedores,
   listaCompra, relatorio, aplicarConciliacao, rascunhoVenda, marcarVenda, remanejarAlocacao,
-  conferirNf, conciliarManual, excluirPedido,
+  conferirNf, conciliarManual, excluirPedido, gerarVendas,
 };
