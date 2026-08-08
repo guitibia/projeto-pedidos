@@ -135,7 +135,7 @@
   }
 
   function cardPedido(p){
-    const pend = Number(p.itens_pendentes) > 0
+    const pend = p.entregue && Number(p.itens_pendentes) > 0
       ? `<span class="badge bg-warning text-dark ms-1"><i class="bi bi-exclamation-triangle"></i> ${p.itens_pendentes} item(ns) pendente(s)</span>`
       : '';
     const entrega = p.entregue && p.entregue_em

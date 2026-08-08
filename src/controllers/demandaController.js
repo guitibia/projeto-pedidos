@@ -61,7 +61,10 @@ async function listarPedidos(req, res) {
        FROM demanda_pedidos dp JOIN clients c ON c.id = dp.client_id
        WHERE 1=1${filtroNome}${filtroEntrega}${ordem} LIMIT 300`, params);
 
-    return res.json(rows.map(r => ({ ...r, entregue: Number(r.entregue_flag) === 1 })));
+    return res.json(rows.map(r => {
+      const { entregue_flag, ...rest } = r;
+      return { ...rest, entregue: Number(entregue_flag) === 1 };
+    }));
   } catch (e) { console.error('listarPedidos', e); return res.status(500).json({ error: 'Erro ao listar.' }); }
 }
 
