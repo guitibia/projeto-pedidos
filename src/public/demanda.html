@@ -305,7 +305,9 @@
       if (best && bestScore >= 1) {
         const nfQ = Math.floor(Number(best.quantidade) || 0);
         const qtd = nfQ > 0 ? Math.min(Number(i.qtd_pedida) || 0, nfQ) : (Number(i.qtd_pedida) || 0);
-        const rr = await Auth.apiFetch('/api/demanda/itens/'+i.id+'/alocacao', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ qtd_recebida: qtd }) });
+        const payload = { qtd_recebida: qtd };
+        if (best.product_id) payload.product_id = best.product_id;
+        const rr = await Auth.apiFetch('/api/demanda/itens/'+i.id+'/alocacao', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         if (rr.ok) marcados++;
       } else { semMatch++; }
     }
